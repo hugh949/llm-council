@@ -12,7 +12,7 @@ SQLite is used automatically - no setup needed! The database file will be create
 
 SQLite works great for your use case (10 users, 5 conversations/day). The database file will be stored in the `data/` directory.
 
-**For Railway/Render deployment:**
+**For Azure deployment:**
 - SQLite files persist in the filesystem
 - No additional setup needed
 - Just ensure the `data/` directory is writable
@@ -21,7 +21,7 @@ SQLite works great for your use case (10 users, 5 conversations/day). The databa
 
 If you need to scale up later, you can easily switch to PostgreSQL:
 
-1. **Get PostgreSQL URL** from your hosting provider (Railway, Render, etc.)
+1. **Get PostgreSQL URL** from Azure Database for PostgreSQL (if using PostgreSQL)
 2. **Set environment variable:**
    ```bash
    DATABASE_URL=postgresql://user:pass@host:port/dbname
