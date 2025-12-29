@@ -2,8 +2,10 @@
  * API client for the LLM Council backend.
  */
 
-// Use environment variable for production, fallback to localhost for development
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
+// Use environment variable for production, or default to same origin (when served from backend)
+// In production (served from same backend), API_BASE will be empty string (same origin)
+// In development, use localhost
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8001' : '');
 
 export const api = {
   /**

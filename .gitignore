@@ -17,6 +17,7 @@ dist/
 *.sqlite
 *.sqlite3
 data/llm_council.db
+backend/static/
 
 # Environment
 .env
