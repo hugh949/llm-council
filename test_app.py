@@ -7,6 +7,7 @@ Tests core functionality without requiring API keys.
 import sys
 import os
 import json
+import uuid
 from pathlib import Path
 
 # Add project root to path
@@ -17,7 +18,7 @@ def test_imports():
     print("🔍 Testing imports...")
     
     try:
-        from backend.database import init_db, SessionLocal, Conversation
+        from backend.database import init_db, engine, Base, Conversation
         from backend.storage_db import (
             create_conversation, get_conversation, list_conversations,
             delete_conversation, finalize_prompt, add_context_engineering_message
@@ -26,7 +27,7 @@ def test_imports():
             COUNCIL_MODELS, CHAIRMAN_MODEL,
             PROMPT_ENGINEERING_MODEL, CONTEXT_ENGINEERING_MODEL
         )
-        from backend.document_parser import parse_document, fetch_url_content
+        from backend.document_parser import parse_file, fetch_url_content
         print("  ✅ All core imports successful")
         return True
     except Exception as e:
@@ -40,13 +41,15 @@ def test_database():
     print("\n🔍 Testing database...")
     
     try:
-        from backend.database import init_db, SessionLocal, Conversation
+        from backend.database import init_db, engine, Conversation
+        from sqlalchemy.orm import sessionmaker
         
         # Initialize database
         init_db()
         print("  ✅ Database initialized")
         
         # Test session creation
+        SessionLocal = sessionmaker(bind=engine)
         db = SessionLocal()
         try:
             # Test query
@@ -73,8 +76,9 @@ def test_storage_operations():
             add_prompt_engineering_message, finalize_prompt
         )
         
-        # Create a test conversation
-        conv_id = create_conversation()
+        # Create a test conversation (with UUID)
+        conv_id = str(uuid.uuid4())
+        create_conversation(conv_id)
         print(f"  ✅ Conversation created: {conv_id[:8]}...")
         
         # Retrieve conversation
@@ -148,7 +152,7 @@ def test_document_parser():
     print("\n🔍 Testing document parser...")
     
     try:
-        from backend.document_parser import parse_document, fetch_url_content
+        from backend.document_parser import parse_file, fetch_url_content
         
         # Test that functions exist and are callable
         assert callable(parse_file), "parse_file should be callable"
@@ -267,4 +271,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

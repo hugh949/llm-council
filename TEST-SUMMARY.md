@@ -23,11 +23,14 @@
    - ✅ Create conversations
    - ✅ Retrieve conversations
    - ✅ Delete conversations
+   - ✅ Add prompt engineering messages
+   - ✅ Finalize prompts
    - All CRUD operations verified
 
 4. **✅ Configuration**
    - All model configurations loaded correctly
-   - COUNCIL_MODELS, CHAIRMAN_MODEL configured
+   - COUNCIL_MODELS (4 models) configured
+   - CHAIRMAN_MODEL configured
    - PROMPT_ENGINEERING_MODEL, CONTEXT_ENGINEERING_MODEL configured
 
 5. **✅ Document Parser**
@@ -39,6 +42,7 @@
    - Health check endpoint works (`GET /`)
    - Returns correct response: `{"status":"ok","service":"LLM Council API"}`
    - FastAPI app structure verified
+   - CORS configured correctly
 
 ### Frontend Tests
 
@@ -75,6 +79,8 @@ The following endpoints are configured and verified:
 ### Core Functionality
 - ✅ Database initialization and operations
 - ✅ Conversation management (create, read, delete)
+- ✅ Prompt engineering message handling
+- ✅ Prompt finalization
 - ✅ API structure and endpoints
 - ✅ CORS configuration
 - ✅ Frontend build process
@@ -130,4 +136,3 @@ uv run python -m backend.main
 cd frontend
 npm run build
 ```
-
