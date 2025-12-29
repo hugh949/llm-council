@@ -2,9 +2,11 @@
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any
+from pathlib import Path
 import uuid
 import json
 import asyncio
@@ -26,8 +28,15 @@ from .document_parser import parse_file, fetch_url_content
 
 app = FastAPI(title="LLM Council API")
 
-# Enable CORS - allow all origins (needed for production deployment)
-# In production, you can restrict this to your Azure Static Web App domain
+# Serve static files (frontend) from backend/static directory
+static_dir = Path(__file__).parent / "static"
+static_index = static_dir / "index.html"
+
+# Mount static assets if they exist
+if static_dir.exists() and (static_dir / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+
+# Enable CORS - allow all origins (for API access, not needed when serving from same origin)
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -100,10 +109,35 @@ class Conversation(BaseModel):
     council_deliberation: Dict[str, Any] = None
 
 
-@app.get("/")
-async def root():
-    """Health check endpoint."""
+@app.get("/api/")
+async def api_root():
+    """API root endpoint for health check."""
     return {"status": "ok", "service": "LLM Council API"}
+
+@app.get("/")
+async def serve_index():
+    """Serve the React app index page."""
+    if static_index.exists():
+        return FileResponse(str(static_index))
+    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script."}
+
+@app.get("/{file_path:path}")
+async def serve_spa(file_path: str):
+    """Serve the React app for all non-API routes (SPA routing)."""
+    # Don't interfere with API routes
+    if file_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve the requested file if it exists (e.g., favicon, robots.txt, etc.)
+    requested_file = static_dir / file_path
+    if requested_file.exists() and requested_file.is_file() and not file_path.endswith('.html'):
+        return FileResponse(str(requested_file))
+    
+    # For all other routes, serve index.html (React Router will handle client-side routing)
+    if static_index.exists():
+        return FileResponse(str(static_index))
+    
+    raise HTTPException(status_code=404, detail="Frontend not found. Please build the frontend first.")
 
 
 @app.get("/api/conversations", response_model=List[ConversationMetadata])
