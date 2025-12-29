@@ -128,6 +128,13 @@ async def stage3_synthesize_final(
     Returns:
         Dict with 'model' and 'response' keys
     """
+    # Safety check: if no stage1 results, return error
+    if not stage1_results:
+        return {
+            "model": CHAIRMAN_MODEL,
+            "response": "Error: No responses available from Stage 1 to synthesize."
+        }
+    
     # Build comprehensive context for chairman
     stage1_text = "\n\n".join([
         f"Model: {result['model']}\nResponse: {result['response']}"

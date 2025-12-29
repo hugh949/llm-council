@@ -1,5 +1,5 @@
 .sidebar {
-  width: 260px;
+  width: 300px;
   background: #f8f8f8;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -12,10 +12,26 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-.sidebar-header h1 {
+.sidebar-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.xavor-logo {
+  width: 100px;
+  height: auto;
+  max-height: 60px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.app-title {
   font-size: 18px;
   margin: 0 0 12px 0;
   color: #333;
+  text-align: center;
 }
 
 .new-conversation-btn {
@@ -50,11 +66,11 @@
 }
 
 .conversation-item {
-  padding: 12px;
   margin-bottom: 4px;
   border-radius: 6px;
-  cursor: pointer;
+  border: 1px solid transparent;
   transition: background 0.2s;
+  overflow: hidden;
 }
 
 .conversation-item:hover {
@@ -63,16 +79,201 @@
 
 .conversation-item.active {
   background: #e8f0fe;
-  border: 1px solid #4a90e2;
+  border-color: #4a90e2;
+}
+
+.conversation-header {
+  padding: 12px;
+  cursor: pointer;
+}
+
+.conversation-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 8px;
 }
 
 .conversation-title {
   color: #333;
   font-size: 14px;
-  margin-bottom: 4px;
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-conversation-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.conversation-item:hover .delete-conversation-btn {
+  opacity: 1;
+}
+
+.delete-conversation-btn:hover {
+  background: #fee;
+  color: #d32f2f;
+}
+
+.delete-conversation-btn:active {
+  background: #fcc;
 }
 
 .conversation-meta {
   color: #999;
   font-size: 12px;
+}
+
+.conversation-steps {
+  padding: 8px 12px 12px 12px;
+  border-top: 1px solid #e0e0e0;
+  background: #fff;
+  margin-top: 4px;
+}
+
+.steps-loading {
+  padding: 12px;
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.step-item:last-child {
+  margin-bottom: 0;
+}
+
+.step-item.completed {
+  cursor: pointer;
+  border-color: #4caf50;
+  background: #f0f7f0;
+}
+
+.step-item.completed:hover {
+  background: #e8f4e8;
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.step-item.incomplete {
+  opacity: 0.6;
+  border-color: #ddd;
+  background: #f9f9f9;
+  cursor: not-allowed;
+}
+
+.step-item.completed {
+  cursor: pointer;
+}
+
+.step-indicator {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e0e0e0;
+  border: 2px solid #ccc;
+}
+
+.step-item.completed .step-indicator {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.step-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #666;
+}
+
+.step-item.completed .step-number {
+  color: white;
+}
+
+.step-check {
+  position: absolute;
+  font-size: 18px;
+  color: white;
+  font-weight: bold;
+}
+
+.step-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.step-item.incomplete .step-name {
+  color: #999;
+}
+
+.step-preview {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step-item.incomplete .step-preview {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* Scrollbar styling */
+.conversation-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.conversation-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.conversation-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }

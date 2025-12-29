@@ -1,21 +1,44 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
 build/
 dist/
-wheels/
-*.egg-info
+*.egg-info/
 
-# Virtual environments
-.venv
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/llm_council.db
 
-# Keys and secrets
+# Environment
 .env
+.env.local
 
-# Data files
-data/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Frontend
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node
+node_modules/
 frontend/node_modules/
 frontend/dist/
-frontend/.vite/
+
+# Old JSON conversations (optional - can keep for backup)
+# data/conversations/

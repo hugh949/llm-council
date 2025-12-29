@@ -1,5 +1,22 @@
 # LLM Council
 
+> A 3-stage LLM deliberation system with Prompt Engineering, Context Engineering, and Council Deliberation stages.
+
+## Features
+
+- **Step 1: Prompt Engineering** - Refine your prompt through AI-assisted conversation
+- **Step 2: Context Engineering** - Add documents, files, links, and manual context
+- **Step 3: Council Deliberation** - Multiple LLMs deliberate and provide a synthesized answer
+
+## Database
+
+The application uses **SQLite** by default (perfect for small scale: ~10 users, ~5 conversations/day). 
+See [README-DATABASE.md](README-DATABASE.md) for database setup and migration instructions.
+
+## Deployment
+
+See [README-VERCEL.md](README-VERCEL.md) for Vercel deployment instructions.
+
 ![llmcouncil](header.jpg)
 
 The idea of this repo is that instead of asking a question to your favorite LLM provider (e.g. OpenAI GPT 5.1, Google Gemini 3.0 Pro, Anthropic Claude Sonnet 4.5, xAI Grok 4, eg.c), you can group them into your "LLM Council". This repo is a simple, local web app that essentially looks like ChatGPT except it uses OpenRouter to send your query to multiple LLMs, it then asks them to review and rank each other's work, and finally a Chairman LLM produces the final response.
