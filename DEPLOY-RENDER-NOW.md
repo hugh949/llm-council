@@ -36,11 +36,11 @@ Fill in these settings (copy exactly):
 - **Runtime:** `Python 3`
 
 ### Build & Start Commands:
-- **Build Command:** `pip install uv && uv sync`
-  (Or if that doesn't work, try: `pip install -r requirements.txt` if you have one)
+- **Build Command:** `pip install -r requirements.txt`
+  (This installs all Python dependencies)
   
-- **Start Command:** `uv run python -m backend.main`
-  (Or: `python -m backend.main` if uv doesn't work)
+- **Start Command:** `python -m backend.main`
+  (This starts the FastAPI server)
 
 ### Plan:
 - Select **"Free"** plan (good for testing)
