@@ -48,11 +48,13 @@ Fill in the **"Basics"** tab:
 - **Region:** Choose closest to you (same region as backend recommended)
 
 ### Source:
-- **Source:** **GitHub** (recommended)
+- **Source:** **GitHub** (recommended - enables automatic deployment!)
 - **Sign in with GitHub:** Click and authorize Azure
 - **Organization:** Select your GitHub organization/user
 - **Repository:** Select **`llm-council`**
 - **Branch:** Select **`main`**
+
+**✅ IMPORTANT:** Once connected to GitHub, Azure will **automatically deploy** whenever you push code to GitHub. No manual sync needed!
 
 ### Build Details:
 - **Build Presets:** Select **"Vite"**
@@ -96,10 +98,14 @@ After the Static Web App is created:
 
 ## ✅ Step 5: Verify Deployment
 
-Azure will automatically:
-1. Deploy from GitHub when you push changes
-2. Build the frontend (using Vite)
-3. Deploy to the CDN
+**Azure will automatically deploy from GitHub!** When you push code to GitHub, Azure will:
+1. Detect the push
+2. Pull the latest code
+3. Build the frontend (using Vite)
+4. Deploy to the CDN
+5. Update your app (takes 2-3 minutes)
+
+**No manual sync needed** - it's fully automatic! 🎉
 
 ### Check Deployment Status:
 
