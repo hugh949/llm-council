@@ -39,9 +39,9 @@ if [ $? -eq 0 ]; then
     echo "🔗 Repository: https://github.com/hugh949/llm-council"
     echo ""
     echo "📋 Next steps:"
-    echo "   1. Deploy backend to Railway: https://railway.app"
-    echo "   2. Deploy frontend to Vercel: https://vercel.com"
-    echo "   (See YOUR-DEPLOYMENT.md for details)"
+    echo "   1. Deploy backend to Azure App Service (see DEPLOY-AZURE.md)"
+    echo "   2. Deploy frontend to Azure Static Web Apps (see DEPLOY-FRONTEND-AZURE.md)"
+    echo "   (See DEPLOYMENT-GUIDE.md for complete instructions)"
 else
     echo ""
     echo "❌ Push failed. Please check:"

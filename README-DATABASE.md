@@ -62,7 +62,7 @@ All complex nested data is stored as JSON, making it easy to work with and migra
 ## Benefits
 
 ✅ **Persistent storage** - Data survives server restarts  
-✅ **Easy deployment** - Works with Railway, Render, Fly.io  
+✅ **Easy deployment** - Works with Azure App Service  
 ✅ **Scalable** - Can switch to PostgreSQL when needed  
 ✅ **Simple** - SQLite requires no setup for small scale  
 ✅ **Fast** - SQLite is very fast for small datasets  

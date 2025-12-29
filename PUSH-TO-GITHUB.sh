@@ -38,7 +38,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "🔗 Your repository: https://github.com/${GITHUB_USERNAME}/${REPO_NAME}"
     echo ""
-    echo "📋 Next: Deploy to Railway and Vercel (see YOUR-DEPLOYMENT.md)"
+    echo "📋 Next: Deploy to Azure (see DEPLOYMENT-GUIDE.md)"
 else
     echo ""
     echo "❌ Failed to push. Make sure:"
