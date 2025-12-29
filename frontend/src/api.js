@@ -141,20 +141,38 @@ export const api = {
   // ========== PROMPT ENGINEERING ENDPOINTS ==========
 
   async sendPromptEngineeringMessage(conversationId, content) {
-    const response = await fetch(
-      `${API_BASE}/api/conversations/${conversationId}/prompt-engineering/message`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/conversations/${conversationId}/prompt-engineering/message`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content }),
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Prompt engineering error:', response.status, errorText);
+        let errorMessage = 'Failed to send prompt engineering message';
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.detail || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(`${errorMessage} (Status: ${response.status})`);
       }
-    );
-    if (!response.ok) {
-      throw new Error('Failed to send prompt engineering message');
+      
+      return response.json();
+    } catch (error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error(`Cannot connect to backend. Please check that the backend is running at ${API_BASE}`);
+      }
+      throw error;
     }
-    return response.json();
   },
 
   async suggestFinalPrompt(conversationId) {

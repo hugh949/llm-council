@@ -145,29 +145,49 @@ async def send_prompt_engineering_message(conversation_id: str, request: SendMes
     """
     Send a message in the prompt engineering stage.
     """
-    conversation = storage.get_conversation(conversation_id)
-    if conversation is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    # Get conversation history BEFORE adding user message
-    prompt_eng = conversation.get("prompt_engineering", {})
-    messages = prompt_eng.get("messages", [])
-    
-    # Add user message
-    storage.add_prompt_engineering_message(conversation_id, "user", request.content)
-    
-    # Get assistant response (pass the messages list without the user message, as it will be added in the function)
-    response = await get_prompt_engineering_response(messages, request.content)
-    
-    if response is None:
-        raise HTTPException(status_code=500, detail="Failed to get prompt engineering response")
-    
-    # Add assistant message
-    storage.add_prompt_engineering_message(conversation_id, "assistant", response)
-    
-    # Return updated conversation
-    updated_conversation = storage.get_conversation(conversation_id)
-    return {"response": response, "conversation": updated_conversation}
+    try:
+        conversation = storage.get_conversation(conversation_id)
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Check if OPENROUTER_API_KEY is set
+        from .config import OPENROUTER_API_KEY
+        if not OPENROUTER_API_KEY:
+            raise HTTPException(
+                status_code=500, 
+                detail="OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable."
+            )
+        
+        # Get conversation history BEFORE adding user message
+        prompt_eng = conversation.get("prompt_engineering", {})
+        messages = prompt_eng.get("messages", [])
+        
+        # Add user message
+        storage.add_prompt_engineering_message(conversation_id, "user", request.content)
+        
+        # Get assistant response (pass the messages list without the user message, as it will be added in the function)
+        response = await get_prompt_engineering_response(messages, request.content)
+        
+        if response is None:
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to get prompt engineering response. Please check your OpenRouter API key and try again."
+            )
+        
+        # Add assistant message
+        storage.add_prompt_engineering_message(conversation_id, "assistant", response)
+        
+        # Return updated conversation
+        updated_conversation = storage.get_conversation(conversation_id)
+        return {"response": response, "conversation": updated_conversation}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in send_prompt_engineering_message: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 
 @app.post("/api/conversations/{conversation_id}/prompt-engineering/suggest-final")
