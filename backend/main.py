@@ -27,7 +27,7 @@ from .document_parser import parse_file, fetch_url_content
 app = FastAPI(title="LLM Council API")
 
 # Enable CORS - allow all origins (needed for production deployment)
-# In production, you can restrict this to your Vercel domain
+# In production, you can restrict this to your Azure Static Web App domain
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,

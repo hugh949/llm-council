@@ -187,10 +187,6 @@ This restricts backend access to only your frontend domain for better security.
 - **Free:** Up to 100 GB bandwidth/month
 - **Standard:** Starting at ~$9/month (better features)
 
-### Vercel:
-- **Free:** Good for testing
-- **Pro:** $20/month
-
 **For your use case (10 active users), the Free tier should be sufficient!**
 
 ---
@@ -205,15 +201,6 @@ This restricts backend access to only your frontend domain for better security.
 - ✅ **Global CDN** included
 
 ---
-
-## 🎯 Migration from Vercel
-
-If you're currently using Vercel:
-
-1. Deploy to Azure Static Web Apps (follow steps above)
-2. Test thoroughly
-3. Update any bookmarks/links
-4. (Optional) Cancel Vercel deployment
 
 ---
 

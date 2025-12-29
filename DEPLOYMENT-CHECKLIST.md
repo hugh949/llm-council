@@ -1,8 +1,8 @@
-# ✅ Complete Deployment Checklist - Azure Backend
+# ✅ Complete Deployment Checklist - Azure Only
 
 ## 🎯 Required Steps for Production
 
-### 📦 BACKEND (Azure) - Required Configuration
+### 📦 BACKEND (Azure App Service) - Required Configuration
 
 #### ✅ Step 1: Deploy Backend to Azure
 - [ ] Go to https://portal.azure.com
@@ -48,17 +48,19 @@
 
 ---
 
-### 🌐 FRONTEND (Vercel) - Required Configuration
+### 🌐 FRONTEND (Azure Static Web Apps) - Required Configuration
 
-#### ✅ Step 5: Deploy Frontend to Vercel
-- [ ] Go to https://vercel.com
-- [ ] Sign in with GitHub
-- [ ] Click "Add New..." → "Project"
-- [ ] Import `llm-council` repository
-- [ ] Set Root Directory: `frontend` (IMPORTANT!)
-- [ ] Click "Deploy"
+#### ✅ Step 5: Deploy Frontend to Azure Static Web Apps
+- [ ] Go to https://portal.azure.com
+- [ ] Create Static Web App
+- [ ] Connect GitHub repository
+- [ ] Configure build settings:
+  - Build Presets: Vite
+  - App location: `/frontend`
+  - Output location: `dist`
+- [ ] Wait for deployment to complete
 
-#### ✅ Step 6: Set Environment Variables in Vercel
+#### ✅ Step 6: Set Environment Variables in Azure Static Web Apps
 **Required variable:**
 
 1. **`VITE_API_BASE_URL`** (REQUIRED)
@@ -66,29 +68,27 @@
    - Example: `https://llm-council-backend.azurewebsites.net`
    - **DO NOT** include `/api` or trailing slash
    - **MUST** be `https://` (not `http://`)
-   - Set in: Settings → Environment Variables
+   - Set in: Configuration → Application settings
 
 **After setting:**
 - [ ] Click "Save"
-- [ ] Go to "Deployments" tab
-- [ ] Click "..." menu on latest deployment
-- [ ] Click "Redeploy" (required for env vars to take effect)
+- [ ] Azure will automatically redeploy (wait 2-3 minutes)
 
 ---
 
 ## 🧪 Testing Checklist
 
 ### ✅ Backend Tests
-- [ ] Open Azure URL in browser: `https://your-app.azurewebsites.net/`
+- [ ] Open Azure backend URL in browser: `https://your-backend.azurewebsites.net/`
   - Should show: `{"status":"ok","service":"LLM Council API"}`
-- [ ] Test list endpoint: `https://your-app.azurewebsites.net/api/conversations`
+- [ ] Test list endpoint: `https://your-backend.azurewebsites.net/api/conversations`
   - Should return: `[]` (empty array, or list of conversations)
-- [ ] Check Azure Log stream
+- [ ] Check Azure Log stream (Web App → Log stream)
   - Should see: `✅ Database initialized successfully`
   - No error messages
 
 ### ✅ Frontend Tests
-- [ ] Open your Vercel URL in browser
+- [ ] Open your Azure Static Web App URL in browser
 - [ ] Open Developer Tools (F12) → Console tab
 - [ ] Click "New Conversation"
   - Should create a conversation (no errors)
@@ -109,11 +109,11 @@
 
 ## 🔒 Security Checklist
 
-- [ ] `OPENROUTER_API_KEY` is set in Azure (not exposed in frontend)
-- [ ] Backend CORS allows your Vercel domain (or allows all if using default)
+- [ ] `OPENROUTER_API_KEY` is set in Azure App Service (not exposed in frontend)
+- [ ] Backend CORS allows your Azure Static Web App domain (or allows all if using default)
 - [ ] Environment variables are not committed to Git
-- [ ] Azure URL uses HTTPS
-- [ ] Vercel URL uses HTTPS
+- [ ] Backend URL uses HTTPS
+- [ ] Frontend URL uses HTTPS
 
 ---
 
@@ -137,21 +137,21 @@
 
 ### Issue: "Failed to create conversation: 405"
 **Check:**
-1. ✅ `VITE_API_BASE_URL` is set in Vercel
-2. ✅ Vercel has been redeployed after setting env var
+1. ✅ `VITE_API_BASE_URL` is set in Azure Static Web Apps
+2. ✅ Azure has redeployed Static Web App after setting env var
 3. ✅ Azure backend is running (test the URL)
 4. ✅ Browser console shows actual error (F12 → Console)
 
 ### Issue: "Cannot connect to backend"
 **Check:**
-1. ✅ Azure URL is correct (no trailing slash)
-2. ✅ Azure URL uses `https://` (not `http://`)
-3. ✅ Azure service is active
+1. ✅ Backend URL is correct (no trailing slash)
+2. ✅ Backend URL uses `https://` (not `http://`)
+3. ✅ Azure App Service is active (Running status)
 4. ✅ Azure logs show no errors
 
 ### Issue: LLM calls failing
 **Check:**
-1. ✅ `OPENROUTER_API_KEY` is set in Azure
+1. ✅ `OPENROUTER_API_KEY` is set in Azure App Service
 2. ✅ API key is valid (check at openrouter.ai)
 3. ✅ Azure logs show API errors (if any)
 
@@ -161,13 +161,13 @@
 
 Before sharing with external users:
 
-- [ ] ✅ Backend deployed on Azure
-- [ ] ✅ `OPENROUTER_API_KEY` set in Azure
+- [ ] ✅ Backend deployed on Azure App Service
+- [ ] ✅ `OPENROUTER_API_KEY` set in Azure App Service
 - [ ] ✅ Startup command configured in Azure
 - [ ] ✅ Azure backend URL works (test in browser)
-- [ ] ✅ Frontend deployed on Vercel
-- [ ] ✅ `VITE_API_BASE_URL` set in Vercel (pointing to Azure URL)
-- [ ] ✅ Vercel has been redeployed after setting env var
+- [ ] ✅ Frontend deployed on Azure Static Web Apps
+- [ ] ✅ `VITE_API_BASE_URL` set in Azure Static Web Apps (pointing to backend URL)
+- [ ] ✅ Azure has redeployed Static Web App after setting env var
 - [ ] ✅ Frontend URL works (test in browser)
 - [ ] ✅ Can create new conversation (no errors)
 - [ ] ✅ All 3 steps work (Prompt, Context, Council)
@@ -180,7 +180,7 @@ Before sharing with external users:
 
 Once all checkboxes are ✅, your app is ready for external users!
 
-**Share your Vercel URL** - that's all users need to access the app.
+**Share your Azure Static Web App URL** - that's all users need to access the app.
 
 ---
 

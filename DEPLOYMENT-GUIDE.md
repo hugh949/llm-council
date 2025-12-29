@@ -1,6 +1,6 @@
-# 🚀 Complete Deployment Guide - Azure Backend + Vercel Frontend
+# 🚀 Complete Deployment Guide - Azure Only
 
-This guide covers deploying the LLM Council application using **Azure App Service** for the backend and **Vercel** for the frontend.
+This guide covers deploying the entire LLM Council application using **Azure only** - backend and frontend.
 
 ---
 
@@ -16,12 +16,14 @@ This guide covers deploying the LLM Council application using **Azure App Servic
 ## 🎯 Overview
 
 1. **Backend:** Azure App Service (Python/FastAPI)
-2. **Frontend:** Vercel (React)
+2. **Frontend:** Azure Static Web Apps (React/Vite)
 3. **Database:** SQLite (built-in, or PostgreSQL for production scale)
+
+**Everything in one platform - easier to manage!**
 
 ---
 
-## 📦 Part 1: Deploy Backend to Azure
+## 📦 Part 1: Deploy Backend to Azure App Service
 
 Follow the detailed guide: **`DEPLOY-AZURE.md`**
 
@@ -29,53 +31,40 @@ Follow the detailed guide: **`DEPLOY-AZURE.md`**
 1. Create Azure Web App
 2. Connect GitHub repository
 3. Configure environment variables
-4. Deploy
-5. Get backend URL
+4. Set startup command
+5. Deploy
+6. Get backend URL
 
 **See `DEPLOY-AZURE.md` for complete step-by-step instructions.**
 
+**After deployment, copy your backend URL** (e.g., `https://llm-council-backend.azurewebsites.net`)
+
 ---
 
-## 🌐 Part 2: Deploy Frontend to Vercel
+## 🌐 Part 2: Deploy Frontend to Azure Static Web Apps
 
-### Step 1: Create Vercel Project
+Follow the detailed guide: **`DEPLOY-FRONTEND-AZURE.md`**
 
-1. Go to: **https://vercel.com**
-2. Sign in with **GitHub**
-3. Click **"Add New..."** → **"Project"**
-4. Import your **`llm-council`** repository
-5. Configure:
-   - **Root Directory:** `frontend` (IMPORTANT!)
-   - **Framework Preset:** Vite (should auto-detect)
-6. Click **"Deploy"**
+### Quick Steps:
+1. Create Azure Static Web App
+2. Connect GitHub repository
+3. Configure build settings (Vite preset)
+4. Add environment variable: `VITE_API_BASE_URL` = (your backend URL)
+5. Deploy
+6. Get frontend URL
 
-### Step 2: Configure Environment Variables
-
-1. Go to **"Settings"** → **"Environment Variables"**
-2. Click **"Add New"**
-3. Add:
-   - **Key:** `VITE_API_BASE_URL`
-   - **Value:** Your Azure backend URL (e.g., `https://your-app.azurewebsites.net`)
-   - **Environment:** Production
-4. Click **"Save"**
-
-### Step 3: Redeploy
-
-1. Go to **"Deployments"** tab
-2. Click **"..."** on latest deployment
-3. Click **"Redeploy"**
-4. Wait for deployment to complete
+**See `DEPLOY-FRONTEND-AZURE.md` for complete step-by-step instructions.**
 
 ---
 
 ## ✅ Part 3: Verify Deployment
 
 ### Test Backend:
-1. Open your Azure backend URL
+1. Open your Azure App Service URL
 2. Should see: `{"status":"ok","service":"LLM Council API"}`
 
 ### Test Frontend:
-1. Open your Vercel URL
+1. Open your Azure Static Web App URL
 2. Click "New Conversation"
 3. Should work without errors!
 
@@ -83,47 +72,79 @@ Follow the detailed guide: **`DEPLOY-AZURE.md`**
 
 ## 🔑 Required Environment Variables
 
-### Azure Backend:
+### Azure App Service (Backend):
 - `OPENROUTER_API_KEY` (required)
 - `PORT` (optional, Azure sets automatically)
 - `WEBSITES_PORT` (optional, set to 8000)
 
-### Vercel Frontend:
-- `VITE_API_BASE_URL` (required - your Azure backend URL)
+### Azure Static Web Apps (Frontend):
+- `VITE_API_BASE_URL` (required - your backend URL)
 
 ---
 
 ## 📝 Quick Checklist
 
-- [ ] Backend deployed to Azure
-- [ ] `OPENROUTER_API_KEY` set in Azure
-- [ ] Azure backend URL works (test in browser)
-- [ ] Frontend deployed to Vercel
-- [ ] `VITE_API_BASE_URL` set in Vercel (points to Azure URL)
-- [ ] Vercel redeployed after setting env var
-- [ ] Everything tested and working!
+- [ ] Backend deployed to Azure App Service
+- [ ] `OPENROUTER_API_KEY` set in backend
+- [ ] Backend URL copied
+- [ ] Frontend deployed to Azure Static Web Apps
+- [ ] `VITE_API_BASE_URL` set in frontend (points to backend URL)
+- [ ] Both services tested and working
+- [ ] Everything in Azure! ✅
 
 ---
 
 ## 🚨 Troubleshooting
 
-- **405 Error:** Check `VITE_API_BASE_URL` points to Azure backend (not frontend)
-- **Backend not accessible:** Verify Azure service is running
-- **API errors:** Check `OPENROUTER_API_KEY` is set in Azure
+- **405 Error:** Check `VITE_API_BASE_URL` points to backend (not frontend)
+- **Backend not accessible:** Verify App Service is running
+- **Frontend build fails:** Check build settings in Static Web Apps
+- **API errors:** Check `OPENROUTER_API_KEY` is set in backend
 
 See:
 - `FIX-405-ERROR.md` for 405 errors
-- `DEPLOY-AZURE.md` for Azure-specific issues
+- `DEPLOY-AZURE.md` for backend issues
+- `DEPLOY-FRONTEND-AZURE.md` for frontend issues
 - `TROUBLESHOOTING.md` for general troubleshooting
+
+---
+
+## 💰 Cost Estimate
+
+### Azure App Service (Backend):
+- **Free F1:** Free (limited, shared CPU)
+- **Basic B1:** ~$13/month (recommended for 10 users)
+- **Standard S1:** ~$55/month (better performance)
+
+### Azure Static Web Apps (Frontend):
+- **Free:** Up to 100 GB bandwidth/month (sufficient for 10 users)
+- **Standard:** ~$9/month (better features, custom domains)
+
+**Total estimated cost for 10 active users:**
+- Minimum: **Free** (Free tier for both)
+- Recommended: **~$13/month** (Basic B1 backend + Free frontend)
+
+---
+
+## ✅ Advantages of Azure-Only Deployment
+
+- ✅ **Single platform** - everything in Azure
+- ✅ **Easier management** - one portal for everything
+- ✅ **Better integration** - services work together seamlessly
+- ✅ **Unified monitoring** - logs and metrics in one place
+- ✅ **Cost efficient** - can optimize across services
+- ✅ **Enterprise-grade** - Azure reliability and security
 
 ---
 
 ## 📚 Detailed Guides
 
-- **Azure Deployment:** `DEPLOY-AZURE.md`
+- **Backend Deployment:** `DEPLOY-AZURE.md`
+- **Frontend Deployment:** `DEPLOY-FRONTEND-AZURE.md`
 - **Environment Variables:** `ENVIRONMENT-VARIABLES.md`
 - **Troubleshooting:** `TROUBLESHOOTING.md`
 
 ---
 
-**You're all set! Your app is deployed and ready for users.** 🎉
+**You're all set with everything in Azure!** 🎉
+

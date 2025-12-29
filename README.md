@@ -8,6 +8,7 @@ A sophisticated 3-stage LLM deliberation system that helps users refine prompts,
 - Python 3.10+
 - Node.js 18+
 - OpenRouter API key
+- Microsoft Azure account (for deployment)
 
 ### Local Development
 
@@ -27,23 +28,27 @@ A sophisticated 3-stage LLM deliberation system that helps users refine prompts,
 
 ## 📦 Deployment
 
-This application is designed to run with:
+This application is designed to run entirely on **Azure**:
+
 - **Backend:** Azure App Service (Python/FastAPI)
-- **Frontend:** Vercel (React/Vite)
+- **Frontend:** Azure Static Web Apps (React/Vite)
+- **Database:** SQLite (built-in, or PostgreSQL for production scale)
 
 ### Deployment Guides
 
-- **Complete Deployment:** `DEPLOYMENT-GUIDE.md`
+- **Complete Deployment:** `DEPLOYMENT-GUIDE.md` or `DEPLOYMENT-GUIDE-AZURE-ONLY.md`
 - **Azure Backend Setup:** `DEPLOY-AZURE.md`
+- **Azure Frontend Setup:** `DEPLOY-FRONTEND-AZURE.md`
 - **Environment Variables:** `ENVIRONMENT-VARIABLES.md`
 - **Troubleshooting:** `TROUBLESHOOTING.md`
+- **Quick Start:** `START-HERE.md`
 
 ### Quick Deployment Checklist
 
-1. Deploy backend to Azure (see `DEPLOY-AZURE.md`)
-2. Deploy frontend to Vercel
-3. Set `VITE_API_BASE_URL` in Vercel (pointing to Azure backend)
-4. Set `OPENROUTER_API_KEY` in Azure
+1. Deploy backend to Azure App Service (see `DEPLOY-AZURE.md`)
+2. Deploy frontend to Azure Static Web Apps (see `DEPLOY-FRONTEND-AZURE.md`)
+3. Set `VITE_API_BASE_URL` in Azure Static Web Apps (pointing to backend URL)
+4. Set `OPENROUTER_API_KEY` in Azure App Service
 5. Test and verify
 
 ## 🏗️ Architecture
@@ -60,8 +65,9 @@ This application is designed to run with:
 
 ## 📚 Documentation
 
-- `DEPLOYMENT-GUIDE.md` - Complete deployment instructions
-- `DEPLOY-AZURE.md` - Detailed Azure deployment guide
+- `DEPLOYMENT-GUIDE.md` - Complete deployment instructions (Azure only)
+- `DEPLOY-AZURE.md` - Detailed Azure App Service deployment guide
+- `DEPLOY-FRONTEND-AZURE.md` - Detailed Azure Static Web Apps deployment guide
 - `ENVIRONMENT-VARIABLES.md` - Environment variable reference
 - `TROUBLESHOOTING.md` - Common issues and solutions
 - `QUALITY-CHECK.md` - Quality assurance checklist
@@ -69,11 +75,17 @@ This application is designed to run with:
 ## 🔧 Troubleshooting
 
 Common issues and fixes:
-- **405 Error:** Check `VITE_API_BASE_URL` in Vercel (see `FIX-405-ERROR.md`)
-- **API Errors:** Verify `OPENROUTER_API_KEY` in Azure
+- **405 Error:** Check `VITE_API_BASE_URL` in Azure Static Web Apps (see `FIX-405-ERROR.md`)
+- **API Errors:** Verify `OPENROUTER_API_KEY` in Azure App Service
 - **Database Issues:** Check Azure Log stream for errors
 
 See `TROUBLESHOOTING.md` for detailed solutions.
+
+## 💰 Cost Estimate
+
+For 10 active users:
+- **Minimum:** Free (Free tier for both services)
+- **Recommended:** ~$13/month (Basic B1 backend + Free frontend)
 
 ## 📄 License
 

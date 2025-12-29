@@ -1,6 +1,6 @@
 # 🚀 Complete Deployment Guide - Azure Only (Backend + Frontend)
 
-This guide covers deploying the entire LLM Council application using **Azure only** - no Vercel needed!
+This guide covers deploying the entire LLM Council application using **Azure only**.
 
 ---
 

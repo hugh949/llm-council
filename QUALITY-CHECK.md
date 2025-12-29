@@ -6,7 +6,7 @@
 **Cause:** Database initialization issue or storage error
 
 **Fix:**
-1. Check backend logs (Azure/Render/Railway)
+1. Check backend logs (Azure App Service → Log stream)
 2. Verify database is initialized
 3. Check if storage module is working
 
@@ -16,7 +16,7 @@
 **Cause:** Backend URL is wrong or backend is down
 
 **Fix:**
-1. Check `VITE_API_BASE_URL` in Vercel
+1. Check `VITE_API_BASE_URL` in Azure Static Web Apps
 2. Verify backend is running (test the URL in browser)
 3. Check CORS settings
 
@@ -86,7 +86,7 @@
    - Response body (what does it say?)
 
 ### 3. Check Backend Logs
-1. Go to your backend platform (Azure/Render/Railway)
+1. Go to Azure Portal → Your Web App → Log stream
 2. Open "Logs" or "Log stream"
 3. Look for errors when creating conversation
 4. Check for database errors
@@ -158,7 +158,7 @@ Before deploying to production:
 2. **Where it happens** (which button/action)
 3. **Browser console errors** (F12 → Console)
 4. **Network request details** (F12 → Network → find the failed request)
-5. **Backend logs** (from Azure/Render/Railway)
+5. **Backend logs** (from Azure App Service → Log stream)
 
 This will help identify the exact issue!
 

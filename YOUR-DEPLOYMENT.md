@@ -61,19 +61,20 @@ Quick steps:
 
 ---
 
-## ✅ STEP 4: Deploy Frontend (Vercel)
+## ✅ STEP 4: Deploy Frontend (Azure Static Web Apps)
 
-1. Go to: **https://vercel.com**
-2. Sign in with **GitHub**
-3. Click **"Add New..."** → **"Project"**
-4. Import **`llm-council`**
-5. **Root Directory:** Type `frontend` (IMPORTANT!)
-6. **Environment Variables:** Click **"Add"**
-   - Name: `VITE_API_BASE_URL`
-   - Value: (paste Azure backend URL from Step 3)
-7. Click **"Deploy"**
-8. Wait 2-3 minutes
-9. **Copy your Vercel URL** - This is your live app! 🎉
+**Follow the detailed guide: `DEPLOY-FRONTEND-AZURE.md`**
+
+Quick steps:
+1. Go to: **https://portal.azure.com**
+2. Create a **Static Web App**
+3. Connect your **GitHub repository**
+4. Configure build settings (Vite preset, App location: `/frontend`)
+5. Add environment variable: `VITE_API_BASE_URL` = (your backend URL from Step 3)
+6. Deploy and get your Azure Static Web App URL
+7. **Copy the URL** - This is your live app! 🎉
+
+**See `DEPLOY-FRONTEND-AZURE.md` for complete step-by-step instructions.**
 
 ---
 
@@ -81,7 +82,7 @@ Quick steps:
 
 1. **GitHub username** (for Step 2)
 2. **OpenRouter API key** (for Azure Step 3)
-3. **Azure backend URL** (for Vercel Step 4)
+3. **Azure backend URL** (for Azure Static Web Apps Step 4)
 
 That's it! Everything else is automatic.
 

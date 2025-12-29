@@ -1,6 +1,6 @@
 # 🔐 Environment Variables Reference
 
-## Backend (Azure) - Required Variables
+## Backend (Azure App Service) - Required Variables
 
 ### ✅ `OPENROUTER_API_KEY` (REQUIRED)
 - **Purpose:** API key for OpenRouter to access LLM models
@@ -15,7 +15,7 @@
 
 ---
 
-## Backend (Azure) - Optional Variables
+## Backend (Azure App Service) - Optional Variables
 
 ### `DATABASE_URL` (Optional)
 - **Purpose:** PostgreSQL database connection string
@@ -27,9 +27,9 @@
 ### `CORS_ORIGINS` (Optional)
 - **Purpose:** Restrict which domains can access your backend
 - **Default:** `*` (allows all origins)
-- **When to use:** If you want to restrict access to specific domains
-- **Format:** `https://your-app.vercel.app,https://another-domain.com`
-- **Recommendation:** Leave empty for simplicity (allows all origins)
+- **When to use:** If you want to restrict access to specific domains (e.g., your Azure Static Web App)
+- **Format:** `https://your-app.azurestaticapps.net`
+- **Recommendation:** Set to your Azure Static Web App URL for better security
 
 ### `PORT` (Optional)
 - **Purpose:** Port number for the backend
@@ -44,83 +44,109 @@
 
 ---
 
-## Frontend (Vercel) - Required Variables
+## Frontend (Azure Static Web Apps) - Required Variables
 
 ### ✅ `VITE_API_BASE_URL` (REQUIRED)
 - **Purpose:** Tells frontend where to find the backend API
-- **Value:** Your Railway backend URL
-- **How to set in Vercel:**
-  1. Vercel dashboard → Your project → "Settings" → "Environment Variables"
-  2. Click "Add New"
+- **Value:** Your Azure App Service backend URL
+- **How to set in Azure:**
+  1. Azure Portal → Your Static Web App → "Configuration" → "Application settings"
+  2. Click "+ Add"
   3. Name: `VITE_API_BASE_URL`
-  4. Value: Your Railway URL (e.g., `https://your-app.up.railway.app`)
+  4. Value: Your backend URL (e.g., `https://llm-council-backend.azurewebsites.net`)
   5. **IMPORTANT:** 
      - Use `https://` (not `http://`)
      - No trailing slash `/`
      - No `/api` at the end
-  6. Click "Save"
-  7. **CRITICAL:** Go to "Deployments" → Redeploy for changes to take effect
+  6. Click "OK" then "Save"
+  7. Azure will automatically redeploy
 
 ---
 
 ## 📋 Quick Reference
 
-### Azure Variables:
+### Azure App Service (Backend) Variables:
 ```
 OPENROUTER_API_KEY=your-key-here        (REQUIRED)
 PORT=8000                               (Optional - Azure sets automatically)
 WEBSITES_PORT=8000                      (Optional but recommended)
 DATABASE_URL=postgresql://...           (Optional - only if using PostgreSQL)
+CORS_ORIGINS=https://your-app.azurestaticapps.net  (Optional - for security)
 ```
 
-### Vercel Variables:
+### Azure Static Web Apps (Frontend) Variables:
 ```
-VITE_API_BASE_URL=https://your-app.azurewebsites.net    (REQUIRED)
+VITE_API_BASE_URL=https://your-backend.azurewebsites.net    (REQUIRED)
 ```
 
 ---
 
 ## ✅ Verification
 
-### Check Azure Variables:
+### Check Azure App Service Variables:
 1. Azure Portal → Your Web App → "Configuration" → "Application settings"
 2. Verify `OPENROUTER_API_KEY` is present
 3. Check "Log stream" for initialization messages
 
-### Check Vercel Variables:
-1. Vercel dashboard → Project → "Settings" → "Environment Variables"
+### Check Azure Static Web Apps Variables:
+1. Azure Portal → Your Static Web App → "Configuration" → "Application settings"
 2. Verify `VITE_API_BASE_URL` is present and correct
-3. Make sure you've redeployed after adding/changing variables
+3. Check "Deployment history" to ensure redeployment completed
 
 ### Test Backend:
 ```bash
-curl https://your-app.azurewebsites.net/
+curl https://your-backend.azurewebsites.net/
 # Should return: {"status":"ok","service":"LLM Council API"}
 ```
 
 ### Test Frontend:
-1. Open your Vercel URL
+1. Open your Azure Static Web App URL
 2. Open browser console (F12)
-3. Should see no errors about API connection
-4. Try creating a conversation
+3. Type: `console.log(import.meta.env.VITE_API_BASE_URL)`
+4. Should show your backend URL
+5. Try creating a conversation
 
 ---
 
 ## 🚨 Common Mistakes
 
-1. ❌ **Forgetting to redeploy Vercel after setting environment variable**
-   - ✅ Fix: Always redeploy after adding/changing env vars
+1. ❌ **Forgetting that Azure redeploys automatically after setting environment variables**
+   - ✅ Fix: Wait 2-3 minutes after saving
 
 2. ❌ **Wrong format for `VITE_API_BASE_URL`**
-   - ❌ `http://your-app.up.railway.app` (should be https)
-   - ❌ `https://your-app.up.railway.app/` (no trailing slash)
-   - ❌ `https://your-app.up.railway.app/api` (no /api)
-   - ✅ `https://your-app.up.railway.app` (correct)
+   - ❌ `http://your-backend.azurewebsites.net` (should be https)
+   - ❌ `https://your-backend.azurewebsites.net/` (no trailing slash)
+   - ❌ `https://your-backend.azurewebsites.net/api` (no /api)
+   - ✅ `https://your-backend.azurewebsites.net` (correct)
 
-3. ❌ **Missing `OPENROUTER_API_KEY` in Railway**
-   - ✅ Fix: Add it in Railway Variables tab
+3. ❌ **Missing `OPENROUTER_API_KEY` in Azure App Service**
+   - ✅ Fix: Add it in Configuration → Application settings
 
 4. ❌ **Using frontend URL as `VITE_API_BASE_URL`**
-   - ❌ `https://your-app.vercel.app` (this is frontend, not backend)
-   - ✅ `https://your-app.azurewebsites.net` (this is backend)
+   - ❌ `https://your-app.azurestaticapps.net` (this is frontend, not backend)
+   - ✅ `https://your-backend.azurewebsites.net` (this is backend)
 
+5. ❌ **Setting variables in the wrong Azure service**
+   - Backend variables go in **Azure App Service**
+   - Frontend variables go in **Azure Static Web Apps**
+   - ✅ Make sure you're editing the correct service!
+
+---
+
+## 📍 Where to Set Variables in Azure Portal
+
+### Backend (Azure App Service):
+1. Azure Portal → Your **Web App** (backend)
+2. Left sidebar → **"Configuration"**
+3. Tab: **"Application settings"**
+4. Click **"+ New application setting"**
+
+### Frontend (Azure Static Web Apps):
+1. Azure Portal → Your **Static Web App** (frontend)
+2. Left sidebar → **"Configuration"**
+3. Tab: **"Application settings"**
+4. Click **"+ Add"**
+
+---
+
+**All variables are set in Azure Portal - no external services needed!** ✅
