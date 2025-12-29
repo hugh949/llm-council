@@ -8,13 +8,17 @@ from typing import List, Dict, Any
 import uuid
 import json
 import asyncio
+import os
 
 # Use database storage instead of JSON files
 try:
     from . import storage_db as storage
+    from .database import init_db
 except ImportError:
     # Fallback to JSON storage if database not available
     from . import storage
+    init_db = None
+
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
 from .prompt_engineering import get_prompt_engineering_response, suggest_finalized_prompt
 from .context_engineering import get_context_engineering_response, package_context
@@ -23,13 +27,27 @@ from .document_parser import parse_file, fetch_url_content
 app = FastAPI(title="LLM Council API")
 
 # Enable CORS - allow all origins (needed for production deployment)
+# In production, you can restrict this to your Vercel domain
+cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for production
+    allow_origins=cors_origins if cors_origins != ["*"] else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup."""
+    if init_db:
+        try:
+            init_db()
+            print("✅ Database initialized successfully")
+        except Exception as e:
+            print(f"⚠️  Database initialization error: {e}")
+            # Continue anyway - database will be initialized on first use
 
 
 class CreateConversationRequest(BaseModel):

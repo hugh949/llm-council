@@ -21,17 +21,28 @@ export const api = {
    * Create a new conversation.
    */
   async createConversation() {
-    const response = await fetch(`${API_BASE}/api/conversations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to create conversation');
+    try {
+      const response = await fetch(`${API_BASE}/api/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Create conversation error:', response.status, errorText);
+        throw new Error(`Failed to create conversation: ${response.status} ${errorText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error(`Cannot connect to backend. Please check that the backend is running at ${API_BASE}`);
+      }
+      throw error;
     }
-    return response.json();
   },
 
   /**
