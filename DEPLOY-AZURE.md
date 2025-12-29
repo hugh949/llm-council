@@ -215,8 +215,8 @@ Azure will automatically deploy when you:
 - [ ] Startup command set: `python -m backend.main`
 - [ ] Service deployed
 - [ ] Azure URL copied
-- [ ] `VITE_API_BASE_URL` updated in Vercel
-- [ ] Vercel redeployed
+- [ ] Frontend deployed to Azure Static Web Apps
+- [ ] `VITE_API_BASE_URL` set in Azure Static Web Apps
 - [ ] Tested - everything works!
 
 ---

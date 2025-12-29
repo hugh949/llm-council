@@ -1,4 +1,4 @@
-# 🎯 EXACT STEPS - Follow These in Order
+# 🎯 EXACT STEPS - Follow These in Order (Azure Only)
 
 I've prepared everything. Here's exactly what YOU need to do:
 
@@ -25,12 +25,12 @@ I've prepared everything. Here's exactly what YOU need to do:
 2. Copy and paste this command (replace `YOUR-USERNAME` with your actual GitHub username):
 
 ```bash
-cd /Users/hughrashid/Cursor/LLM-Council && ./DEPLOY-NOW.sh YOUR-USERNAME
+cd /Users/hughrashid/Cursor/LLM-Council && ./push-with-token.sh YOUR-USERNAME
 ```
 
 **Example:** If your username is `johnsmith`, the command is:
 ```bash
-cd /Users/hughrashid/Cursor/LLM-Council && ./DEPLOY-NOW.sh johnsmith
+cd /Users/hughrashid/Cursor/LLM-Council && ./push-with-token.sh johnsmith
 ```
 
 3. Press Enter
@@ -48,66 +48,48 @@ cd /Users/hughrashid/Cursor/LLM-Council && ./DEPLOY-NOW.sh johnsmith
 
 ---
 
-## ✅ STEP 3: Deploy Backend to Railway
+## ✅ STEP 3: Deploy Backend to Azure App Service
 
-**What to do:**
-1. Open: https://railway.app
-2. Click **"Start a New Project"** (or "Login" if you have an account)
-3. Sign in with **GitHub** (click the GitHub button)
-4. Click **"Deploy from GitHub repo"**
-5. Find **`llm-council`** in the list and click it
-6. Wait 2-3 minutes (Railway will start deploying)
-7. Click on your project name (left sidebar)
-8. Click **"Variables"** tab (left sidebar)
-9. Click **"New Variable"** button
-10. Enter exactly:
-    - **Name:** `OPENROUTER_API_KEY`
-    - **Value:** (paste your OpenRouter API key - get it from https://openrouter.ai/keys)
-11. Click **"Add"**
-12. Wait 1 minute for automatic redeploy
-13. Click **"Settings"** tab (left sidebar)
-14. Scroll down to **"Domains"** section
-15. Click **"Generate Domain"** button
-16. **Copy the URL** that appears (looks like: `https://llm-council-production-xxxx.up.railway.app`)
+**Follow the detailed guide: `DEPLOY-AZURE.md`**
+
+**Quick overview:**
+1. Go to: https://portal.azure.com
+2. Sign in with your Xavor account
+3. Create Web App (Python 3.11, Linux)
+4. Connect GitHub repository
+5. Add environment variable: `OPENROUTER_API_KEY` (your API key from https://openrouter.ai/keys)
+6. Set startup command: `python -m backend.main`
+7. Deploy and get your backend URL
 
 **📝 WRITE THIS URL DOWN - You'll need it in Step 4!**
 
-**Time:** 5 minutes
+**Time:** 10 minutes
 
 ---
 
-## ✅ STEP 4: Deploy Frontend to Vercel
+## ✅ STEP 4: Deploy Frontend to Azure Static Web Apps
 
-**What to do:**
-1. Open: https://vercel.com
-2. Click **"Sign Up"** (or "Login" if you have an account)
-3. Sign in with **GitHub** (click the GitHub button)
-4. Click **"Add New..."** → **"Project"**
-5. Find **`llm-council`** in the list and click **"Import"**
-6. **IMPORTANT:** Under "Root Directory", click the **"Edit"** link
-7. Type exactly: `frontend` (all lowercase)
-8. Scroll down to **"Environment Variables"** section
-9. Click **"Add"** button
-10. Enter exactly:
-    - **Name:** `VITE_API_BASE_URL`
-    - **Value:** (paste the Railway URL from Step 3, #16 - make sure there's NO slash at the end)
-11. Click **"Add"** button
-12. Scroll all the way to the bottom
-13. Click the big blue **"Deploy"** button
-14. Wait 2-3 minutes for deployment
+**Follow the detailed guide: `DEPLOY-FRONTEND-AZURE.md`**
 
-**Time:** 5 minutes
+**Quick overview:**
+1. Go to: https://portal.azure.com
+2. Create Static Web App
+3. Connect GitHub repository
+4. Configure build settings (Vite preset, App location: `/frontend`)
+5. Add environment variable: `VITE_API_BASE_URL` = (your backend URL from Step 3)
+6. Deploy and get your frontend URL
+
+**Time:** 10 minutes
 
 ---
 
 ## ✅ STEP 5: Test Your App!
 
 **What to do:**
-1. Once Vercel shows **"Ready"** (green checkmark), you'll see a URL
-2. Click on that URL (or copy it)
-3. Your app should open in a new tab!
-4. Try clicking **"+ New Conversation"**
-5. If it works, **SUCCESS!** 🎉
+1. Open your Azure Static Web App URL
+2. Your app should open!
+3. Try clicking **"+ New Conversation"**
+4. If it works, **SUCCESS!** 🎉
 
 **Time:** 1 minute
 
@@ -116,8 +98,8 @@ cd /Users/hughrashid/Cursor/LLM-Council && ./DEPLOY-NOW.sh johnsmith
 ## 📝 Summary - What You Need to Enter:
 
 1. **GitHub username** (for Step 2 command)
-2. **OpenRouter API key** (for Railway Step 3, #10) - Get from: https://openrouter.ai/keys
-3. **Railway URL** (for Vercel Step 4, #10) - Copy from Railway Step 3, #16
+2. **OpenRouter API key** (for Azure Step 3) - Get from: https://openrouter.ai/keys
+3. **Azure backend URL** (for Azure Static Web Apps Step 4) - Copy from Step 3
 
 ---
 
@@ -126,20 +108,18 @@ cd /Users/hughrashid/Cursor/LLM-Council && ./DEPLOY-NOW.sh johnsmith
 **If Step 2 fails (GitHub push):**
 - Make sure you created the repository first (Step 1)
 - Make sure you're using a Personal Access Token, not your password
-- Try the commands manually from START-HERE.md
 
-**If Step 3 fails (Railway):**
-- Check Railway logs: Click project → "Deployments" → Latest → "View Logs"
+**If Step 3 fails (Azure backend):**
+- Check Azure Log stream: Web App → Log stream
 - Make sure `OPENROUTER_API_KEY` is set correctly
 
-**If Step 4 fails (Vercel):**
-- Make sure you typed `frontend` (not `Frontend`) as root directory
-- Make sure Railway URL has no trailing slash
-- Check Vercel logs: Click project → "Deployments" → Latest → "View Function Logs"
+**If Step 4 fails (Azure frontend):**
+- Check build logs: Static Web App → Deployment history
+- Make sure `VITE_API_BASE_URL` points to your backend URL
 
 **If app doesn't work:**
-- Check that `VITE_API_BASE_URL` in Vercel matches your Railway URL exactly
-- Make sure Railway is running (check Railway dashboard)
+- Check that `VITE_API_BASE_URL` in Azure Static Web Apps matches your backend URL exactly
+- Make sure backend is running (check Azure dashboard)
 
 ---
 
@@ -149,3 +129,4 @@ cd /Users/hughrashid/Cursor/LLM-Council && ./DEPLOY-NOW.sh johnsmith
 2. Follow each step in order
 3. That's it!
 
+**See `DEPLOYMENT-GUIDE.md` for complete detailed instructions!**

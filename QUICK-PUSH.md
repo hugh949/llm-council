@@ -38,8 +38,8 @@ You should see all your files there!
 
 ## 🎯 Next Steps After Push
 
-1. **Deploy Backend to Railway** (see `YOUR-DEPLOYMENT.md`)
-2. **Deploy Frontend to Vercel** (see `YOUR-DEPLOYMENT.md`)
+1. **Deploy Backend to Azure App Service** (see `DEPLOY-AZURE.md`)
+2. **Deploy Frontend to Azure Static Web Apps** (see `DEPLOY-FRONTEND-AZURE.md`)
 
 ---
 

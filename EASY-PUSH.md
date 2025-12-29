@@ -60,5 +60,5 @@ When asked:
 
 Check: https://github.com/hugh949/llm-council
 
-Then proceed to deploy to Railway and Vercel! 🎉
+Then proceed to deploy to Azure! See `DEPLOYMENT-GUIDE.md` 🎉
 

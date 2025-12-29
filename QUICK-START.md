@@ -1,6 +1,6 @@
-# 🚀 Quick Deployment - What YOU Need to Do
+# 🚀 Quick Deployment - Azure Only
 
-I've set up everything automatically. You just need to follow these 3 simple steps:
+Everything runs on Azure - backend and frontend!
 
 ## ✅ Step 1: Create GitHub Repository
 
@@ -8,13 +8,13 @@ I've set up everything automatically. You just need to follow these 3 simple ste
 2. Repository name: `llm-council`
 3. Make it **Public** ✅
 4. Click **"Create repository"**
-5. **Copy your GitHub username** (you'll need it in Step 2)
+5. **Copy your GitHub username**
 
 ---
 
 ## ✅ Step 2: Push Code to GitHub
 
-Open Terminal on your Mac and run these commands (replace `YOUR-USERNAME` with your actual GitHub username):
+Open Terminal and run (replace `YOUR-USERNAME` with your GitHub username):
 
 ```bash
 cd /Users/hughrashid/Cursor/LLM-Council
@@ -25,78 +25,50 @@ git remote add origin https://github.com/YOUR-USERNAME/llm-council.git
 git push -u origin main
 ```
 
-**Example:** If your username is `johnsmith`, the 4th command would be:
-```bash
-git remote add origin https://github.com/johnsmith/llm-council.git
-```
-
-**If it asks for username/password:** Use a GitHub Personal Access Token (not your password). Get one at: https://github.com/settings/tokens
+**If asked for password:** Use a GitHub Personal Access Token (get from https://github.com/settings/tokens)
 
 ---
 
-## ✅ Step 3: Deploy Backend (Railway)
+## ✅ Step 3: Deploy Backend (Azure App Service)
 
-1. Go to: https://railway.app
-2. Sign in with **GitHub**
-3. Click **"New Project"**
-4. Click **"Deploy from GitHub repo"**
-5. Select **`llm-council`**
-6. Railway will start deploying (wait 2-3 minutes)
-7. Click **"Variables"** tab
-8. Click **"New Variable"**
-9. Enter:
-   - **Name:** `OPENROUTER_API_KEY`
-   - **Value:** (paste your OpenRouter API key - get it from https://openrouter.ai/keys)
-10. Click **"Add"**
-11. Wait for redeploy (automatic)
-12. Click **"Settings"** → Scroll down → Click **"Generate Domain"**
-13. **Copy the URL** (looks like: `https://llm-council-production-xxxx.up.railway.app`)
+**Follow: `DEPLOY-AZURE.md`**
 
-**Save this URL - you'll need it next!**
+Quick steps:
+1. Go to: https://portal.azure.com
+2. Create Web App (Python 3.11, Linux)
+3. Connect GitHub repository
+4. Add `OPENROUTER_API_KEY` environment variable
+5. Set startup command: `python -m backend.main`
+6. Get backend URL
 
 ---
 
-## ✅ Step 4: Deploy Frontend (Vercel)
+## ✅ Step 4: Deploy Frontend (Azure Static Web Apps)
 
-1. Go to: https://vercel.com
-2. Sign in with **GitHub**
-3. Click **"Add New..."** → **"Project"**
-4. Import **`llm-council`** repository
-5. **IMPORTANT:** Under "Root Directory", click "Edit" and type: `frontend`
-6. Scroll down to **"Environment Variables"**
-7. Click **"Add"** and enter:
-   - **Name:** `VITE_API_BASE_URL`
-   - **Value:** (paste the Railway URL from Step 3, #13)
-8. Click **"Add"**
-9. Click **"Deploy"** (bottom of page)
-10. Wait 2-3 minutes for deployment
+**Follow: `DEPLOY-FRONTEND-AZURE.md`**
+
+Quick steps:
+1. Go to: https://portal.azure.com
+2. Create Static Web App
+3. Connect GitHub repository
+4. Configure build (Vite preset, App location: `/frontend`)
+5. Add `VITE_API_BASE_URL` = (your backend URL)
+6. Get frontend URL
 
 ---
 
-## ✅ Step 5: Test Your App!
+## ✅ Step 5: Test!
 
-1. Once Vercel shows "Ready", click the URL (looks like: `https://llm-council.vercel.app`)
-2. Your app should open!
-3. Try creating a new conversation
-4. If it works, **you're done!** 🎉
+Open your Azure Static Web App URL and try creating a conversation!
 
 ---
 
-## 📝 Summary - What You Need to Enter:
+## 📝 What You Need:
 
-1. **GitHub:** Your username (for the git command)
-2. **Railway:** Your OpenRouter API key (from https://openrouter.ai/keys)
-3. **Vercel:** The Railway URL (from Step 3, #13)
-
-That's it! Everything else is automatic.
+1. **GitHub username**
+2. **OpenRouter API key** (from https://openrouter.ai/keys)
+3. **Azure account** (Xavor account)
 
 ---
 
-## 🆘 Need Help?
-
-If something doesn't work:
-- Check that you typed `frontend` as the root directory in Vercel
-- Make sure the Railway URL in Vercel doesn't have a trailing slash
-- Check Railway logs: Project → Deployments → Latest → View Logs
-- Check Vercel logs: Project → Deployments → Latest → View Function Logs
-
+**See `DEPLOYMENT-GUIDE.md` for complete instructions!** 🎉

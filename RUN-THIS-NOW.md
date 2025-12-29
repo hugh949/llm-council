@@ -29,5 +29,5 @@ cd /Users/hughrashid/Cursor/LLM-Council && git push -u origin main
 
 You should see all your files!
 
-Then proceed to deploy to Railway and Vercel (see `YOUR-DEPLOYMENT.md`)
+Then proceed to deploy to Azure (see `DEPLOYMENT-GUIDE.md`)
 
