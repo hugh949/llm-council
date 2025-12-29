@@ -158,20 +158,22 @@ Azure will automatically deploy when you:
 1. In your Web App overview page
 2. Look for **"Default domain"** or **"URL"**
 3. It will be: `https://your-app-name.azurewebsites.net`
-4. **Copy this URL** - you'll need it for Vercel!
+4. **Copy this URL** - you'll need it for the frontend!
 
 ---
 
-## 🌐 Step 9: Update Vercel Frontend
+## 🌐 Step 9: Deploy Frontend to Azure Static Web Apps
 
-1. Go to: **https://vercel.com**
-2. Open your **`llm-council`** project
-3. Go to **"Settings"** → **"Environment Variables"**
-4. Update **`VITE_API_BASE_URL`**:
-   - **Value:** `https://your-app-name.azurewebsites.net`
-   - (Use YOUR Azure URL from Step 8)
-5. Click **"Save"**
-6. Go to **"Deployments"** → **"Redeploy"**
+**Follow the detailed guide: `DEPLOY-FRONTEND-AZURE.md`**
+
+Quick steps:
+1. Create Azure Static Web App
+2. Connect GitHub repository
+3. Configure build settings (Vite preset, App location: `/frontend`)
+4. Add environment variable: `VITE_API_BASE_URL` = (your backend URL from Step 8)
+5. Deploy and get your frontend URL
+
+**See `DEPLOY-FRONTEND-AZURE.md` for complete step-by-step instructions.**
 
 ---
 
@@ -182,9 +184,9 @@ Azure will automatically deploy when you:
    - Should see: `{"status":"ok","service":"LLM Council API"}`
 
 2. **Test Frontend:**
-   - Open: https://llm-council-wine.vercel.app
+   - Open your Azure Static Web App URL
    - Click "New Conversation"
-   - Try Step 1 - should work and be much faster! ✅
+   - Should work perfectly! ✅
 
 ---
 
