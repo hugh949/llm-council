@@ -66,27 +66,23 @@ git push -u origin main
 
 ---
 
-### Step 3: Deploy Backend to Railway (5 minutes)
+### Step 3: Deploy Backend to Azure (10 minutes)
 
-1. Go to: **https://railway.app**
-2. Click **"Start a New Project"**
-3. Click **"Deploy from GitHub repo"**
-4. Select **`llm-council`** from the list
-5. Wait 2-3 minutes for deployment to start
-6. Click on your project name
-7. Click **"Variables"** tab (left sidebar)
-8. Click **"New Variable"** button
-9. Enter:
-   - **Name:** `OPENROUTER_API_KEY`
-   - **Value:** (paste your OpenRouter API key here)
-10. Click **"Add"**
-11. Wait for automatic redeploy (about 1 minute)
-12. Click **"Settings"** tab
-13. Scroll down to **"Domains"** section
-14. Click **"Generate Domain"**
-15. **Copy the URL** (looks like: `https://llm-council-production-xxxx.up.railway.app`)
+**Follow the detailed guide: `DEPLOY-AZURE.md`**
+
+Quick overview:
+1. Go to: **https://portal.azure.com**
+2. Sign in with your **Xavor account**
+3. Create a **Web App** (Python 3.11, Linux)
+4. Connect your **GitHub repository**
+5. Add environment variable: `OPENROUTER_API_KEY` (your API key)
+6. Configure startup command: `python -m backend.main`
+7. Deploy and get your Azure backend URL
+8. **Copy the URL** (looks like: `https://llm-council-backend.azurewebsites.net`)
 
 **📝 Save this URL somewhere - you'll need it in Step 4!**
+
+**See `DEPLOY-AZURE.md` for complete step-by-step instructions.**
 
 ---
 
@@ -101,7 +97,7 @@ git push -u origin main
 7. Click **"Add"** button
 8. Enter:
    - **Name:** `VITE_API_BASE_URL`
-   - **Value:** (paste the Railway URL from Step 3, #15)
+   - **Value:** (paste the Azure backend URL from Step 3)
 9. Click **"Add"**
 10. Scroll to bottom and click **"Deploy"** button
 11. Wait 2-3 minutes for deployment
@@ -131,8 +127,8 @@ Share the Vercel URL with others so they can test your app!
 - Make sure the Railway URL in Vercel doesn't have a trailing slash (no `/` at the end)
 
 **Can't see conversations:**
-- Check Railway logs: Click your project → "Deployments" → Latest → "View Logs"
-- Make sure `OPENROUTER_API_KEY` is set in Railway
+- Check Azure logs: Azure Portal → Your Web App → "Log stream"
+- Make sure `OPENROUTER_API_KEY` is set in Azure (Configuration → Application settings)
 
 **Need help?** Check the logs in Railway and Vercel dashboards.
 
