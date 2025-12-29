@@ -22,7 +22,11 @@ export const api = {
    */
   async createConversation() {
     try {
-      const response = await fetch(`${API_BASE}/api/conversations`, {
+      const url = `${API_BASE}/api/conversations`;
+      console.log('Creating conversation at:', url);
+      console.log('API_BASE is:', API_BASE);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,16 +34,21 @@ export const api = {
         body: JSON.stringify({}),
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Create conversation error:', response.status, errorText);
         throw new Error(`Failed to create conversation: ${response.status} ${errorText}`);
       }
       
-      return response.json();
+      const data = await response.json();
+      console.log('Conversation created successfully:', data.id);
+      return data;
     } catch (error) {
+      console.error('Create conversation exception:', error);
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        throw new Error(`Cannot connect to backend. Please check that the backend is running at ${API_BASE}`);
+        throw new Error(`Cannot connect to backend at ${API_BASE}. Please check that the backend is running and VITE_API_BASE_URL is set correctly.`);
       }
       throw error;
     }
