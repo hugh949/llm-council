@@ -48,6 +48,8 @@ function App() {
       return conv;
     } catch (error) {
       console.error('Failed to load conversation:', error);
+      // Show user-friendly error message
+      alert(`Error: ${error.message || 'Failed to load conversation. Please try again.'}`);
       return null;
     }
   };
@@ -55,17 +57,29 @@ function App() {
   const handleNewConversation = async () => {
     try {
       const newConv = await api.createConversation();
+      console.log('Created new conversation:', newConv.id);
+      
+      // Update conversations list
       setConversations([
         { id: newConv.id, created_at: newConv.created_at, message_count: 0 },
         ...conversations,
       ]);
+      
+      // Set current conversation ID
       setCurrentConversationId(newConv.id);
       setViewingStep(null); // Reset step view for new conversation
-      // Load the new conversation immediately
-      await loadConversation(newConv.id);
+      
+      // Use the conversation data directly from the create response
+      // This avoids a second API call that might fail
+      if (newConv) {
+        setCurrentConversation(newConv);
+      } else {
+        // Fallback: try to load if the response didn't include full conversation data
+        await loadConversation(newConv.id);
+      }
     } catch (error) {
       console.error('Failed to create conversation:', error);
-      alert(`Error: ${error.message || 'Failed to create conversation. Please try again.'}`);
+      alert(`Error: ${error.message || 'Failed to create conversation. Please check your backend connection and try again.'}`);
     }
   };
 

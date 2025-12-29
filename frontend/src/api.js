@@ -62,13 +62,22 @@ export const api = {
    * Get a specific conversation.
    */
   async getConversation(conversationId) {
-    const response = await fetch(
-      `${API_BASE}/api/conversations/${conversationId}`
-    );
-    if (!response.ok) {
-      throw new Error('Failed to get conversation');
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/conversations/${conversationId}`
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Get conversation error:', response.status, errorText);
+        throw new Error(`Failed to get conversation: ${response.status} ${errorText}`);
+      }
+      return response.json();
+    } catch (error) {
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error(`Cannot connect to backend. Please check that the backend is running at ${API_BASE}`);
+      }
+      throw error;
     }
-    return response.json();
   },
 
   /**
