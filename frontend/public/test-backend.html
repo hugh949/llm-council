@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4a90e2;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Backend Connection Diagnostic Tool</h1>
+        <p>Use this page to test your backend connection and diagnose issues.</p>
+
+        <div class="section">
+            <h2>Step 1: Enter Your Backend URL</h2>
+            <input type="text" id="backendUrl" placeholder="https://your-backend.azurewebsites.net" value="">
+            <button onclick="setBackendUrl()">Set Backend URL</button>
+        </div>
+
+        <div class="section">
+            <h2>Step 2: Run Tests</h2>
+            <button onclick="testHealthCheck()">Test Health Check (GET /)</button>
+            <button onclick="testListConversations()">Test List Conversations</button>
+            <button onclick="testCreateConversation()">Test Create Conversation</button>
+            <button onclick="runAllTests()">Run All Tests</button>
+        </div>
+
+        <div class="section">
+            <h2>Step 3: Check Results</h2>
+            <div id="results">Results will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        let backendUrl = '';
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            results.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function setBackendUrl() {
+            const url = document.getElementById('backendUrl').value.trim();
+            if (!url) {
+                log('Please enter a backend URL', 'error');
+                return;
+            }
+            backendUrl = url.replace(/\/$/, ''); // Remove trailing slash
+            log(`Backend URL set to: ${backendUrl}`, 'success');
+            log('Now you can run the tests above', 'info');
+        }
+
+        async function testHealthCheck() {
+            if (!backendUrl) {
+                log('Please set backend URL first', 'error');
+                return;
+            }
+
+            log('\n=== Testing Health Check ===', 'info');
+            log(`Request: GET ${backendUrl}/`, 'info');
+
+            try {
+                const response = await fetch(`${backendUrl}/`);
+                log(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                log(`Response: ${text}`, 'info');
+
+                if (response.ok) {
+                    log('✅ Health check PASSED', 'success');
+                } else {
+                    log('❌ Health check FAILED', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                log('This usually means the backend URL is wrong or the backend is not running', 'error');
+            }
+        }
+
+        async function testListConversations() {
+            if (!backendUrl) {
+                log('Please set backend URL first', 'error');
+                return;
+            }
+
+            log('\n=== Testing List Conversations ===', 'info');
+            log(`Request: GET ${backendUrl}/api/conversations`, 'info');
+
+            try {
+                const response = await fetch(`${backendUrl}/api/conversations`);
+                log(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                log(`Response: ${text}`, 'info');
+
+                if (response.ok) {
+                    log('✅ List conversations PASSED', 'success');
+                } else {
+                    log('❌ List conversations FAILED', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                if (error.message.includes('CORS')) {
+                    log('CORS Error: Backend is not allowing requests from this origin', 'error');
+                }
+            }
+        }
+
+        async function testCreateConversation() {
+            if (!backendUrl) {
+                log('Please set backend URL first', 'error');
+                return;
+            }
+
+            log('\n=== Testing Create Conversation ===', 'info');
+            log(`Request: POST ${backendUrl}/api/conversations`, 'info');
+            log(`Body: {}`, 'info');
+
+            try {
+                const response = await fetch(`${backendUrl}/api/conversations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                });
+
+                log(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                log(`Response: ${text}`, 'info');
+
+                if (response.ok) {
+                    log('✅ Create conversation PASSED', 'success');
+                    try {
+                        const data = JSON.parse(text);
+                        log(`Created conversation ID: ${data.id}`, 'success');
+                    } catch (e) {
+                        log('Note: Response is not valid JSON', 'info');
+                    }
+                } else {
+                    log('❌ Create conversation FAILED', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                if (error.message.includes('CORS')) {
+                    log('CORS Error: Backend is not allowing requests from this origin', 'error');
+                }
+                if (error.message.includes('Failed to fetch')) {
+                    log('Network Error: Cannot reach the backend. Check the URL is correct.', 'error');
+                }
+            }
+        }
+
+        async function runAllTests() {
+            log('\n═══════════════════════════════════════', 'info');
+            log('RUNNING ALL TESTS', 'info');
+            log('═══════════════════════════════════════\n', 'info');
+
+            await testHealthCheck();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testListConversations();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testCreateConversation();
+
+            log('\n═══════════════════════════════════════', 'info');
+            log('ALL TESTS COMPLETE', 'info');
+            log('═══════════════════════════════════════', 'info');
+        }
+
+        // Auto-detect backend URL from environment if available
+        window.addEventListener('load', () => {
+            log('Backend Connection Diagnostic Tool Loaded', 'success');
+            log('Instructions:', 'info');
+            log('1. Enter your backend URL (e.g., https://your-backend.azurewebsites.net)', 'info');
+            log('2. Click "Set Backend URL"', 'info');
+            log('3. Click "Run All Tests" or test individually', 'info');
+            log('', 'info');
+        });
+    </script>
+</body>
+</html>
+
