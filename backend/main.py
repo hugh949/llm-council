@@ -115,9 +115,23 @@ async def list_conversations():
 @app.post("/api/conversations", response_model=Conversation)
 async def create_conversation(request: CreateConversationRequest):
     """Create a new conversation."""
-    conversation_id = str(uuid.uuid4())
-    conversation = storage.create_conversation(conversation_id)
-    return conversation
+    try:
+        conversation_id = str(uuid.uuid4())
+        conversation = storage.create_conversation(conversation_id)
+        if conversation is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to create conversation in database"
+            )
+        return conversation
+    except Exception as e:
+        print(f"Error creating conversation: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating conversation: {str(e)}"
+        )
 
 
 @app.get("/api/conversations/{conversation_id}", response_model=Conversation)
