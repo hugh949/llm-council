@@ -28,10 +28,8 @@ The issue is almost always that `VITE_API_BASE_URL` in Vercel is pointing to the
 - `https://your-app.up.railway.app` (If you're not using Railway)
 - Empty or missing
 
-**✅ CORRECT (Use YOUR backend URL):**
-- `https://your-backend.azurewebsites.net` (If using Azure)
-- `https://your-backend.onrender.com` (If using Render)
-- `https://your-backend.up.railway.app` (If using Railway)
+**✅ CORRECT (Use YOUR Azure backend URL):**
+- `https://your-backend.azurewebsites.net`
 
 **Format:**
 - Must start with `https://`
@@ -60,24 +58,11 @@ The issue is almost always that `VITE_API_BASE_URL` in Vercel is pointing to the
 
 Before updating Vercel, make sure your backend is working:
 
-### If Using Azure:
-1. Go to Azure Portal
+### Get Your Azure Backend URL:
+1. Go to Azure Portal (https://portal.azure.com)
 2. Find your Web App
 3. Copy the URL (e.g., `https://llm-council-backend.azurewebsites.net`)
 4. Test it: Open in browser → Should show `{"status":"ok","service":"LLM Council API"}`
-
-### If Using Render:
-1. Go to Render dashboard
-2. Find your service
-3. Copy the URL (e.g., `https://llm-council-backend.onrender.com`)
-4. Test it in browser
-
-### If Using Railway:
-1. Go to Railway dashboard
-2. Find your service
-3. Go to Settings → Domains
-4. Copy the URL
-5. Test it in browser
 
 ---
 
@@ -107,27 +92,12 @@ Before updating Vercel, make sure your backend is working:
 
 ## 📋 Step-by-Step Fix
 
-### Scenario 1: Using Azure Backend
+### Fix Steps:
 
 1. Get your Azure backend URL (e.g., `https://llm-council-backend.azurewebsites.net`)
 2. Vercel → Settings → Environment Variables
 3. Set `VITE_API_BASE_URL` = `https://llm-council-backend.azurewebsites.net`
-4. Save and Redeploy Vercel
-5. Test!
-
-### Scenario 2: Using Render Backend
-
-1. Get your Render backend URL (e.g., `https://llm-council-backend.onrender.com`)
-2. Vercel → Settings → Environment Variables
-3. Set `VITE_API_BASE_URL` = `https://llm-council-backend.onrender.com`
-4. Save and Redeploy Vercel
-5. Test!
-
-### Scenario 3: Using Railway Backend
-
-1. Get your Railway backend URL (e.g., `https://llm-council-backend.up.railway.app`)
-2. Vercel → Settings → Environment Variables
-3. Set `VITE_API_BASE_URL` = `https://llm-council-backend.up.railway.app`
+   (Use YOUR actual Azure URL)
 4. Save and Redeploy Vercel
 5. Test!
 
@@ -160,9 +130,7 @@ If you're still getting 405 after fixing the URL:
    Should return a conversation object
 
 3. **Check backend logs:**
-   - Azure: Log stream
-   - Render: Logs tab
-   - Railway: Deployments → Logs
+   - Azure: Log stream (left sidebar in your Web App)
 
 4. **Make sure you redeployed Vercel** after changing the environment variable!
 

@@ -1,65 +1,72 @@
-# ✅ Complete Deployment Checklist for External Users
+# ✅ Complete Deployment Checklist - Azure Backend
 
 ## 🎯 Required Steps for Production
 
-### 📦 BACKEND (Railway) - Required Configuration
+### 📦 BACKEND (Azure) - Required Configuration
 
-#### ✅ Step 1: Deploy Backend to Railway
-- [ ] Go to https://railway.app
-- [ ] Sign in with GitHub
-- [ ] New Project → Deploy from GitHub repo
-- [ ] Select `llm-council` repository
+#### ✅ Step 1: Deploy Backend to Azure
+- [ ] Go to https://portal.azure.com
+- [ ] Sign in with Xavor account
+- [ ] Create Web App (Python 3.11, Linux)
+- [ ] Connect GitHub repository
 - [ ] Wait for deployment to complete
 
-#### ✅ Step 2: Set Environment Variables in Railway
+#### ✅ Step 2: Set Environment Variables in Azure
 **Required variables:**
 
 1. **`OPENROUTER_API_KEY`** (REQUIRED)
    - Value: Your OpenRouter API key
    - Get it from: https://openrouter.ai/keys
    - Without this, the app cannot call LLM APIs
+   - Set in: Configuration → Application settings
 
 **Optional variables:**
-2. **`DATABASE_URL`** (Optional - defaults to SQLite)
+2. **`PORT`** (Optional - Azure sets this automatically)
+   - Value: `8000`
+   - Set in: Configuration → Application settings
+
+3. **`WEBSITES_PORT`** (Optional but recommended)
+   - Value: `8000`
+   - Tells Azure which port your app uses
+   - Set in: Configuration → Application settings
+
+4. **`DATABASE_URL`** (Optional - defaults to SQLite)
    - Only needed if you want PostgreSQL
-   - Railway provides this automatically if you add a PostgreSQL service
+   - Azure provides this automatically if you add Azure Database for PostgreSQL
    - For small scale (< 10 users), SQLite is fine
 
-3. **`CORS_ORIGINS`** (Optional - defaults to allow all)
-   - Format: `https://your-app.vercel.app,https://another-domain.com`
-   - Leave empty to allow all origins (recommended for simplicity)
+#### ✅ Step 3: Configure Startup Command
+- [ ] Go to Configuration → General settings
+- [ ] Set Startup Command: `python -m backend.main`
+- [ ] Click "Save"
 
-4. **`PORT`** (Optional - Railway sets this automatically)
-   - Railway automatically provides the PORT environment variable
-
-#### ✅ Step 3: Get Railway Backend URL
-- [ ] Click on your Railway service
-- [ ] Go to "Settings" tab
-- [ ] Scroll to "Domains" section
-- [ ] Click "Generate Domain"
-- [ ] **Copy the URL** (e.g., `https://llm-council-production.up.railway.app`)
+#### ✅ Step 4: Get Azure Backend URL
+- [ ] In your Web App overview page
+- [ ] Look for "Default domain" or "URL"
+- [ ] Copy the URL (e.g., `https://llm-council-backend.azurewebsites.net`)
 - [ ] Test it in browser - should show: `{"status":"ok","service":"LLM Council API"}`
 
 ---
 
 ### 🌐 FRONTEND (Vercel) - Required Configuration
 
-#### ✅ Step 4: Deploy Frontend to Vercel
+#### ✅ Step 5: Deploy Frontend to Vercel
 - [ ] Go to https://vercel.com
 - [ ] Sign in with GitHub
 - [ ] Click "Add New..." → "Project"
 - [ ] Import `llm-council` repository
-- [ ] **IMPORTANT:** Set "Root Directory" to: `frontend`
+- [ ] Set Root Directory: `frontend` (IMPORTANT!)
 - [ ] Click "Deploy"
 
-#### ✅ Step 5: Set Environment Variables in Vercel
+#### ✅ Step 6: Set Environment Variables in Vercel
 **Required variable:**
 
 1. **`VITE_API_BASE_URL`** (REQUIRED)
-   - Value: Your Railway backend URL from Step 3
-   - Example: `https://llm-council-production.up.railway.app`
+   - Value: Your Azure backend URL from Step 4
+   - Example: `https://llm-council-backend.azurewebsites.net`
    - **DO NOT** include `/api` or trailing slash
    - **MUST** be `https://` (not `http://`)
+   - Set in: Settings → Environment Variables
 
 **After setting:**
 - [ ] Click "Save"
@@ -72,11 +79,11 @@
 ## 🧪 Testing Checklist
 
 ### ✅ Backend Tests
-- [ ] Open Railway URL in browser: `https://your-app.up.railway.app/`
+- [ ] Open Azure URL in browser: `https://your-app.azurewebsites.net/`
   - Should show: `{"status":"ok","service":"LLM Council API"}`
-- [ ] Test list endpoint: `https://your-app.up.railway.app/api/conversations`
+- [ ] Test list endpoint: `https://your-app.azurewebsites.net/api/conversations`
   - Should return: `[]` (empty array, or list of conversations)
-- [ ] Check Railway logs (Deployments → View Logs)
+- [ ] Check Azure Log stream
   - Should see: `✅ Database initialized successfully`
   - No error messages
 
@@ -102,10 +109,10 @@
 
 ## 🔒 Security Checklist
 
-- [ ] `OPENROUTER_API_KEY` is set in Railway (not exposed in frontend)
+- [ ] `OPENROUTER_API_KEY` is set in Azure (not exposed in frontend)
 - [ ] Backend CORS allows your Vercel domain (or allows all if using default)
 - [ ] Environment variables are not committed to Git
-- [ ] Railway URL uses HTTPS
+- [ ] Azure URL uses HTTPS
 - [ ] Vercel URL uses HTTPS
 
 ---
@@ -119,8 +126,8 @@
 - ✅ Works out of the box
 
 ### If You Need to Scale Later (PostgreSQL)
-1. Add PostgreSQL service in Railway
-2. Railway automatically provides `DATABASE_URL`
+1. Add Azure Database for PostgreSQL service
+2. Azure automatically provides `DATABASE_URL`
 3. Backend will automatically use PostgreSQL
 4. No code changes needed
 
@@ -128,25 +135,25 @@
 
 ## 🚨 Common Issues & Quick Fixes
 
-### Issue: "Failed to create conversation"
+### Issue: "Failed to create conversation: 405"
 **Check:**
 1. ✅ `VITE_API_BASE_URL` is set in Vercel
 2. ✅ Vercel has been redeployed after setting env var
-3. ✅ Railway backend is running (test the URL)
+3. ✅ Azure backend is running (test the URL)
 4. ✅ Browser console shows actual error (F12 → Console)
 
 ### Issue: "Cannot connect to backend"
 **Check:**
-1. ✅ Railway URL is correct (no trailing slash)
-2. ✅ Railway URL uses `https://` (not `http://`)
-3. ✅ Railway service is active (green status)
-4. ✅ Railway logs show no errors
+1. ✅ Azure URL is correct (no trailing slash)
+2. ✅ Azure URL uses `https://` (not `http://`)
+3. ✅ Azure service is active
+4. ✅ Azure logs show no errors
 
 ### Issue: LLM calls failing
 **Check:**
-1. ✅ `OPENROUTER_API_KEY` is set in Railway
+1. ✅ `OPENROUTER_API_KEY` is set in Azure
 2. ✅ API key is valid (check at openrouter.ai)
-3. ✅ Railway logs show API errors (if any)
+3. ✅ Azure logs show API errors (if any)
 
 ---
 
@@ -154,11 +161,12 @@
 
 Before sharing with external users:
 
-- [ ] ✅ Backend deployed on Railway
-- [ ] ✅ `OPENROUTER_API_KEY` set in Railway
-- [ ] ✅ Backend URL works (test in browser)
+- [ ] ✅ Backend deployed on Azure
+- [ ] ✅ `OPENROUTER_API_KEY` set in Azure
+- [ ] ✅ Startup command configured in Azure
+- [ ] ✅ Azure backend URL works (test in browser)
 - [ ] ✅ Frontend deployed on Vercel
-- [ ] ✅ `VITE_API_BASE_URL` set in Vercel (pointing to Railway URL)
+- [ ] ✅ `VITE_API_BASE_URL` set in Vercel (pointing to Azure URL)
 - [ ] ✅ Vercel has been redeployed after setting env var
 - [ ] ✅ Frontend URL works (test in browser)
 - [ ] ✅ Can create new conversation (no errors)
@@ -179,7 +187,6 @@ Once all checkboxes are ✅, your app is ready for external users!
 ## 📞 Still Having Issues?
 
 1. Check `TROUBLESHOOTING.md` for detailed error solutions
-2. Check Railway logs for backend errors
+2. Check Azure Log stream for backend errors
 3. Check browser console (F12) for frontend errors
 4. Verify all environment variables are set correctly
-

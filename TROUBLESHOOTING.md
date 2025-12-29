@@ -16,20 +16,20 @@
 
 ---
 
-### 2. ✅ Check Backend is Running on Railway
+### 2. ✅ Check Backend is Running on Azure
 
 **Problem:** Backend is not accessible.
 
 **Solution:**
-1. Go to Railway dashboard
-2. Check if your service is **"Active"** (green status)
-3. Click on your service → **"Settings"** → **"Generate Domain"**
-4. Copy the URL and test it in your browser: `https://your-app.up.railway.app/`
+1. Go to Azure Portal (https://portal.azure.com)
+2. Find your Web App
+3. Check the status is **"Running"**
+4. Copy the URL (found in Overview page) and test it in your browser: `https://your-app.azurewebsites.net/`
 5. You should see: `{"status":"ok","service":"LLM Council API"}`
 
 **If you get an error:**
-- Check Railway logs (click "Deployments" → "View Logs")
-- Make sure `OPENROUTER_API_KEY` is set in Railway environment variables
+- Check Azure Log stream (left sidebar → "Log stream")
+- Make sure `OPENROUTER_API_KEY` is set in Azure Configuration → Application settings
 
 ---
 
@@ -74,17 +74,16 @@ VITE_API_BASE_URL=https://your-app-name.up.railway.app
 
 ### 5. ✅ Check Database Initialization
 
-**Problem:** Database not initialized on Railway.
+**Problem:** Database not initialized on Azure.
 
 **Solution:**
-The backend now initializes the database on startup. Check Railway logs:
-1. Railway dashboard → Your service → "Deployments"
-2. Click on latest deployment → "View Logs"
-3. Look for: `✅ Database initialized successfully`
+The backend now initializes the database on startup. Check Azure logs:
+1. Azure Portal → Your Web App → "Log stream" (left sidebar)
+2. Look for: `✅ Database initialized successfully`
 
 **If you see database errors:**
-- Railway uses SQLite by default (which should work)
-- If you want PostgreSQL, add a PostgreSQL service in Railway and set `DATABASE_URL`
+- Azure uses SQLite by default (which should work)
+- If you want PostgreSQL, add Azure Database for PostgreSQL and set `DATABASE_URL`
 
 ---
 
@@ -93,23 +92,23 @@ The backend now initializes the database on startup. Check Railway logs:
 **Problem:** Not sure if backend is working.
 
 **Solution:**
-Open these URLs in your browser (replace with your Railway URL):
+Open these URLs in your browser (replace with your Azure URL):
 
 1. **Health check:**
    ```
-   https://your-app.up.railway.app/
+   https://your-app.azurewebsites.net/
    ```
    Should return: `{"status":"ok","service":"LLM Council API"}`
 
 2. **List conversations:**
    ```
-   https://your-app.up.railway.app/api/conversations
+   https://your-app.azurewebsites.net/api/conversations
    ```
    Should return: `[]` (empty array)
 
 3. **Create conversation (use a tool like Postman or curl):**
    ```bash
-   curl -X POST https://your-app.up.railway.app/api/conversations \
+   curl -X POST https://your-app.azurewebsites.net/api/conversations \
      -H "Content-Type: application/json" \
      -d "{}"
    ```
@@ -117,16 +116,16 @@ Open these URLs in your browser (replace with your Railway URL):
 
 ---
 
-### 7. ✅ Check Railway Environment Variables
+### 7. ✅ Check Azure Environment Variables
 
 **Problem:** Missing API key.
 
 **Solution:**
-1. Railway dashboard → Your service → "Variables"
+1. Azure Portal → Your Web App → "Configuration" → "Application settings"
 2. Make sure you have:
    - **Name:** `OPENROUTER_API_KEY`
    - **Value:** Your OpenRouter API key
-3. After adding, the service will auto-restart
+3. Click "Save" to apply changes (service will restart)
 
 ---
 
@@ -134,10 +133,10 @@ Open these URLs in your browser (replace with your Railway URL):
 
 Run through this checklist:
 
-- [ ] Backend is deployed and running on Railway
+- [ ] Backend is deployed and running on Azure
 - [ ] Backend URL works when opened in browser (`/` endpoint returns OK)
-- [ ] `OPENROUTER_API_KEY` is set in Railway
-- [ ] `VITE_API_BASE_URL` is set in Vercel (with Railway URL)
+- [ ] `OPENROUTER_API_KEY` is set in Azure
+- [ ] `VITE_API_BASE_URL` is set in Vercel (with Azure URL)
 - [ ] Vercel has been redeployed after setting environment variable
 - [ ] Browser console shows the actual error (not just "Failed to create conversation")
 - [ ] No CORS errors in browser console

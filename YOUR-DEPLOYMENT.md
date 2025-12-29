@@ -44,20 +44,20 @@ git push -u origin main
 
 ---
 
-## ✅ STEP 3: Deploy Backend (Railway)
+## ✅ STEP 3: Deploy Backend (Azure)
 
-1. Go to: **https://railway.app**
-2. Sign in with **GitHub**
-3. Click **"New Project"** → **"Deploy from GitHub repo"**
-4. Select **`llm-council`**
-5. Wait 2-3 minutes
-6. Click **"Variables"** tab
-7. Click **"New Variable"**
-8. Name: `OPENROUTER_API_KEY`
-9. Value: (your OpenRouter API key from https://openrouter.ai/keys)
-10. Click **"Add"**
-11. Click **"Settings"** → **"Generate Domain"**
-12. **Copy the URL** (save it!)
+**Follow the detailed guide: `DEPLOY-AZURE.md`**
+
+Quick steps:
+1. Go to: **https://portal.azure.com**
+2. Sign in with your **Xavor account**
+3. Create a **Web App** (Python 3.11, Linux)
+4. Connect your **GitHub repository**
+5. Add environment variable: `OPENROUTER_API_KEY` (your API key from https://openrouter.ai/keys)
+6. Deploy and get your Azure backend URL
+7. **Copy the URL** (save it!)
+
+**See `DEPLOY-AZURE.md` for complete step-by-step instructions.**
 
 ---
 
@@ -70,7 +70,7 @@ git push -u origin main
 5. **Root Directory:** Type `frontend` (IMPORTANT!)
 6. **Environment Variables:** Click **"Add"**
    - Name: `VITE_API_BASE_URL`
-   - Value: (paste Railway URL from Step 3)
+   - Value: (paste Azure backend URL from Step 3)
 7. Click **"Deploy"**
 8. Wait 2-3 minutes
 9. **Copy your Vercel URL** - This is your live app! 🎉
@@ -80,8 +80,8 @@ git push -u origin main
 ## 📝 What You Need to Enter:
 
 1. **GitHub username** (for Step 2)
-2. **OpenRouter API key** (for Railway Step 3)
-3. **Railway URL** (for Vercel Step 4)
+2. **OpenRouter API key** (for Azure Step 3)
+3. **Azure backend URL** (for Vercel Step 4)
 
 That's it! Everything else is automatic.
 

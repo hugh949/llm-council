@@ -1,26 +1,26 @@
 # 🔐 Environment Variables Reference
 
-## Backend (Railway) - Required Variables
+## Backend (Azure) - Required Variables
 
 ### ✅ `OPENROUTER_API_KEY` (REQUIRED)
 - **Purpose:** API key for OpenRouter to access LLM models
 - **Where to get it:** https://openrouter.ai/keys
-- **How to set in Railway:**
-  1. Railway dashboard → Your service → "Variables" tab
-  2. Click "New Variable"
+- **How to set in Azure:**
+  1. Azure Portal → Your Web App → "Configuration" → "Application settings"
+  2. Click "+ New application setting"
   3. Name: `OPENROUTER_API_KEY`
   4. Value: Your API key from OpenRouter
-  5. Click "Add"
+  5. Click "OK" then "Save"
 - **Important:** Without this, the app cannot call LLM APIs
 
 ---
 
-## Backend (Railway) - Optional Variables
+## Backend (Azure) - Optional Variables
 
 ### `DATABASE_URL` (Optional)
 - **Purpose:** PostgreSQL database connection string
 - **Default:** Uses SQLite if not set (sufficient for small scale)
-- **When to use:** If you add PostgreSQL service in Railway, Railway provides this automatically
+- **When to use:** If you add Azure Database for PostgreSQL, Azure provides this automatically
 - **Format:** `postgresql://user:pass@host:port/dbname`
 - **Note:** For 10 users, SQLite is perfectly fine - no need to set this
 
@@ -33,8 +33,14 @@
 
 ### `PORT` (Optional)
 - **Purpose:** Port number for the backend
-- **Default:** Railway automatically sets this
-- **When to use:** Never - Railway handles this automatically
+- **Default:** Azure automatically sets this (but you can set it to 8000)
+- **When to use:** Set to `8000` for consistency
+
+### `WEBSITES_PORT` (Optional but recommended)
+- **Purpose:** Tells Azure which port your app uses
+- **Default:** Not set
+- **When to use:** Set to `8000` to match your app's port
+- **Value:** `8000`
 
 ---
 
@@ -59,27 +65,27 @@
 
 ## 📋 Quick Reference
 
-### Railway Variables:
+### Azure Variables:
 ```
 OPENROUTER_API_KEY=your-key-here        (REQUIRED)
+PORT=8000                               (Optional - Azure sets automatically)
+WEBSITES_PORT=8000                      (Optional but recommended)
 DATABASE_URL=postgresql://...           (Optional - only if using PostgreSQL)
-CORS_ORIGINS=https://app.vercel.app     (Optional - defaults to allow all)
-PORT=8000                               (Optional - Railway sets automatically)
 ```
 
 ### Vercel Variables:
 ```
-VITE_API_BASE_URL=https://your-app.up.railway.app    (REQUIRED)
+VITE_API_BASE_URL=https://your-app.azurewebsites.net    (REQUIRED)
 ```
 
 ---
 
 ## ✅ Verification
 
-### Check Railway Variables:
-1. Railway dashboard → Service → "Variables" tab
+### Check Azure Variables:
+1. Azure Portal → Your Web App → "Configuration" → "Application settings"
 2. Verify `OPENROUTER_API_KEY` is present
-3. Check "Deployments" → "Logs" for initialization messages
+3. Check "Log stream" for initialization messages
 
 ### Check Vercel Variables:
 1. Vercel dashboard → Project → "Settings" → "Environment Variables"
@@ -88,7 +94,7 @@ VITE_API_BASE_URL=https://your-app.up.railway.app    (REQUIRED)
 
 ### Test Backend:
 ```bash
-curl https://your-app.up.railway.app/
+curl https://your-app.azurewebsites.net/
 # Should return: {"status":"ok","service":"LLM Council API"}
 ```
 
@@ -116,5 +122,5 @@ curl https://your-app.up.railway.app/
 
 4. ❌ **Using frontend URL as `VITE_API_BASE_URL`**
    - ❌ `https://your-app.vercel.app` (this is frontend, not backend)
-   - ✅ `https://your-app.up.railway.app` (this is backend)
+   - ✅ `https://your-app.azurewebsites.net` (this is backend)
 
