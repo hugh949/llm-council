@@ -33,7 +33,7 @@ def get_database_url() -> str:
     database_url = os.getenv("DATABASE_URL")
     
     if database_url:
-        # PostgreSQL URL (e.g., from Railway, Render, etc.)
+        # PostgreSQL URL (e.g., from Azure Database for PostgreSQL)
         # Format: postgresql://user:pass@host:port/dbname
         return database_url
     else:
