@@ -18,7 +18,7 @@ def test_imports():
     print("🔍 Testing imports...")
     
     try:
-        from backend.database import init_db, engine, Base, Conversation
+        from backend.database import init_db, Conversation, Base
         from backend.storage_db import (
             create_conversation, get_conversation, list_conversations,
             delete_conversation, finalize_prompt, add_context_engineering_message
@@ -41,16 +41,14 @@ def test_database():
     print("\n🔍 Testing database...")
     
     try:
-        from backend.database import init_db, engine, Conversation
-        from sqlalchemy.orm import sessionmaker
+        from backend.database import init_db, Conversation, get_session
         
         # Initialize database
-        init_db()
+        engine = init_db()
         print("  ✅ Database initialized")
         
         # Test session creation
-        SessionLocal = sessionmaker(bind=engine)
-        db = SessionLocal()
+        db = get_session()
         try:
             # Test query
             conversations = db.query(Conversation).limit(1).all()
