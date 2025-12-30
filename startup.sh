@@ -9,23 +9,41 @@ exec 1>&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "🚀 STARTUP.SH STARTED" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+echo "🔍 Current directory: $(pwd)" >&2
+echo "🔍 Script location: $0" >&2
 
 # Find the app directory (could be /home/site/wwwroot or extracted location)
+# First, try to find where we actually are
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "🔍 Script directory: $SCRIPT_DIR" >&2
+
+# Find the extracted directory
 if [ -d "/tmp" ]; then
     # Find the extracted directory
     EXTRACTED_DIR=$(find /tmp -maxdepth 1 -type d -name "*" 2>/dev/null | grep -E "^/tmp/[a-f0-9]+$" | head -1)
+    echo "🔍 Found extracted directory: $EXTRACTED_DIR" >&2
     if [ -n "$EXTRACTED_DIR" ] && [ -f "$EXTRACTED_DIR/backend/main.py" ]; then
         APP_DIR="$EXTRACTED_DIR"
+        echo "✅ Using extracted directory: $APP_DIR" >&2
+    elif [ -f "/home/site/wwwroot/backend/main.py" ]; then
+        APP_DIR="/home/site/wwwroot"
+        echo "✅ Using wwwroot directory: $APP_DIR" >&2
+    elif [ -f "$SCRIPT_DIR/backend/main.py" ]; then
+        APP_DIR="$SCRIPT_DIR"
+        echo "✅ Using script directory: $APP_DIR" >&2
     else
         APP_DIR="/home/site/wwwroot"
+        echo "⚠️  Defaulting to wwwroot: $APP_DIR" >&2
     fi
 else
     APP_DIR="/home/site/wwwroot"
+    echo "⚠️  /tmp not found, using wwwroot: $APP_DIR" >&2
 fi
 
 cd "$APP_DIR"
 echo "🔍 Working directory: $(pwd)" >&2
 echo "🔍 Checking for frontend directory..." >&2
+ls -la . >&2
 
 # Build frontend if not already built
 if [ ! -f "backend/static/index.html" ]; then
