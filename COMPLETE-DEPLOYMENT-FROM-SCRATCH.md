@@ -131,11 +131,22 @@ Add these settings:
 
 ### 4.1 Set Startup Command
 
-1. Still in **"Configuration"**, click the **"General settings"** tab
-2. Scroll down to **"Startup Command"**
-3. Enter: `startup.sh`
-4. Click **"Save"** at the top
-5. Click **"Continue"** when prompted
+**Navigation:**
+1. In your App Service, look at the **left sidebar**
+2. Find **"Settings"** section (scroll down if needed)
+3. Click **"Configuration"** (under Settings)
+4. You'll see tabs at the top: **Application settings** | **General settings** | etc.
+5. Click the **"General settings"** tab
+
+**Setting the Command:**
+1. Scroll down on the General settings page
+2. Look for **"Startup Command"** field (usually near the bottom)
+3. Click in the text box
+4. Enter: `startup.sh` (no quotes, just the text)
+5. Click **"Save"** button at the **top** of the page (blue button in toolbar)
+6. Click **"Continue"** when prompted
+
+**💡 Can't find it?** See detailed guide: `HOW-TO-SET-STARTUP-COMMAND.md`
 
 ---
 
