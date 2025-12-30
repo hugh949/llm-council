@@ -29,12 +29,24 @@ from .document_parser import parse_file, fetch_url_content
 app = FastAPI(title="LLM Council API")
 
 # Serve static files (frontend) from backend/static directory
-static_dir = Path(__file__).parent / "static"
+# In Azure, files are extracted to /tmp/... so we need to check multiple locations
+_base_dir = Path(__file__).parent
+static_dir = _base_dir / "static"
 static_index = static_dir / "index.html"
 
-# Mount static assets if they exist
+# Also check the wwwroot location (where files are actually deployed)
+wwwroot_static = Path("/home/site/wwwroot/backend/static")
+wwwroot_index = wwwroot_static / "index.html"
+
+# Mount static assets if they exist (check both locations)
+assets_dir = None
 if static_dir.exists() and (static_dir / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+    assets_dir = static_dir / "assets"
+elif wwwroot_static.exists() and (wwwroot_static / "assets").exists():
+    assets_dir = wwwroot_static / "assets"
+
+if assets_dir:
+    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
 # Enable CORS - allow all origins (for API access, not needed when serving from same origin)
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
@@ -653,20 +665,31 @@ async def serve_index():
     """Serve the React app index page."""
     # Debug: Log the paths being checked
     print(f"🔍 Checking for static files...")
+    print(f"   __file__: {__file__}")
+    print(f"   _base_dir: {_base_dir}")
     print(f"   static_dir: {static_dir}")
     print(f"   static_dir.exists(): {static_dir.exists()}")
     print(f"   static_index: {static_index}")
     print(f"   static_index.exists(): {static_index.exists()}")
+    print(f"   wwwroot_static: {wwwroot_static}")
+    print(f"   wwwroot_static.exists(): {wwwroot_static.exists()}")
+    print(f"   wwwroot_index: {wwwroot_index}")
+    print(f"   wwwroot_index.exists(): {wwwroot_index.exists()}")
     
+    # Try primary location (relative to backend/main.py)
     if static_index.exists():
-        print(f"✅ Found index.html, serving React app")
+        print(f"✅ Found index.html at: {static_index}")
         return FileResponse(str(static_index))
+    
+    # Try wwwroot location (where Azure deploys files)
+    if wwwroot_index.exists():
+        print(f"✅ Found index.html at wwwroot: {wwwroot_index}")
+        return FileResponse(str(wwwroot_index))
     
     # Also check alternative locations
     alt_paths = [
         Path("/home/site/wwwroot/backend/static/index.html"),
         Path("/tmp/8de475922a03fff/backend/static/index.html"),
-        Path(__file__).parent.parent / "backend" / "static" / "index.html",
     ]
     
     for alt_path in alt_paths:
@@ -675,7 +698,7 @@ async def serve_index():
             return FileResponse(str(alt_path))
     
     print(f"❌ Frontend not found at any location")
-    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script.", "debug": {"static_dir": str(static_dir), "exists": static_dir.exists()}}
+    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script.", "debug": {"static_dir": str(static_dir), "exists": static_dir.exists(), "wwwroot": str(wwwroot_static), "wwwroot_exists": wwwroot_static.exists()}}
 
 @app.get("/{file_path:path}")
 async def serve_spa(file_path: str):
@@ -685,13 +708,19 @@ async def serve_spa(file_path: str):
         raise HTTPException(status_code=404, detail="Not found")
     
     # Serve the requested file if it exists (e.g., favicon, robots.txt, etc.)
+    # Check both locations
     requested_file = static_dir / file_path
+    if not requested_file.exists():
+        requested_file = wwwroot_static / file_path
+    
     if requested_file.exists() and requested_file.is_file() and not file_path.endswith('.html'):
         return FileResponse(str(requested_file))
     
     # For all other routes, serve index.html (React Router will handle client-side routing)
     if static_index.exists():
         return FileResponse(str(static_index))
+    elif wwwroot_index.exists():
+        return FileResponse(str(wwwroot_index))
     
     raise HTTPException(status_code=404, detail="Frontend not found. Please build the frontend first.")
 
