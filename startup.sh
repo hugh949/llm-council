@@ -1,5 +1,8 @@
 #!/bin/bash
 # Azure App Service startup script
+# All output goes to stderr so Azure Log Stream captures it
+
+exec 1>&2  # Redirect stdout to stderr so Azure captures all output
 
 # Find the app directory (could be /home/site/wwwroot or extracted location)
 if [ -d "/tmp" ]; then
@@ -15,35 +18,60 @@ else
 fi
 
 cd "$APP_DIR"
-echo "Working directory: $(pwd)"
+echo "🔍 Working directory: $(pwd)" >&2
+echo "🔍 Checking for frontend directory..." >&2
 
 # Build frontend if not already built
 if [ ! -f "backend/static/index.html" ]; then
-    echo "🔨 Building frontend..."
+    echo "🔨 Building frontend..." >&2
     if [ -d "frontend" ]; then
+        echo "✅ Found frontend directory" >&2
         cd frontend
-        echo "Running npm install..."
-        npm install
-        echo "Running npm run build..."
-        npm run build
+        echo "📦 Running npm install..." >&2
+        npm install 2>&1
+        if [ $? -ne 0 ]; then
+            echo "❌ npm install failed!" >&2
+            exit 1
+        fi
+        echo "✅ npm install completed" >&2
+        
+        echo "🔨 Running npm run build..." >&2
+        npm run build 2>&1
+        if [ $? -ne 0 ]; then
+            echo "❌ npm run build failed!" >&2
+            exit 1
+        fi
+        echo "✅ npm run build completed" >&2
+        
         cd ..
         
         if [ -d "frontend/dist" ]; then
-            echo "📦 Copying frontend build to backend/static..."
+            echo "📦 Copying frontend build to backend/static..." >&2
             mkdir -p backend/static
             rm -rf backend/static/*
             cp -r frontend/dist/* backend/static/
-            echo "✅ Frontend build complete!"
+            if [ $? -eq 0 ]; then
+                echo "✅ Frontend build complete! Files copied to backend/static/" >&2
+            else
+                echo "❌ Error copying files to backend/static/" >&2
+                exit 1
+            fi
         else
-            echo "❌ Error: frontend/dist not created after build"
+            echo "❌ Error: frontend/dist not created after build" >&2
+            echo "🔍 Contents of frontend directory:" >&2
+            ls -la frontend/ >&2
+            exit 1
         fi
     else
-        echo "❌ Error: frontend directory not found"
+        echo "❌ Error: frontend directory not found at $(pwd)/frontend" >&2
+        echo "🔍 Current directory contents:" >&2
+        ls -la >&2
+        exit 1
     fi
 else
-    echo "✅ Frontend already built, skipping build step..."
+    echo "✅ Frontend already built, skipping build step..." >&2
 fi
 
 # Run the application
-echo "🚀 Starting Python application..."
-python -m backend.main
+echo "🚀 Starting Python application..." >&2
+exec python -m backend.main
