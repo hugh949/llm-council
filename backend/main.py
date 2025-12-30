@@ -651,9 +651,31 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
 @app.get("/")
 async def serve_index():
     """Serve the React app index page."""
+    # Debug: Log the paths being checked
+    print(f"🔍 Checking for static files...")
+    print(f"   static_dir: {static_dir}")
+    print(f"   static_dir.exists(): {static_dir.exists()}")
+    print(f"   static_index: {static_index}")
+    print(f"   static_index.exists(): {static_index.exists()}")
+    
     if static_index.exists():
+        print(f"✅ Found index.html, serving React app")
         return FileResponse(str(static_index))
-    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script."}
+    
+    # Also check alternative locations
+    alt_paths = [
+        Path("/home/site/wwwroot/backend/static/index.html"),
+        Path("/tmp/8de475922a03fff/backend/static/index.html"),
+        Path(__file__).parent.parent / "backend" / "static" / "index.html",
+    ]
+    
+    for alt_path in alt_paths:
+        if alt_path.exists():
+            print(f"✅ Found index.html at alternative path: {alt_path}")
+            return FileResponse(str(alt_path))
+    
+    print(f"❌ Frontend not found at any location")
+    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script.", "debug": {"static_dir": str(static_dir), "exists": static_dir.exists()}}
 
 @app.get("/{file_path:path}")
 async def serve_spa(file_path: str):
