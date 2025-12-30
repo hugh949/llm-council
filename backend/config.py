@@ -9,12 +9,12 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Council members - list of OpenRouter model identifiers
-# Updated to latest stable versions as of 2024/2025
+# Using proven, fast models that are actually available
 COUNCIL_MODELS = [
-    "openai/gpt-5.1",  # Latest GPT-5.1 model (if available, otherwise falls back to gpt-4o)
-    "google/gemini-3-pro",  # Latest Gemini 3 Pro model
-    "anthropic/claude-3.5-sonnet",  # Latest Claude 3.5 Sonnet
-    "x-ai/grok-4",  # Latest Grok model
+    "openai/gpt-4o",  # Fast and reliable GPT-4 Omni
+    "google/gemini-2.0-flash-exp",  # Fast Gemini model
+    "anthropic/claude-3.5-sonnet",  # Fast Claude 3.5 Sonnet
+    "anthropic/claude-3-haiku",  # Very fast Claude model
 ]
 
 # Chairman model - synthesizes final response
