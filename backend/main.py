@@ -348,10 +348,18 @@ async def send_prompt_engineering_message(conversation_id: str, request: SendMes
         response = await get_prompt_engineering_response(messages, request.content)
         
         if response is None:
-            raise HTTPException(
-                status_code=500, 
-                detail="Failed to get prompt engineering response. Please check your OpenRouter API key and try again."
-            )
+            # Check if API key is set for better error message
+            from .config import OPENROUTER_API_KEY
+            if not OPENROUTER_API_KEY:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable in Azure App Service Configuration."
+                )
+            else:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Failed to get prompt engineering response. Please check your OpenRouter API key is valid and has sufficient credits. Check Azure Log Stream for detailed error messages."
+                )
         
         # Add assistant message
         storage.add_prompt_engineering_message(conversation_id, "assistant", response)
