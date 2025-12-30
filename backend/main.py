@@ -34,19 +34,35 @@ _base_dir = Path(__file__).parent
 static_dir = _base_dir / "static"
 static_index = static_dir / "index.html"
 
-# Also check the wwwroot location (where files are actually deployed)
-wwwroot_static = Path("/home/site/wwwroot/backend/static")
-wwwroot_index = wwwroot_static / "index.html"
+# Check multiple possible locations where files might be
+# 1. Relative to backend/main.py (when running from extracted location)
+# 2. In wwwroot (where files are deployed)
+# 3. In current working directory
+possible_static_dirs = [
+    _base_dir / "static",  # Relative to backend/main.py
+    Path("/home/site/wwwroot/backend/static"),  # wwwroot location
+    Path("/tmp/8de475922a03fff/backend/static"),  # Extracted location (may vary)
+    Path.cwd() / "backend" / "static",  # Current working directory
+]
 
-# Mount static assets if they exist (check both locations)
-assets_dir = None
-if static_dir.exists() and (static_dir / "assets").exists():
-    assets_dir = static_dir / "assets"
-elif wwwroot_static.exists() and (wwwroot_static / "assets").exists():
-    assets_dir = wwwroot_static / "assets"
+# Find the first location that exists
+static_dir = None
+static_index = None
+for possible_dir in possible_static_dirs:
+    possible_index = possible_dir / "index.html"
+    if possible_index.exists():
+        static_dir = possible_dir
+        static_index = possible_index
+        break
 
-if assets_dir:
-    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+# Fallback to relative path if none found (for local development)
+if static_dir is None:
+    static_dir = _base_dir / "static"
+    static_index = static_dir / "index.html"
+
+# Mount static assets if they exist
+if static_dir and static_dir.exists() and (static_dir / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
 
 # Enable CORS - allow all origins (for API access, not needed when serving from same origin)
 cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
@@ -667,44 +683,33 @@ async def serve_index():
     # Use stderr for logging (shows in Azure logs)
     sys.stderr.write(f"🔍 Checking for static files...\n")
     sys.stderr.write(f"   __file__: {__file__}\n")
-    sys.stderr.write(f"   _base_dir: {_base_dir}\n")
     sys.stderr.write(f"   static_dir: {static_dir}\n")
-    sys.stderr.write(f"   static_dir.exists(): {static_dir.exists()}\n")
+    sys.stderr.write(f"   static_dir.exists(): {static_dir.exists() if static_dir else False}\n")
     sys.stderr.write(f"   static_index: {static_index}\n")
-    sys.stderr.write(f"   static_index.exists(): {static_index.exists()}\n")
-    sys.stderr.write(f"   wwwroot_static: {wwwroot_static}\n")
-    sys.stderr.write(f"   wwwroot_static.exists(): {wwwroot_static.exists()}\n")
-    sys.stderr.write(f"   wwwroot_index: {wwwroot_index}\n")
-    sys.stderr.write(f"   wwwroot_index.exists(): {wwwroot_index.exists()}\n")
+    sys.stderr.write(f"   static_index.exists(): {static_index.exists() if static_index else False}\n")
     sys.stderr.flush()
     
-    # Try primary location (relative to backend/main.py)
-    if static_index.exists():
-        sys.stderr.write(f"✅ Found index.html at: {static_index}\n")
-        sys.stderr.flush()
-        return FileResponse(str(static_index))
-    
-    # Try wwwroot location (where Azure deploys files)
-    if wwwroot_index.exists():
-        sys.stderr.write(f"✅ Found index.html at wwwroot: {wwwroot_index}\n")
-        sys.stderr.flush()
-        return FileResponse(str(wwwroot_index))
-    
-    # Also check alternative locations
-    alt_paths = [
-        Path("/home/site/wwwroot/backend/static/index.html"),
-        Path("/tmp/8de475922a03fff/backend/static/index.html"),
+    # Check all possible locations dynamically
+    check_paths = [
+        static_index,  # Pre-detected location
+        _base_dir / "static" / "index.html",  # Relative to backend/main.py
+        Path("/home/site/wwwroot/backend/static/index.html"),  # wwwroot
+        Path("/tmp/8de475922a03fff/backend/static/index.html"),  # Extracted location
+        Path.cwd() / "backend" / "static" / "index.html",  # Current directory
     ]
     
-    for alt_path in alt_paths:
-        if alt_path.exists():
-            sys.stderr.write(f"✅ Found index.html at alternative path: {alt_path}\n")
+    for check_path in check_paths:
+        if check_path and check_path.exists():
+            sys.stderr.write(f"✅ Found index.html at: {check_path}\n")
             sys.stderr.flush()
-            return FileResponse(str(alt_path))
+            return FileResponse(str(check_path))
     
-    sys.stderr.write(f"❌ Frontend not found at any location\n")
+    sys.stderr.write(f"❌ Frontend not found. Checked paths:\n")
+    for p in check_paths:
+        if p:
+            sys.stderr.write(f"   - {p} (exists: {p.exists()})\n")
     sys.stderr.flush()
-    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script.", "debug": {"static_dir": str(static_dir), "exists": static_dir.exists(), "wwwroot": str(wwwroot_static), "wwwroot_exists": wwwroot_static.exists()}}
+    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script.", "debug": {"static_dir": str(static_dir), "checked_paths": [str(p) for p in check_paths if p]}}
 
 @app.get("/{file_path:path}")
 async def serve_spa(file_path: str):
@@ -714,19 +719,32 @@ async def serve_spa(file_path: str):
         raise HTTPException(status_code=404, detail="Not found")
     
     # Serve the requested file if it exists (e.g., favicon, robots.txt, etc.)
-    # Check both locations
-    requested_file = static_dir / file_path
-    if not requested_file.exists():
-        requested_file = wwwroot_static / file_path
+    # Check all possible locations
+    check_locations = [
+        static_dir / file_path if static_dir else None,
+        _base_dir / "static" / file_path,
+        Path("/home/site/wwwroot/backend/static") / file_path,
+        Path("/tmp/8de475922a03fff/backend/static") / file_path,
+        Path.cwd() / "backend" / "static" / file_path,
+    ]
     
-    if requested_file.exists() and requested_file.is_file() and not file_path.endswith('.html'):
-        return FileResponse(str(requested_file))
+    for requested_file in check_locations:
+        if requested_file and requested_file.exists() and requested_file.is_file() and not file_path.endswith('.html'):
+            return FileResponse(str(requested_file))
     
     # For all other routes, serve index.html (React Router will handle client-side routing)
-    if static_index.exists():
+    if static_index and static_index.exists():
         return FileResponse(str(static_index))
-    elif wwwroot_index.exists():
-        return FileResponse(str(wwwroot_index))
+    
+    # Try all locations for index.html
+    for check_path in [
+        _base_dir / "static" / "index.html",
+        Path("/home/site/wwwroot/backend/static/index.html"),
+        Path("/tmp/8de475922a03fff/backend/static/index.html"),
+        Path.cwd() / "backend" / "static" / "index.html",
+    ]:
+        if check_path.exists():
+            return FileResponse(str(check_path))
     
     raise HTTPException(status_code=404, detail="Frontend not found. Please build the frontend first.")
 
