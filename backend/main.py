@@ -663,27 +663,31 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
 @app.get("/")
 async def serve_index():
     """Serve the React app index page."""
-    # Debug: Log the paths being checked
-    print(f"🔍 Checking for static files...")
-    print(f"   __file__: {__file__}")
-    print(f"   _base_dir: {_base_dir}")
-    print(f"   static_dir: {static_dir}")
-    print(f"   static_dir.exists(): {static_dir.exists()}")
-    print(f"   static_index: {static_index}")
-    print(f"   static_index.exists(): {static_index.exists()}")
-    print(f"   wwwroot_static: {wwwroot_static}")
-    print(f"   wwwroot_static.exists(): {wwwroot_static.exists()}")
-    print(f"   wwwroot_index: {wwwroot_index}")
-    print(f"   wwwroot_index.exists(): {wwwroot_index.exists()}")
+    import sys
+    # Use stderr for logging (shows in Azure logs)
+    sys.stderr.write(f"🔍 Checking for static files...\n")
+    sys.stderr.write(f"   __file__: {__file__}\n")
+    sys.stderr.write(f"   _base_dir: {_base_dir}\n")
+    sys.stderr.write(f"   static_dir: {static_dir}\n")
+    sys.stderr.write(f"   static_dir.exists(): {static_dir.exists()}\n")
+    sys.stderr.write(f"   static_index: {static_index}\n")
+    sys.stderr.write(f"   static_index.exists(): {static_index.exists()}\n")
+    sys.stderr.write(f"   wwwroot_static: {wwwroot_static}\n")
+    sys.stderr.write(f"   wwwroot_static.exists(): {wwwroot_static.exists()}\n")
+    sys.stderr.write(f"   wwwroot_index: {wwwroot_index}\n")
+    sys.stderr.write(f"   wwwroot_index.exists(): {wwwroot_index.exists()}\n")
+    sys.stderr.flush()
     
     # Try primary location (relative to backend/main.py)
     if static_index.exists():
-        print(f"✅ Found index.html at: {static_index}")
+        sys.stderr.write(f"✅ Found index.html at: {static_index}\n")
+        sys.stderr.flush()
         return FileResponse(str(static_index))
     
     # Try wwwroot location (where Azure deploys files)
     if wwwroot_index.exists():
-        print(f"✅ Found index.html at wwwroot: {wwwroot_index}")
+        sys.stderr.write(f"✅ Found index.html at wwwroot: {wwwroot_index}\n")
+        sys.stderr.flush()
         return FileResponse(str(wwwroot_index))
     
     # Also check alternative locations
@@ -694,10 +698,12 @@ async def serve_index():
     
     for alt_path in alt_paths:
         if alt_path.exists():
-            print(f"✅ Found index.html at alternative path: {alt_path}")
+            sys.stderr.write(f"✅ Found index.html at alternative path: {alt_path}\n")
+            sys.stderr.flush()
             return FileResponse(str(alt_path))
     
-    print(f"❌ Frontend not found at any location")
+    sys.stderr.write(f"❌ Frontend not found at any location\n")
+    sys.stderr.flush()
     return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script.", "debug": {"static_dir": str(static_dir), "exists": static_dir.exists(), "wwwroot": str(wwwroot_static), "wwwroot_exists": wwwroot_static.exists()}}
 
 @app.get("/{file_path:path}")
