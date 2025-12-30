@@ -11,6 +11,9 @@ import uuid
 import json
 import asyncio
 import os
+import subprocess
+import shutil
+import sys
 
 # Use database storage instead of JSON files
 try:
@@ -81,15 +84,134 @@ app.add_middleware(
 )
 
 
+def build_frontend_if_needed():
+    """Build frontend if not already built. Runs synchronously before app starts."""
+    # Find the app directory
+    app_dir = None
+    tmp_dir = Path("/tmp")
+    
+    if tmp_dir.exists():
+        # Find directories in /tmp that match the pattern
+        extracted_dirs = [d for d in tmp_dir.iterdir() if d.is_dir() and d.name not in ['.', '..']]
+        if extracted_dirs:
+            extracted_dir = extracted_dirs[0]
+            backend_main = extracted_dir / "backend" / "main.py"
+            if backend_main.exists():
+                app_dir = extracted_dir
+    
+    # Fallback to wwwroot or current directory
+    if app_dir is None:
+        wwwroot = Path("/home/site/wwwroot")
+        if (wwwroot / "backend" / "main.py").exists():
+            app_dir = wwwroot
+        else:
+            app_dir = _base_parent
+    
+    backend_static = app_dir / "backend" / "static" / "index.html"
+    frontend_dir = app_dir / "frontend"
+    frontend_dist = app_dir / "frontend" / "dist"
+    
+    # Only build if frontend is not already built
+    if backend_static.exists():
+        print("✅ Frontend already built, skipping build step...", file=sys.stderr, flush=True)
+        return
+    
+    print("🔨 Building frontend...", file=sys.stderr, flush=True)
+    
+    if not frontend_dir.exists():
+        print(f"⚠️  Frontend directory not found at {frontend_dir}, skipping build", file=sys.stderr, flush=True)
+        return
+    
+    # Check if Node.js is available
+    try:
+        result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=5)
+        print(f"✅ Node.js version: {result.stdout.strip()}", file=sys.stderr, flush=True)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        print("⚠️  Node.js not found. Frontend build skipped. Install Node.js extension in Azure.", file=sys.stderr, flush=True)
+        return
+    
+    # Run npm install
+    print("📦 Running npm install...", file=sys.stderr, flush=True)
+    try:
+        result = subprocess.run(
+            ["npm", "install"],
+            cwd=str(frontend_dir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=300
+        )
+        if result.returncode != 0:
+            print(f"⚠️  npm install failed: {result.stdout[:500]}", file=sys.stderr, flush=True)
+            return
+        print("✅ npm install completed", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"⚠️  npm install error: {e}", file=sys.stderr, flush=True)
+        return
+    
+    # Run npm run build
+    print("🔨 Running npm run build...", file=sys.stderr, flush=True)
+    try:
+        result = subprocess.run(
+            ["npm", "run", "build"],
+            cwd=str(frontend_dir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=300
+        )
+        if result.returncode != 0:
+            print(f"⚠️  npm run build failed: {result.stdout[:500]}", file=sys.stderr, flush=True)
+            return
+        print("✅ npm run build completed", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"⚠️  npm run build error: {e}", file=sys.stderr, flush=True)
+        return
+    
+    # Copy files to backend/static
+    if not frontend_dist.exists():
+        print(f"⚠️  frontend/dist not created after build", file=sys.stderr, flush=True)
+        return
+    
+    print("📦 Copying frontend build to backend/static...", file=sys.stderr, flush=True)
+    try:
+        backend_static_dir = app_dir / "backend" / "static"
+        backend_static_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Remove existing files
+        if backend_static_dir.exists():
+            for item in backend_static_dir.iterdir():
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+        
+        # Copy files
+        for item in frontend_dist.iterdir():
+            dest = backend_static_dir / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+        
+        print("✅ Frontend build complete! Files copied to backend/static/", file=sys.stderr, flush=True)
+    except Exception as e:
+        print(f"⚠️  Error copying files: {e}", file=sys.stderr, flush=True)
+
+
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup."""
+    """Initialize database and build frontend on startup."""
+    # Build frontend first (synchronously)
+    build_frontend_if_needed()
+    
+    # Then initialize database
     if init_db:
         try:
             init_db()
-            print("✅ Database initialized successfully")
+            print("✅ Database initialized successfully", file=sys.stderr, flush=True)
         except Exception as e:
-            print(f"⚠️  Database initialization error: {e}")
+            print(f"⚠️  Database initialization error: {e}", file=sys.stderr, flush=True)
             # Continue anyway - database will be initialized on first use
 
 
