@@ -1,0 +1,29 @@
+<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Xavor Logo - Stylized 3D X symbol in golden yellow -->
+  
+  <!-- Left stroke: bottom left to top right, thick at ends, narrow in middle -->
+  <path d="M 10 70 Q 25 50, 35 45 Q 45 40, 60 35 Q 75 30, 85 25 Q 95 20, 110 10" 
+        stroke="#FFD700" 
+        stroke-width="14" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Right stroke: top right to bottom left, thick at ends, narrow in middle -->
+  <path d="M 110 10 Q 95 20, 85 25 Q 75 30, 60 35 Q 45 40, 35 45 Q 25 50, 10 70" 
+        stroke="#FFD700" 
+        stroke-width="14" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Xavor text below the symbol -->
+  <text x="60" y="75" 
+        font-family="Arial, sans-serif" 
+        font-size="18" 
+        font-weight="600" 
+        fill="#000000" 
+        text-anchor="middle">
+    <tspan font-size="18">X</tspan><tspan font-size="18">avor</tspan>
+  </text>
+</svg>

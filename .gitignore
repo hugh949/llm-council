@@ -17,7 +17,9 @@ dist/
 *.sqlite
 *.sqlite3
 data/llm_council.db
-backend/static/
+# backend/static/ - Commented out to allow pre-built frontend files
+# backend/static/*
+# !backend/static/.gitkeep
 
 # Environment
 .env
