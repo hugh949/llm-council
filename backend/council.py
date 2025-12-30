@@ -165,8 +165,8 @@ Provide a clear, well-reasoned final answer that represents the council's collec
 
     messages = [{"role": "user", "content": chairman_prompt}]
 
-    # Query the chairman model
-    response = await query_model(CHAIRMAN_MODEL, messages)
+    # Query the chairman model with longer timeout for synthesis (90s)
+    response = await query_model(CHAIRMAN_MODEL, messages, timeout=90.0)
 
     if response is None:
         # Fallback if chairman fails
