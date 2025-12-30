@@ -5,12 +5,15 @@
 # Force output to stderr (Azure Log Stream captures stderr)
 exec 1>&2
 
-# Log that script started
+# Log that script started - THIS MUST APPEAR IN LOGS
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-echo "🚀 STARTUP.SH STARTED" >&2
+echo "🚀 STARTUP.SH STARTED - SCRIPT IS RUNNING!" >&2
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 echo "🔍 Current directory: $(pwd)" >&2
 echo "🔍 Script location: $0" >&2
+echo "🔍 Script arguments: $@" >&2
+echo "🔍 Environment:" >&2
+env | grep -E "(PATH|PWD|HOME)" >&2
 
 # Find the app directory (could be /home/site/wwwroot or extracted location)
 # First, try to find where we actually are
