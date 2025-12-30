@@ -9,12 +9,12 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Council members - list of OpenRouter model identifiers
-# Using proven, fast models that are actually available
+# Using the BEST available models for high-quality deliberation
 COUNCIL_MODELS = [
-    "openai/gpt-4o",  # Fast and reliable GPT-4 Omni
-    "google/gemini-2.0-flash-exp",  # Fast Gemini model
-    "anthropic/claude-3.5-sonnet",  # Fast Claude 3.5 Sonnet
-    "anthropic/claude-3-haiku",  # Very fast Claude model
+    "openai/gpt-4o",  # GPT-4 Omni - OpenAI's most capable model
+    "anthropic/claude-3.5-sonnet",  # Claude 3.5 Sonnet - Excellent reasoning
+    "google/gemini-pro-1.5",  # Gemini Pro 1.5 - Google's advanced model
+    "anthropic/claude-3-opus",  # Claude 3 Opus - Anthropic's most capable model
 ]
 
 # Chairman model - synthesizes final response
