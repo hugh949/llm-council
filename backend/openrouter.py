@@ -9,7 +9,7 @@ from .config import OPENROUTER_API_KEY, OPENROUTER_API_URL
 async def query_model(
     model: str,
     messages: List[Dict[str, str]],
-    timeout: float = 60.0  # Reduced from 120s for faster failure detection
+    timeout: float = 120.0  # Longer timeout for best models (they may take more time for quality)
 ) -> Optional[Dict[str, Any]]:
     """
     Query a single model via OpenRouter API.
