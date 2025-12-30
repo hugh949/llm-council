@@ -31,21 +31,27 @@ app = FastAPI(title="LLM Council API")
 # Serve static files (frontend) from backend/static directory
 # In Azure, files are extracted to /tmp/... so we need to check multiple locations
 _base_dir = Path(__file__).parent
-static_dir = _base_dir / "static"
-static_index = static_dir / "index.html"
+_base_parent = _base_dir.parent  # Parent of backend/ (project root)
 
 # Check multiple possible locations where files might be
-# 1. Relative to backend/main.py (when running from extracted location)
-# 2. In wwwroot (where files are deployed)
-# 3. In current working directory
+# 1. backend/static/ (preferred - where we copy files)
+# 2. frontend/dist/ (if build happened but copy didn't)
+# 3. frontend/ (if files are directly there)
+# 4. In wwwroot
+# 5. In extracted location
 possible_static_dirs = [
-    _base_dir / "static",  # Relative to backend/main.py
+    _base_dir / "static",  # backend/static/ (preferred)
+    _base_parent / "frontend" / "dist",  # frontend/dist/ (built but not copied)
+    _base_parent / "frontend",  # frontend/ (direct)
     Path("/home/site/wwwroot/backend/static"),  # wwwroot location
-    Path("/tmp/8de475922a03fff/backend/static"),  # Extracted location (may vary)
+    Path("/tmp/8de475922a03fff/backend/static"),  # Extracted location
+    Path("/tmp/8de475922a03fff/frontend/dist"),  # Extracted frontend/dist
+    Path("/tmp/8de475922a03fff/frontend"),  # Extracted frontend
     Path.cwd() / "backend" / "static",  # Current working directory
+    Path.cwd() / "frontend" / "dist",  # Current working directory frontend/dist
 ]
 
-# Find the first location that exists
+# Find the first location that exists and has index.html
 static_dir = None
 static_index = None
 for possible_dir in possible_static_dirs:
@@ -692,10 +698,15 @@ async def serve_index():
     # Check all possible locations dynamically
     check_paths = [
         static_index,  # Pre-detected location
-        _base_dir / "static" / "index.html",  # Relative to backend/main.py
+        _base_dir / "static" / "index.html",  # backend/static/
+        _base_parent / "frontend" / "dist" / "index.html",  # frontend/dist/
+        _base_parent / "frontend" / "index.html",  # frontend/
         Path("/home/site/wwwroot/backend/static/index.html"),  # wwwroot
-        Path("/tmp/8de475922a03fff/backend/static/index.html"),  # Extracted location
-        Path.cwd() / "backend" / "static" / "index.html",  # Current directory
+        Path("/tmp/8de475922a03fff/backend/static/index.html"),  # Extracted backend/static
+        Path("/tmp/8de475922a03fff/frontend/dist/index.html"),  # Extracted frontend/dist
+        Path("/tmp/8de475922a03fff/frontend/index.html"),  # Extracted frontend
+        Path.cwd() / "backend" / "static" / "index.html",  # Current directory backend
+        Path.cwd() / "frontend" / "dist" / "index.html",  # Current directory frontend/dist
     ]
     
     for check_path in check_paths:
@@ -722,10 +733,15 @@ async def serve_spa(file_path: str):
     # Check all possible locations
     check_locations = [
         static_dir / file_path if static_dir else None,
-        _base_dir / "static" / file_path,
+        _base_dir / "static" / file_path,  # backend/static/
+        _base_parent / "frontend" / "dist" / file_path,  # frontend/dist/
+        _base_parent / "frontend" / file_path,  # frontend/
         Path("/home/site/wwwroot/backend/static") / file_path,
         Path("/tmp/8de475922a03fff/backend/static") / file_path,
+        Path("/tmp/8de475922a03fff/frontend/dist") / file_path,
+        Path("/tmp/8de475922a03fff/frontend") / file_path,
         Path.cwd() / "backend" / "static" / file_path,
+        Path.cwd() / "frontend" / "dist" / file_path,
     ]
     
     for requested_file in check_locations:
@@ -738,10 +754,15 @@ async def serve_spa(file_path: str):
     
     # Try all locations for index.html
     for check_path in [
-        _base_dir / "static" / "index.html",
+        _base_dir / "static" / "index.html",  # backend/static/
+        _base_parent / "frontend" / "dist" / "index.html",  # frontend/dist/
+        _base_parent / "frontend" / "index.html",  # frontend/
         Path("/home/site/wwwroot/backend/static/index.html"),
         Path("/tmp/8de475922a03fff/backend/static/index.html"),
+        Path("/tmp/8de475922a03fff/frontend/dist/index.html"),
+        Path("/tmp/8de475922a03fff/frontend/index.html"),
         Path.cwd() / "backend" / "static" / "index.html",
+        Path.cwd() / "frontend" / "dist" / "index.html",
     ]:
         if check_path.exists():
             return FileResponse(str(check_path))
