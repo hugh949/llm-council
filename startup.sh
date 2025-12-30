@@ -2,7 +2,13 @@
 # Azure App Service startup script
 # All output goes to stderr so Azure Log Stream captures it
 
-exec 1>&2  # Redirect stdout to stderr so Azure captures all output
+# Force output to stderr (Azure Log Stream captures stderr)
+exec 1>&2
+
+# Log that script started
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+echo "🚀 STARTUP.SH STARTED" >&2
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 
 # Find the app directory (could be /home/site/wwwroot or extracted location)
 if [ -d "/tmp" ]; then
