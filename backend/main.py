@@ -646,6 +646,34 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
     )
 
 
+# ========== STATIC FILE SERVING (Must be last to not interfere with API routes) ==========
+
+@app.get("/")
+async def serve_index():
+    """Serve the React app index page."""
+    if static_index.exists():
+        return FileResponse(str(static_index))
+    return {"status": "ok", "service": "LLM Council API", "message": "Frontend not built. Please run build script."}
+
+@app.get("/{file_path:path}")
+async def serve_spa(file_path: str):
+    """Serve the React app for all non-API routes (SPA routing)."""
+    # Don't interfere with API routes
+    if file_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve the requested file if it exists (e.g., favicon, robots.txt, etc.)
+    requested_file = static_dir / file_path
+    if requested_file.exists() and requested_file.is_file() and not file_path.endswith('.html'):
+        return FileResponse(str(requested_file))
+    
+    # For all other routes, serve index.html (React Router will handle client-side routing)
+    if static_index.exists():
+        return FileResponse(str(static_index))
+    
+    raise HTTPException(status_code=404, detail="Frontend not found. Please build the frontend first.")
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8001))
