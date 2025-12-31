@@ -15,7 +15,6 @@ COUNCIL_MODELS = [
     "google/gemini-3-flash-preview",  # Gemini 3 Flash Preview - Google's latest
     "deepseek/deepseek-v3.2",  # DeepSeek V3.2 - Advanced reasoning
     "anthropic/claude-haiku-4.5",  # Claude Haiku 4.5 - Anthropic's latest
-    "x-ai/grok-4.1-fast",  # Grok 4.1 Fast - X.AI's latest fast model
 ]
 
 # Chairman model - synthesizes final response
