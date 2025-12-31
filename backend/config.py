@@ -15,11 +15,12 @@ COUNCIL_MODELS = [
     "google/gemini-3-flash-preview",  # Gemini 3 Flash Preview - Google's latest
     "deepseek/deepseek-v3.2",  # DeepSeek V3.2 - Advanced reasoning
     "anthropic/claude-haiku-4.5",  # Claude Haiku 4.5 - Anthropic's latest
+    "x-ai/grok-4.1-fast",  # Grok 4.1 Fast - X.AI's latest fast model
 ]
 
 # Chairman model - synthesizes final response
-# Using Claude 3.5 Sonnet for advanced reasoning and synthesis
-CHAIRMAN_MODEL = "anthropic/claude-3.5-sonnet"
+# Using Claude Sonnet 4.5 for advanced reasoning and synthesis
+CHAIRMAN_MODEL = "anthropic/claude-sonnet-4.5"
 
 # Prompt Engineering model (cheap and fast)
 PROMPT_ENGINEERING_MODEL = "google/gemini-2.5-flash"
