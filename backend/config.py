@@ -18,8 +18,8 @@ COUNCIL_MODELS = [
 ]
 
 # Chairman model - synthesizes final response
-# Using Claude Sonnet 4.5 for advanced reasoning and synthesis
-CHAIRMAN_MODEL = "anthropic/claude-sonnet-4.5"
+# Using Gemini 3 Flash Preview for advanced reasoning and synthesis
+CHAIRMAN_MODEL = "google/gemini-3-flash-preview"
 
 # Prompt Engineering model (cheap and fast)
 PROMPT_ENGINEERING_MODEL = "google/gemini-2.5-flash"
