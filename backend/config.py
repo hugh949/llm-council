@@ -9,17 +9,16 @@ load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Council members - list of OpenRouter model identifiers
-# Using the LATEST and MOST ADVANCED models available on OpenRouter (2025)
-# These models have the most current information and latest capabilities
+# Using latest models for Step 3 council deliberation
 COUNCIL_MODELS = [
-    "openai/gpt-4o",  # Latest GPT-4o - OpenAI's most advanced model
-    "anthropic/claude-3.5-sonnet",  # Latest Claude 3.5 Sonnet - Advanced reasoning
-    "google/gemini-2.0-flash-exp",  # Latest Gemini 2.0 Flash Experimental
-    "anthropic/claude-3-opus",  # Claude 3 Opus - Anthropic's most capable model
+    "openai/gpt-5.2",  # GPT-5.2 - OpenAI's latest model
+    "google/gemini-3-flash-preview",  # Gemini 3 Flash Preview - Google's latest
+    "deepseek/deepseek-v3.2",  # DeepSeek V3.2 - Advanced reasoning
+    "anthropic/claude-haiku-4.5",  # Claude Haiku 4.5 - Anthropic's latest
 ]
 
 # Chairman model - synthesizes final response
-# Using latest Claude 3.5 Sonnet for advanced reasoning and synthesis
+# Using Claude 3.5 Sonnet for advanced reasoning and synthesis
 CHAIRMAN_MODEL = "anthropic/claude-3.5-sonnet"
 
 # Prompt Engineering model (cheap and fast)
