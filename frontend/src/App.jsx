@@ -17,7 +17,6 @@ function App() {
   const [contextLoading, setContextLoading] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
   const [forcedStage, setForcedStage] = useState(null); // Force a specific stage during transitions
-  const [forcedStage, setForcedStage] = useState(null); // Force a specific stage (for transitions)
 
   // Load conversations on mount
   useEffect(() => {
