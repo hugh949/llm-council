@@ -357,32 +357,64 @@ function App() {
       console.log('Conversation reloaded after finalization:', {
         id: reloadedConv.id,
         promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
+        finalizedPromptText: reloadedConv.prompt_engineering?.finalized_prompt?.substring(0, 50),
         contextStarted: !!(reloadedConv.context_engineering?.messages?.length > 0)
       });
       
       // Automatically proceed to Step 2 after prompt is finalized
-      // The stage logic will automatically show Step 2 once prompt is finalized
-      // We don't need to send an initialization message - just ensure context_engineering structure exists
       console.log('Prompt finalized successfully, automatically transitioning to Step 2 (RAG/Context Engineering)...');
       
-      // Ensure context_engineering structure exists in the conversation
-      // Even if empty, this ensures Step 2 will render properly
+      // Ensure all structures exist with proper defaults
       const updatedConv = {
         ...reloadedConv,
-        context_engineering: reloadedConv.context_engineering || {
-          messages: [],
-          documents: [],
-          files: [],
-          links: [],
-          finalized_context: null
+        prompt_engineering: {
+          messages: reloadedConv.prompt_engineering?.messages || [],
+          finalized_prompt: reloadedConv.prompt_engineering?.finalized_prompt || null
+        },
+        context_engineering: {
+          messages: reloadedConv.context_engineering?.messages || [],
+          documents: reloadedConv.context_engineering?.documents || [],
+          files: reloadedConv.context_engineering?.files || [],
+          links: reloadedConv.context_engineering?.links || [],
+          finalized_context: reloadedConv.context_engineering?.finalized_context || null
+        },
+        council_deliberation: {
+          messages: reloadedConv.council_deliberation?.messages || []
         }
       };
       
-      // Update state - this will trigger re-render and show Step 2 automatically
-      // getCurrentStage() will return 'context_engineering' since prompt is finalized
+      // Verify the prompt is actually finalized
+      const isPromptFinalized = !!updatedConv.prompt_engineering?.finalized_prompt;
+      console.log('Verifying prompt finalization:', {
+        isPromptFinalized,
+        finalizedPromptExists: !!updatedConv.prompt_engineering?.finalized_prompt,
+        promptLength: updatedConv.prompt_engineering?.finalized_prompt?.length || 0
+      });
+      
+      if (!isPromptFinalized) {
+        console.error('ERROR: Prompt was not finalized properly!');
+        alert('Error: Prompt finalization failed. Please try again.');
+        return;
+      }
+      
+      // Update state - this will trigger re-render
+      // React will call renderStage() again, which calls getCurrentStage()
+      // getCurrentStage() will see promptFinalized=true and return 'context_engineering'
       setCurrentConversation(updatedConv);
       
-      console.log('Automatically transitioned to Step 2: Context Engineering (RAG UI)');
+      console.log('State updated with conversation:', {
+        id: updatedConv.id,
+        promptFinalized: isPromptFinalized,
+        hasContextEng: !!updatedConv.context_engineering,
+        contextEngStructure: {
+          messages: updatedConv.context_engineering.messages.length,
+          documents: updatedConv.context_engineering.documents.length,
+          files: updatedConv.context_engineering.files.length,
+          links: updatedConv.context_engineering.links.length
+        },
+        expectedStage: 'context_engineering'
+      });
+      console.log('✅ State updated - React will re-render and show Step 2 (Context Engineering)');
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
@@ -915,9 +947,13 @@ function App() {
         }
         
         try {
+          // Get finalized prompt from Step 1 to display in Step 2
+          const finalizedPrompt = promptEng.finalized_prompt || null;
+          
           return (
             <ContextEngineering
               conversationId={currentConversationId}
+              finalizedPrompt={finalizedPrompt}
               messages={safeContextEng.messages}
               documents={safeContextEng.documents}
               files={safeContextEng.files}
@@ -928,6 +964,7 @@ function App() {
               onUploadFile={handleUploadFile}
               onAddLink={handleAddLink}
               onPackageContext={handlePackageContext}
+              onEditPrompt={handleEditPrompt}
               onReloadConversation={() => loadConversation(currentConversationId)}
               isLoading={contextLoading}
             />

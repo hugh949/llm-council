@@ -41,6 +41,140 @@
   margin-bottom: 4px;
 }
 
+/* Finalized Prompt Section */
+.finalized-prompt-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background-color: #f0f7f0;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+}
+
+.finalized-prompt-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.finalized-prompt-section h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #2e7d32;
+}
+
+.edit-prompt-button {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-prompt-button:hover {
+  background-color: #45a049;
+}
+
+.finalized-prompt-content {
+  background-color: white;
+  padding: 16px;
+  border-radius: 4px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.edit-prompt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prompt-edit-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 200px;
+}
+
+.prompt-edit-textarea:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.edit-prompt-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.save-prompt-button {
+  padding: 10px 24px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-prompt-button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.save-prompt-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-edit-button {
+  padding: 10px 24px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-edit-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* Add Context Section */
+.add-context-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: #fff9e6;
+  border-left: 4px solid #ffd54f;
+  border-radius: 6px;
+}
+
+.add-context-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.context-hint {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .attachments-section {
   margin-bottom: 20px;
   padding: 16px;

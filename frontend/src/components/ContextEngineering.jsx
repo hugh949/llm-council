@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import ProgressIndicator from './ProgressIndicator';
 import './ContextEngineering.css';
 
 export default function ContextEngineering({
   conversationId,
+  finalizedPrompt,
   messages,
   documents,
   files,
@@ -15,6 +16,7 @@ export default function ContextEngineering({
   onUploadFile,
   onAddLink,
   onPackageContext,
+  onEditPrompt,
   onReloadConversation,
   isLoading,
 }) {
@@ -25,7 +27,16 @@ export default function ContextEngineering({
   const [linkUrl, setLinkUrl] = useState('');
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState(finalizedPrompt || '');
   const fileInputRef = useRef(null);
+
+  // Sync editedPrompt when finalizedPrompt prop changes
+  useEffect(() => {
+    if (finalizedPrompt && !editingPrompt) {
+      setEditedPrompt(finalizedPrompt);
+    }
+  }, [finalizedPrompt, editingPrompt]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -122,6 +133,13 @@ export default function ContextEngineering({
     return preview + (content.length > 150 ? '...' : '');
   };
 
+  const handleSavePrompt = async () => {
+    if (editedPrompt.trim() && onEditPrompt) {
+      await onEditPrompt(editedPrompt.trim());
+      setEditingPrompt(false);
+    }
+  };
+
   return (
     <div className="context-engineering">
       <ProgressIndicator 
@@ -133,11 +151,75 @@ export default function ContextEngineering({
       <div className="stage-header">
         <h2>Step 2: Context Engineering</h2>
         <p className="stage-description">
-          Add relevant context, documents, and background information. The system uses RAG (Retrieval-Augmented Generation) to intelligently retrieve and use the most relevant parts of your attachments when answering your prompt.
+          Review your finalized prompt from Step 1, add context to refine it, and attach documents. Both your prompt and context will be used by the council for deliberation.
         </p>
         <div className="rag-info-banner">
           <strong>💡 How RAG Works:</strong> Your documents are automatically chunked and indexed. When the council deliberates, only the most relevant chunks are retrieved and included in the context, making responses more focused and accurate.
         </div>
+      </div>
+
+      {/* Finalized Prompt from Step 1 */}
+      {finalizedPrompt && (
+        <div className="finalized-prompt-section">
+          <div className="section-header">
+            <h3>📝 Finalized Prompt from Step 1</h3>
+            {!editingPrompt && (
+              <button
+                type="button"
+                className="edit-prompt-button"
+                onClick={() => {
+                  setEditingPrompt(true);
+                  setEditedPrompt(finalizedPrompt);
+                }}
+              >
+                Edit Prompt
+              </button>
+            )}
+          </div>
+          {editingPrompt ? (
+            <div className="edit-prompt-form">
+              <textarea
+                className="prompt-edit-textarea"
+                value={editedPrompt}
+                onChange={(e) => setEditedPrompt(e.target.value)}
+                rows={8}
+                placeholder="Edit your finalized prompt..."
+              />
+              <div className="edit-prompt-actions">
+                <button
+                  type="button"
+                  className="save-prompt-button"
+                  onClick={handleSavePrompt}
+                  disabled={!editedPrompt.trim() || isLoading}
+                >
+                  Save Prompt
+                </button>
+                <button
+                  type="button"
+                  className="cancel-edit-button"
+                  onClick={() => {
+                    setEditingPrompt(false);
+                    setEditedPrompt(finalizedPrompt);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="finalized-prompt-content">
+              <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add Context to Prompt Section */}
+      <div className="add-context-section">
+        <h3>💬 Add Context to Your Prompt</h3>
+        <p className="context-hint">
+          You can provide additional context, clarifications, constraints, or guidelines that will be combined with your prompt above and sent to the council for deliberation.
+        </p>
       </div>
 
       {/* Attachments Section */}
