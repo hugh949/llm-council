@@ -98,3 +98,4 @@ echo "   3. Restart the App Service if needed"
 echo "   4. Test the URL above"
 echo ""
 
+

@@ -1,0 +1,133 @@
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.step-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  transition: all 0.3s ease;
+  border: 3px solid #dee2e6;
+  background: white;
+  color: #6c757d;
+}
+
+.progress-step.pending .step-circle {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+  color: #adb5bd;
+}
+
+.progress-step.active .step-circle {
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  border-color: #4a90e2;
+  color: white;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+  animation: pulse 2s infinite;
+}
+
+.progress-step.completed .step-circle {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  border-color: #4caf50;
+  color: white;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(74, 144, 226, 0.5);
+  }
+}
+
+.step-checkmark {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.step-number {
+  font-size: 20px;
+}
+
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.progress-step.pending .step-label {
+  color: #adb5bd;
+}
+
+.progress-step.active .step-label {
+  color: #4a90e2;
+}
+
+.progress-step.completed .step-label {
+  color: #4caf50;
+}
+
+.progress-line {
+  width: 80px;
+  height: 3px;
+  background: #dee2e6;
+  margin: 0 12px;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+  position: relative;
+  top: -24px; /* Align with center of circles */
+}
+
+.progress-line.active {
+  background: linear-gradient(90deg, #4caf50 0%, #4a90e2 100%);
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+}
+
+@media (max-width: 768px) {
+  .progress-indicator {
+    padding: 16px 12px;
+  }
+  
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .step-label {
+    font-size: 11px;
+    max-width: 100px;
+  }
+  
+  .progress-line {
+    width: 40px;
+    margin: 0 8px;
+  }
+}

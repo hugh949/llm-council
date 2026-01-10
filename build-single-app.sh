@@ -15,3 +15,4 @@ cp -r frontend/dist/* backend/static/
 echo "✅ Build complete! Frontend files are in backend/static/"
 echo "🚀 You can now deploy just the backend, and it will serve both frontend and API!"
 
+

@@ -47,3 +47,4 @@ So we just need to call it from the working directory!
 
 **Change startup command to: `bash startup.sh` and restart!** ✅
 
+

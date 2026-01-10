@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import ProgressIndicator from './ProgressIndicator';
 import './ContextEngineering.css';
 
 export default function ContextEngineering({
@@ -94,13 +95,42 @@ export default function ContextEngineering({
 
   const totalAttachments = (documents?.length || 0) + (files?.length || 0) + (links?.length || 0);
 
+  // Helper function to get file icon
+  const getFileIcon = (file) => {
+    const type = (file.type || '').toLowerCase();
+    if (type === 'pdf') return '📄';
+    if (type === 'docx' || type === 'doc') return '📝';
+    if (type === 'xlsx' || type === 'xls') return '📊';
+    if (type === 'pptx' || type === 'ppt') return '📽️';
+    if (type === 'txt' || type === 'md') return '📃';
+    if (type === 'csv') return '📈';
+    return '📎';
+  };
+
+  // Helper function to get file preview (first few lines of content)
+  const getFilePreview = (file) => {
+    const content = file.content || '';
+    if (!content) return 'No content preview available';
+    const preview = content.substring(0, 150).replace(/\n/g, ' ').trim();
+    return preview + (content.length > 150 ? '...' : '');
+  };
+
   return (
     <div className="context-engineering">
+      <ProgressIndicator 
+        currentStep={2}
+        step1Complete={true}
+        step2Complete={!!finalizedContext}
+        step3Complete={false}
+      />
       <div className="stage-header">
         <h2>Step 2: Context Engineering</h2>
         <p className="stage-description">
-          Provide context, guidelines, constraints, and background information by typing in the chat below. Attachments (documents, files, links) are optional - you can proceed with just manually typed context.
+          Add relevant context, documents, and background information. The system uses RAG (Retrieval-Augmented Generation) to intelligently retrieve and use the most relevant parts of your attachments when answering your prompt.
         </p>
+        <div className="rag-info-banner">
+          <strong>💡 How RAG Works:</strong> Your documents are automatically chunked and indexed. When the council deliberates, only the most relevant chunks are retrieved and included in the context, making responses more focused and accurate.
+        </div>
       </div>
 
       {/* Attachments Section */}
@@ -187,17 +217,27 @@ export default function ContextEngineering({
           <div className="files-list">
             <h4>Uploaded Files ({files.length})</h4>
             <div className="files-grid">
-              {files.map((file, index) => (
-                <div key={index} className="file-item">
-                  <div className="file-icon">📄</div>
-                  <div className="file-info">
-                    <div className="file-name">{file.name || file.get?.('name') || 'Untitled'}</div>
-                    <div className="file-type">{file.type || file.get?.('type') || 'unknown'}</div>
-                    {file.page_count && <div className="file-meta">{file.page_count} pages</div>}
-                    {file.slide_count && <div className="file-meta">{file.slide_count} slides</div>}
+              {files.map((file, index) => {
+                const fileName = file.name || file.get?.('name') || 'Untitled';
+                const fileType = file.type || file.get?.('type') || 'unknown';
+                const preview = getFilePreview(file);
+                return (
+                  <div key={index} className="file-item with-preview">
+                    <div className="file-icon-large">{getFileIcon(file)}</div>
+                    <div className="file-info">
+                      <div className="file-name">{fileName}</div>
+                      <div className="file-type-badge">{fileType.toUpperCase()}</div>
+                      {file.page_count && <div className="file-meta">📑 {file.page_count} pages</div>}
+                      {file.slide_count && <div className="file-meta">🎞️ {file.slide_count} slides</div>}
+                      {file.content && (
+                        <div className="file-preview-text" title={preview}>
+                          {preview}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -228,15 +268,26 @@ export default function ContextEngineering({
           <div className="documents-list">
             <h4>Text Documents ({documents.length})</h4>
             <div className="documents-grid">
-              {documents.map((doc, index) => (
-                <div key={index} className="document-item">
-                  <div className="document-name">{doc.name || doc.get?.('name') || 'Untitled'}</div>
-                  <div className="document-preview">
-                    {doc.content?.substring(0, 200) || doc.get?.('content')?.substring(0, 200)}
-                    {(doc.content?.length > 200 || doc.get?.('content')?.length > 200) && '...'}
+              {documents.map((doc, index) => {
+                const docName = doc.name || doc.get?.('name') || 'Untitled';
+                const docContent = doc.content || doc.get?.('content') || '';
+                const preview = docContent.substring(0, 200);
+                return (
+                  <div key={index} className="document-item with-preview">
+                    <div className="document-icon">📄</div>
+                    <div className="document-content-wrapper">
+                      <div className="document-name">{docName}</div>
+                      <div className="document-preview">
+                        {preview}
+                        {docContent.length > 200 && '...'}
+                      </div>
+                      <div className="document-meta">
+                        {docContent.length} characters • Ready for RAG
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -271,8 +322,21 @@ export default function ContextEngineering({
 
       {finalizedContext ? (
         <div className="finalized-section">
-          <h3>✓ Context Packaged</h3>
-          <p className="info-text">Context has been packaged. You can now proceed to review.</p>
+          <h3>✓ Step 2 Complete: Context Packaged</h3>
+          <div className="step-completion-actions">
+            <p className="info-text">
+              Excellent! Your context is ready with {totalAttachments} attachment{totalAttachments !== 1 ? 's' : ''}. 
+              {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant chunks when needed.'}
+              Review everything in the next step, then proceed to council deliberation.
+            </p>
+            <div className="next-step-guidance">
+              <p className="guidance-text">
+                ✓ Your context is packaged! The system will automatically take you to the Review stage, then Step 3.
+                <br />
+                <small>If you don't see the Review stage, the page will update shortly.</small>
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="input-section">

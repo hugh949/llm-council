@@ -147,3 +147,4 @@ log(f"🔍 Running: python -m backend.main from {os.getcwd()}")
 # Use exec to replace this process with the FastAPI app
 os.execvp("python", ["python", "-m", "backend.main"])
 
+

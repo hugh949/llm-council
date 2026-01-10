@@ -59,3 +59,4 @@ az webapp list --output table
 
 **I recommend Option 2 (Azure Portal) for simplicity!** 📋
 
+

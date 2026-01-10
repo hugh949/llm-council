@@ -58,3 +58,4 @@ EXTRACTED_DIR=$(find /tmp -mindepth 1 -maxdepth 1 -type d | head -1); cd $EXTRAC
 
 **This is the simplest and most reliable approach!** ✅
 
+

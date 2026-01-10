@@ -73,3 +73,4 @@ After changing the startup command, restart the App Service and check Log Stream
 
 **The key is using the full path to startup.sh in the extracted location!** ✅
 
+

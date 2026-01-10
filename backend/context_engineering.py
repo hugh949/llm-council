@@ -3,6 +3,7 @@
 from typing import List, Dict, Any, Optional
 from .openrouter import query_model
 from .config import CONTEXT_ENGINEERING_MODEL
+from .rag_system import retrieve_relevant_chunks, format_retrieved_chunks
 
 
 async def get_context_engineering_response(
@@ -79,16 +80,21 @@ async def package_context(
     documents: List[Dict[str, Any]],
     files: List[Dict[str, Any]],
     links: List[Dict[str, Any]],
-    finalized_prompt: str
+    finalized_prompt: str,
+    use_rag: bool = True
 ) -> Optional[str]:
     """
     Package the context information for use with the council deliberation.
     
+    Uses RAG (Retrieval-Augmented Generation) to intelligently retrieve only the most
+    relevant chunks from attachments, rather than including everything.
+    
     Order of priority (from highest to lowest):
     1. Prompt from Step 1
     2. Manually typed context from Step 2 chat (user messages)
-    3. Attachments (documents and files)
-    4. External links
+    3. Retrieved relevant chunks from attachments (via RAG) - if use_rag=True
+    4. All attachments (documents and files) - if use_rag=False
+    5. External links
     
     Args:
         conversation_history: The full context engineering conversation
@@ -96,6 +102,7 @@ async def package_context(
         files: List of parsed files (PDF, Word, Excel, PowerPoint)
         links: List of URL content
         finalized_prompt: The finalized prompt from stage 1
+        use_rag: Whether to use RAG for intelligent chunk retrieval (default: True)
         
     Returns:
         Packaged context text ready for council deliberation, or None if failed
@@ -182,9 +189,40 @@ The following context was manually provided during the context engineering conve
     # 3. Attachments (documents + files)
     # 4. External links (lowest priority)
     
+    # Use RAG to retrieve relevant chunks if enabled and we have attachments
+    rag_section = ""
+    has_rag_chunks = False
+    
+    if use_rag and (documents or files or links):
+        try:
+            # Extract the core query from the finalized prompt (first few sentences)
+            query = finalized_prompt.split('\n')[0][:500]  # Use first sentence/line as query
+            
+            # Retrieve relevant chunks (using fast keyword-based scoring by default)
+            # Set use_llm_scoring=True for more accurate but slower retrieval
+            relevant_chunks = await retrieve_relevant_chunks(
+                query=query,
+                documents=documents,
+                files=files,
+                links=links,
+                top_k=15,  # Get top 15 most relevant chunks
+                relevance_threshold=0.3,  # Only include chunks with >30% relevance
+                use_llm_scoring=False  # Use fast keyword matching (set to True for LLM-based scoring)
+            )
+            
+            if relevant_chunks:
+                rag_section = format_retrieved_chunks(relevant_chunks)
+                has_rag_chunks = True
+                
+                # Note: We'll use RAG chunks instead of full documents/files sections
+                # But still include links section as-is since they're typically smaller
+        except Exception as e:
+            print(f"RAG retrieval failed, falling back to full content: {e}")
+            # Fall back to including full content if RAG fails
+    
     # Build instructions based on what's available
     has_manual_context = bool(manual_context_section)
-    has_attachments = bool(documents_section or files_section)
+    has_attachments = bool(documents_section or files_section) or has_rag_chunks
     has_links = bool(links_section)
     
     instructions_list = ["1. **Prompt from Step 1** (above) - This is the primary question or task to address"]
@@ -194,7 +232,10 @@ The following context was manually provided during the context engineering conve
         instructions_list.append(f"{priority_num}. **Manually provided context** - Direct instructions and context from the user")
         priority_num += 1
     
-    if has_attachments:
+    if has_rag_chunks:
+        instructions_list.append(f"{priority_num}. **Retrieved relevant chunks (RAG)** - Most relevant portions extracted from attachments using intelligent retrieval")
+        priority_num += 1
+    elif has_attachments:
         instructions_list.append(f"{priority_num}. **Attached documents and files** - Reference materials and supporting documents")
         priority_num += 1
     
@@ -207,11 +248,19 @@ The following context was manually provided during the context engineering conve
     if not has_manual_context and not has_attachments and not has_links:
         instructions_text += "\n\n*Note: No additional context was provided beyond the prompt. Please address the prompt directly.*"
     
+    # Choose which sections to include based on RAG
+    if has_rag_chunks:
+        # Use RAG chunks instead of full documents/files
+        attachments_section = rag_section
+    else:
+        # Use full documents and files sections
+        attachments_section = documents_section + files_section
+    
     packaged_context = f"""# COUNCIL DELIBERATION REQUEST
 
 ## PROMPT TO ADDRESS (Step 1)
 
-{finalized_prompt}{manual_context_section}{documents_section}{files_section}{links_section}
+{finalized_prompt}{manual_context_section}{attachments_section}{links_section}
 
 ---
 

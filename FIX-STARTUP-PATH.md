@@ -62,3 +62,4 @@ bash -c 'EXTRACTED_DIR=$(find /tmp -mindepth 1 -maxdepth 1 -type d | head -1); b
 
 **This should work because we're using the full path, not relying on cd!** ✅
 
+

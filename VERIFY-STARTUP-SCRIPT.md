@@ -79,3 +79,4 @@ This will tell us if:
 
 **Try Option 1 first - change the startup command in Azure Portal to use the full path!**
 
+

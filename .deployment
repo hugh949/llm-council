@@ -2,3 +2,4 @@
 SCM_DO_BUILD_DURING_DEPLOYMENT=true
 POST_BUILD_COMMAND="cd frontend && npm install && npm run build && cd .. && mkdir -p backend/static && rm -rf backend/static/* && cp -r frontend/dist/* backend/static/"
 
+

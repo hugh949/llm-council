@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import ProgressIndicator from './ProgressIndicator';
 import './PromptEngineering.css';
 
 export default function PromptEngineering({
@@ -51,6 +52,12 @@ export default function PromptEngineering({
 
   return (
     <div className="prompt-engineering">
+      <ProgressIndicator 
+        currentStep={1}
+        step1Complete={!!finalizedPrompt}
+        step2Complete={false}
+        step3Complete={false}
+      />
       <div className="stage-header">
         <h2>Step 1: Prompt Engineering</h2>
         <p className="stage-description">
@@ -86,11 +93,22 @@ export default function PromptEngineering({
 
       {finalizedPrompt ? (
         <div className="finalized-section">
-          <h3>✓ Finalized Prompt</h3>
+          <h3>✓ Step 1 Complete: Finalized Prompt</h3>
           <div className="finalized-content">
             <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
           </div>
-          <p className="info-text">You can now proceed to Context Engineering.</p>
+          <div className="step-completion-actions">
+            <p className="info-text">
+              Great! Your prompt is ready. Next, add context and background information in Step 2 to help the council provide more accurate responses.
+            </p>
+            <div className="next-step-guidance">
+              <p className="guidance-text">
+                ✓ Your prompt is finalized! The system will automatically take you to Step 2.
+                <br />
+                <small>If you don't see Step 2, the page will update shortly.</small>
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="input-section">

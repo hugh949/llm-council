@@ -61,3 +61,4 @@ cd /tmp && cd $(ls -d */ | head -1) && bash startup.sh
 
 **Use the single-line command above - it should work!** ✅
 
+

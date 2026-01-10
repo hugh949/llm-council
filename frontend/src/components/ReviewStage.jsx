@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import ProgressIndicator from './ProgressIndicator';
 import './ReviewStage.css';
 
 export default function ReviewStage({
@@ -30,11 +31,20 @@ export default function ReviewStage({
 
   return (
     <div className="review-stage">
+      <ProgressIndicator 
+        currentStep={3}
+        step1Complete={true}
+        step2Complete={true}
+        step3Complete={false}
+      />
       <div className="review-header">
         <h2>Final Review Before Council Deliberation</h2>
         <p className="review-description">
-          Review the finalized prompt and all context documents. Make any final edits if needed, then proceed to Step 3.
+          Review the finalized prompt and all context documents. Make any final edits if needed, then proceed to Step 3: Council Deliberation.
         </p>
+        <div className="review-info-banner">
+          <strong>🎯 Almost there!</strong> Once you proceed, the council will deliberate using your prompt and context. The RAG system will automatically retrieve the most relevant chunks from your attachments.
+        </div>
       </div>
 
       <div className="review-content">

@@ -63,3 +63,4 @@ The `bash -c` wrapper might help with command execution.
 
 **If this still doesn't work, we may need to use the Python approach (Option 4).** 🔧
 
+

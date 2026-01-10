@@ -63,3 +63,4 @@ Check Log Stream. You should see:
 
 **This should work much better than the bash script!** ✅
 
+

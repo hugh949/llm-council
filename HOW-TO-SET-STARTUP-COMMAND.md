@@ -147,3 +147,4 @@ If you still can't find it, try this:
 
 **That's it! The startup command should be set to `startup.sh`! 🎉**
 
+
