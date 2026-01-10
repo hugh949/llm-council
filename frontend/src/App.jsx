@@ -16,9 +16,6 @@ function App() {
   const [promptLoading, setPromptLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
-  const [currentStep, setCurrentStep] = useState(null); // Explicitly track current step: 'prompt_engineering', 'context_engineering', 'review', 'council_deliberation'
-  const [stepLocked, setStepLocked] = useState(false); // Flag to prevent useEffect from overriding explicit step sets during transitions
-  const [forceShowStep2, setForceShowStep2] = useState(false); // WORKAROUND: Simple flag to force Step 2 display after finalizing prompt
 
   // Load conversations on mount
   useEffect(() => {
@@ -32,23 +29,6 @@ function App() {
     }
   }, [currentConversationId]);
 
-  // Debug: Log whenever conversation state changes to track transitions
-  useEffect(() => {
-    if (currentConversation) {
-      const promptFinalized = !!currentConversation.prompt_engineering?.finalized_prompt;
-      const contextFinalized = !!currentConversation.context_engineering?.finalized_context;
-      
-      console.log('🔄 Conversation state changed (useEffect triggered):', {
-        id: currentConversation.id,
-        promptFinalized,
-        contextFinalized,
-        hasContextEng: !!currentConversation.context_engineering,
-        expectedStage: promptFinalized && !contextFinalized ? 'context_engineering (Step 2)' : 
-                       promptFinalized && contextFinalized ? 'review or council_deliberation' : 
-                       'prompt_engineering (Step 1)'
-      });
-    }
-  }, [currentConversation]);
 
   const loadConversations = async () => {
     try {
@@ -394,173 +374,54 @@ function App() {
     setPromptLoading(true);
     
     try {
-      console.log('📝 Finalizing prompt...', finalizedPrompt.substring(0, 50));
-      
-      // Step 1: Finalize the prompt via API - this returns { conversation: {...} }
+      // Finalize the prompt via API
       const result = await api.finalizePrompt(currentConversationId, finalizedPrompt);
-      console.log('✅ Finalize prompt API response received:', {
-        hasResult: !!result,
-        hasConversation: !!result?.conversation,
-        conversationId: result?.conversation?.id,
-        promptFinalized: !!result?.conversation?.prompt_engineering?.finalized_prompt
-      });
       
-      // The API returns { conversation: {...} } - use it directly
-      // DO NOT call loadConversation here as it updates state, which would conflict
-      let apiConversation = result?.conversation;
-      
-      // Fallback: If API response doesn't have conversation, fetch it directly (without updating state)
-      if (!apiConversation || !apiConversation.id) {
-        console.warn('⚠️ API response missing conversation, fetching directly (no state update)...');
-        // Use api.getConversation directly - it doesn't update state, just returns data
-        const directFetch = await api.getConversation(currentConversationId);
-        
-        if (!directFetch || !directFetch.id) {
-          console.error('❌ Failed to get conversation after finalization');
-          throw new Error('Failed to finalize prompt - could not retrieve conversation');
-        }
-        apiConversation = directFetch;
+      // Get the updated conversation from API response
+      let updatedConversation = result?.conversation;
+      if (!updatedConversation) {
+        // Fallback: fetch conversation directly
+        updatedConversation = await api.getConversation(currentConversationId);
       }
       
-      // Step 2: Ensure complete, valid conversation structure
-      // This is CRITICAL - we need to guarantee the structure exists
-      const finalConversation = {
-        id: apiConversation.id,
-        created_at: apiConversation.created_at || new Date().toISOString(),
-        title: apiConversation.title || 'New Conversation',
+      if (!updatedConversation || !updatedConversation.id) {
+        throw new Error('Failed to retrieve conversation after finalization');
+      }
+      
+      // Ensure proper structure exists
+      const conversationWithDefaults = {
+        ...updatedConversation,
         prompt_engineering: {
-          messages: Array.isArray(apiConversation.prompt_engineering?.messages) 
-            ? apiConversation.prompt_engineering.messages 
-            : [],
-          finalized_prompt: apiConversation.prompt_engineering?.finalized_prompt || finalizedPrompt
+          messages: updatedConversation.prompt_engineering?.messages || [],
+          finalized_prompt: updatedConversation.prompt_engineering?.finalized_prompt || finalizedPrompt
         },
         context_engineering: {
-          messages: Array.isArray(apiConversation.context_engineering?.messages) 
-            ? apiConversation.context_engineering.messages 
-            : [],
-          documents: Array.isArray(apiConversation.context_engineering?.documents) 
-            ? apiConversation.context_engineering.documents 
-            : [],
-          files: Array.isArray(apiConversation.context_engineering?.files) 
-            ? apiConversation.context_engineering.files 
-            : [],
-          links: Array.isArray(apiConversation.context_engineering?.links) 
-            ? apiConversation.context_engineering.links 
-            : [],
-          finalized_context: apiConversation.context_engineering?.finalized_context || null
+          messages: updatedConversation.context_engineering?.messages || [],
+          documents: updatedConversation.context_engineering?.documents || [],
+          files: updatedConversation.context_engineering?.files || [],
+          links: updatedConversation.context_engineering?.links || [],
+          finalized_context: updatedConversation.context_engineering?.finalized_context || null
         },
         council_deliberation: {
-          messages: Array.isArray(apiConversation.council_deliberation?.messages) 
-            ? apiConversation.council_deliberation.messages 
-            : []
+          messages: updatedConversation.council_deliberation?.messages || []
         }
       };
       
-      // Step 3: Verify the prompt is finalized
-      const isPromptFinalized = !!finalConversation.prompt_engineering.finalized_prompt;
-      
-      console.log('🔍 Verification before state update:', {
-        conversationId: finalConversation.id,
-        promptFinalized: isPromptFinalized,
-        finalizedPromptLength: finalConversation.prompt_engineering.finalized_prompt?.length || 0,
-        hasContextEng: !!finalConversation.context_engineering,
-        contextEngStructure: {
-          messages: finalConversation.context_engineering.messages.length,
-          documents: finalConversation.context_engineering.documents.length,
-          files: finalConversation.context_engineering.files.length,
-          links: finalConversation.context_engineering.links.length
-        }
-      });
-      
-      if (!isPromptFinalized) {
-        console.error('❌ ERROR: Prompt finalization failed - finalized_prompt is missing!');
-        alert('Error: Prompt finalization failed. The prompt was not saved properly.');
-        return;
+      // Verify prompt was finalized
+      if (!conversationWithDefaults.prompt_engineering.finalized_prompt) {
+        throw new Error('Prompt finalization failed - finalized_prompt is missing');
       }
       
-      // Step 4: Update state with the finalized conversation
-      // CRITICAL: Create completely new object references for all nested objects
-      // This ensures React's Object.is() comparison detects the change
-      const newConversationObject = {
-        id: String(finalConversation.id), // Ensure string type
-        created_at: finalConversation.created_at || new Date().toISOString(),
-        title: String(finalConversation.title || 'New Conversation'),
-        prompt_engineering: {
-          messages: Array.isArray(finalConversation.prompt_engineering.messages) 
-            ? [...finalConversation.prompt_engineering.messages] 
-            : [],
-          finalized_prompt: String(finalConversation.prompt_engineering.finalized_prompt || '')
-        },
-          context_engineering: {
-          messages: Array.isArray(finalConversation.context_engineering.messages) 
-            ? [...finalConversation.context_engineering.messages] 
-            : [],
-          documents: Array.isArray(finalConversation.context_engineering.documents) 
-            ? [...finalConversation.context_engineering.documents] 
-            : [],
-          files: Array.isArray(finalConversation.context_engineering.files) 
-            ? [...finalConversation.context_engineering.files] 
-            : [],
-          links: Array.isArray(finalConversation.context_engineering.links) 
-            ? [...finalConversation.context_engineering.links] 
-            : [],
-          finalized_context: finalConversation.context_engineering.finalized_context || null
-        },
-        council_deliberation: {
-          messages: Array.isArray(finalConversation.council_deliberation.messages) 
-            ? [...finalConversation.council_deliberation.messages] 
-            : []
-        }
-      };
-      
-      // Verify before state update
-      const verifyFinalized = !!newConversationObject.prompt_engineering.finalized_prompt;
-      console.log('🔄 Preparing state update:', {
-        conversationId: newConversationObject.id,
-        promptFinalized: verifyFinalized,
-        finalizedPromptLength: newConversationObject.prompt_engineering.finalized_prompt.length,
-        hasContextEng: !!newConversationObject.context_engineering,
-        allStructuresValid: true
-      });
-      
-      if (!verifyFinalized) {
-        throw new Error('Prompt finalization verification failed - finalized_prompt is empty');
-      }
-      
-      // WORKAROUND: Set simple boolean flag to force Step 2 display
-      // This bypasses all complex state logic and directly triggers Step 2 rendering
-      console.log('🎯 WORKAROUND: Setting forceShowStep2 flag to TRUE');
-      setForceShowStep2(true);
-      
-      // Update conversation state
-      console.log('🔄 Updating conversation state...');
-      setCurrentConversation(newConversationObject);
-      
-      // Also set step state (backup)
-      console.log('🎯 Setting currentStep to "context_engineering" (backup)');
-      setCurrentStep('context_engineering');
-      setStepLocked(true);
-      
-      // Clear loading state
+      // Update conversation state - React will re-render and getCurrentStage() will return 'context_engineering'
+      setCurrentConversation(conversationWithDefaults);
       setPromptLoading(false);
       
-      // Clear the workaround flag after a delay (once Step 2 is rendered, normal logic takes over)
-      setTimeout(() => {
-        console.log('🔓 Clearing forceShowStep2 flag - normal logic will handle from here');
-        setForceShowStep2(false);
-        setStepLocked(false);
-      }, 1000);
-      
-      console.log('✅ WORKAROUND activated!');
-      console.log('✅ forceShowStep2 = true');
-      console.log('✅ React will re-render NOW - Step 2 (ContextEngineering) MUST appear!');
-      console.log('✅ This bypasses all complex stage determination logic');
+      console.log('Prompt finalized successfully. Conversation state updated. React will re-render.');
       
     } catch (error) {
-      console.error('❌ Failed to finalize prompt:', error);
+      console.error('Failed to finalize prompt:', error);
       setPromptLoading(false);
       alert(`Error: ${error.message || 'Failed to finalize prompt. Please try again.'}`);
-      // Don't throw - let user try again
     }
   };
 
@@ -1048,82 +909,12 @@ function App() {
         currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
       }
 
-      // WORKAROUND: Check simple boolean flag FIRST - this bypasses ALL complex logic
-      // This is the most reliable way to force Step 2 to show after finalizing prompt
-      if (forceShowStep2) {
-        console.log('🎯 WORKAROUND: forceShowStep2 flag is true - FORCING Step 2 (context_engineering)');
-        const promptFinalized = !!promptEng.finalized_prompt;
-        const contextFinalized = !!contextEng.finalized_context;
-        
-        // Only show Step 2 if prompt is actually finalized (safety check)
-        if (promptFinalized && !contextFinalized) {
-          console.log('✅ forceShowStep2 + prompt finalized = Showing Step 2 NOW');
-          return renderContextEngineering();
-        } else {
-          console.log('⚠️ forceShowStep2 is true but conditions not met - clearing flag');
-          setForceShowStep2(false);
-        }
-      }
+      // Simple logic: determine stage based on conversation state
+      const stageToRender = getCurrentStage();
       
-      // Continue with normal logic if workaround flag is not set
-      const promptFinalized = !!promptEng.finalized_prompt;
-      const contextFinalized = !!contextEng.finalized_context;
-      const finalizedPromptText = promptEng.finalized_prompt;
-      
-      // CRITICAL DEBUG: Log everything to understand what's happening
-      console.log('🔍 renderStage() DEBUG:', {
-        conversationId: currentConversation.id,
-        forceShowStep2: forceShowStep2,
-        currentStep: currentStep,
-        stepLocked: stepLocked,
-        promptFinalized: promptFinalized,
-        finalizedPromptExists: !!finalizedPromptText,
-        finalizedPromptLength: finalizedPromptText?.length || 0,
-        finalizedPromptPreview: finalizedPromptText?.substring(0, 50) || 'NONE',
-        contextFinalized: contextFinalized,
-        promptEngKeys: Object.keys(promptEng),
-        contextEngKeys: Object.keys(contextEng)
-      });
-      
-      let stageToRender;
-      
-      // ABSOLUTE RULE #1: If prompt is finalized and context is NOT finalized, show Step 2
-      if (promptFinalized && !contextFinalized) {
-        console.log('✅✅✅ PROMPT IS FINALIZED AND CONTEXT NOT FINALIZED - FORCING Step 2');
-        stageToRender = 'context_engineering';
-      } else if (currentStep && !stepLocked) {
-        console.log('🎯 Using explicit currentStep state:', currentStep);
-        stageToRender = currentStep;
-      } else {
-        try {
-          const calculated = getCurrentStage();
-          stageToRender = calculated || 'prompt_engineering';
-          console.log('📊 Using calculated stage from getCurrentStage():', stageToRender);
-        } catch (error) {
-          console.error('❌ Error in getCurrentStage():', error);
-          if (promptFinalized && !contextFinalized) {
-            stageToRender = 'context_engineering';
-          } else if (!promptFinalized) {
-            stageToRender = 'prompt_engineering';
-          } else {
-            stageToRender = 'prompt_engineering';
-          }
-        }
-      }
-      
-      // ABSOLUTE SAFETY CHECK
-      if (promptFinalized && !contextFinalized && stageToRender !== 'context_engineering') {
-        console.error('🚨🚨🚨 CRITICAL: Prompt finalized but stageToRender is', stageToRender, '- FORCING context_engineering');
-        stageToRender = 'context_engineering';
-      }
-      
-      console.log('🎬 FINAL stage to render:', stageToRender, {
-        explicitCurrentStep: currentStep,
+      console.log('Rendering stage:', stageToRender, {
         promptFinalized: !!promptEng.finalized_prompt,
         contextFinalized: !!contextEng.finalized_context,
-        contextEngExists: !!currentConversation.context_engineering,
-        contextMessages: Array.isArray(contextEng.messages) ? contextEng.messages.length : 0,
-        councilMessages: councilDelib.messages?.length || 0,
         conversationId: currentConversation.id
       });
 
