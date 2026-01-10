@@ -272,44 +272,55 @@ function App() {
       });
       
       if (result && result.conversation && result.conversation.id) {
-        // Always reload from server immediately to get the complete, latest state
-        // This ensures getCurrentStage() will correctly identify context_engineering stage
-        console.log('Reloading conversation to get complete state...');
-        const reloadedConv = await loadConversation(currentConversationId);
+        // Update state immediately with API response to ensure transition happens right away
+        // The API response should contain the new message in context_engineering
+        const apiConv = result.conversation;
         
-        if (reloadedConv && reloadedConv.id) {
-          console.log('Conversation reloaded successfully, state should now be updated:', {
-            id: reloadedConv.id,
-            contextMessages: reloadedConv.context_engineering?.messages?.length || 0,
-            contextMessagesData: reloadedConv.context_engineering?.messages,
-            contextDocuments: reloadedConv.context_engineering?.documents?.length || 0,
-            contextFiles: reloadedConv.context_engineering?.files?.length || 0,
-            contextLinks: reloadedConv.context_engineering?.links?.length || 0,
-            contextStarted: !!(reloadedConv.context_engineering?.messages?.length > 0 || 
-                              reloadedConv.context_engineering?.documents?.length > 0 ||
-                              reloadedConv.context_engineering?.files?.length > 0 ||
-                              reloadedConv.context_engineering?.links?.length > 0),
-            promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
-            contextFinalized: !!reloadedConv.context_engineering?.finalized_context
-          });
-          
-          // Verify that getCurrentStage will return 'context_engineering'
-          const testContextEng = reloadedConv.context_engineering || {};
-          const testContextStarted = (testContextEng.messages && testContextEng.messages.length > 0) ||
-                                    (testContextEng.documents && testContextEng.documents.length > 0) ||
-                                    (testContextEng.files && testContextEng.files.length > 0) ||
-                                    (testContextEng.links && testContextEng.links.length > 0);
-          
-          console.log('Stage transition check:', {
-            promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
-            contextStarted: testContextStarted,
-            contextFinalized: !!testContextEng.finalized_context,
-            expectedStage: (!!reloadedConv.prompt_engineering?.finalized_prompt && testContextStarted && !testContextEng.finalized_context) ? 'context_engineering' : 'unknown'
-          });
-        } else {
-          console.error('Failed to reload conversation after proceeding to Step 2');
-          alert('Error: Failed to load conversation state. Please refresh the page.');
-        }
+        console.log('API response conversation structure:', {
+          id: apiConv.id,
+          hasPromptEng: !!apiConv.prompt_engineering,
+          hasContextEng: !!apiConv.context_engineering,
+          contextMessages: apiConv.context_engineering?.messages?.length || 0,
+          contextMessagesData: apiConv.context_engineering?.messages,
+          promptFinalized: !!apiConv.prompt_engineering?.finalized_prompt
+        });
+        
+        // Ensure complete data structure to prevent blank screens
+        const updatedConv = {
+          ...apiConv,
+          prompt_engineering: apiConv.prompt_engineering || currentConversation?.prompt_engineering || { messages: [], finalized_prompt: null },
+          context_engineering: {
+            ...(apiConv.context_engineering || {}),
+            messages: Array.isArray(apiConv.context_engineering?.messages) ? apiConv.context_engineering.messages : [],
+            documents: Array.isArray(apiConv.context_engineering?.documents) ? apiConv.context_engineering.documents : [],
+            files: Array.isArray(apiConv.context_engineering?.files) ? apiConv.context_engineering.files : [],
+            links: Array.isArray(apiConv.context_engineering?.links) ? apiConv.context_engineering.links : [],
+            finalized_context: apiConv.context_engineering?.finalized_context || null
+          },
+          council_deliberation: apiConv.council_deliberation || currentConversation?.council_deliberation || { messages: [] }
+        };
+        
+        console.log('Updating state with conversation:', {
+          id: updatedConv.id,
+          contextMessages: updatedConv.context_engineering.messages.length,
+          promptFinalized: !!updatedConv.prompt_engineering.finalized_prompt,
+          contextStarted: updatedConv.context_engineering.messages.length > 0
+        });
+        
+        // Update state immediately - this should trigger re-render and show Step 2
+        setCurrentConversation(updatedConv);
+        
+        // Also reload from server after a short delay to ensure we have the latest state
+        // But don't wait for it - let the immediate state update handle the UI transition
+        setTimeout(async () => {
+          console.log('Reloading conversation to ensure complete state...');
+          try {
+            await loadConversation(currentConversationId);
+          } catch (reloadError) {
+            console.error('Error reloading conversation (non-critical):', reloadError);
+            // Non-critical - state was already updated from API response
+          }
+        }, 500);
       } else {
         console.warn('No valid conversation in result, reloading...');
         await loadConversation(currentConversationId);
