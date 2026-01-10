@@ -37,11 +37,30 @@ def get_database_url() -> str:
         # Format: postgresql://user:pass@host:port/dbname
         return database_url
     else:
-        # Default to SQLite for local development
-        data_dir = Path("data")
-        data_dir.mkdir(exist_ok=True)
+        # Default to SQLite - use persistent location in Azure
+        # In Azure, use /home/site/wwwroot/data/ for persistence
+        # Locally, use ./data/ relative to project root
+        if os.path.exists("/home/site/wwwroot"):
+            # Azure environment - use persistent location
+            data_dir = Path("/home/site/wwwroot/data")
+        else:
+            # Local development - use relative path
+            # Find project root (where this file is: backend/database.py)
+            backend_dir = Path(__file__).parent
+            project_root = backend_dir.parent
+            data_dir = project_root / "data"
+        
+        data_dir.mkdir(parents=True, exist_ok=True)
         db_path = data_dir / "llm_council.db"
-        return f"sqlite:///{db_path}"
+        db_url = f"sqlite:///{db_path}"
+        
+        # Log database path for debugging (only in Azure)
+        if os.path.exists("/home/site/wwwroot"):
+            import sys
+            print(f"🔍 Database path: {db_path}", file=sys.stderr, flush=True)
+            print(f"🔍 Database exists: {db_path.exists()}", file=sys.stderr, flush=True)
+        
+        return db_url
 
 
 def get_engine():

@@ -105,6 +105,11 @@ def get_conversation(conversation_id: str) -> Optional[Dict[str, Any]]:
     try:
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
         if not conversation:
+            # Log for debugging in Azure
+            import os
+            if os.path.exists("/home/site/wwwroot"):
+                import sys
+                print(f"⚠️ Conversation {conversation_id} not found in database", file=sys.stderr, flush=True)
             return None
         return _ensure_conversation_structure(conversation)
     finally:
