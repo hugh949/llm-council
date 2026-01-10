@@ -11,6 +11,7 @@ export default function PromptEngineering({
   onSuggestFinal,
   onFinalizePrompt,
   onReloadConversation,
+  onProceedToStep2,
   isLoading,
 }) {
   const [input, setInput] = useState('');
@@ -112,16 +113,17 @@ export default function PromptEngineering({
               <button
                 className="proceed-button large"
                 onClick={async () => {
-                  // The state update should have already happened when prompt was finalized
-                  // Just reload conversation to ensure we have the latest state
-                  // This stays in the same window - no page reload
-                  if (onReloadConversation) {
+                  // Trigger transition to Step 2
+                  if (onProceedToStep2) {
+                    await onProceedToStep2();
+                  } else if (onReloadConversation) {
+                    // Fallback: reload conversation and let stage logic handle it
                     await onReloadConversation();
                   }
                   // Scroll to top smoothly
                   setTimeout(() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 100);
+                  }, 200);
                 }}
               >
                 → Continue to Step 2: Context Engineering

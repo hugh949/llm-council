@@ -214,6 +214,40 @@ function App() {
     return await api.suggestFinalPrompt(currentConversationId);
   };
 
+  const handleProceedToStep2 = async () => {
+    if (!currentConversationId) {
+      console.error('No conversation ID available');
+      return;
+    }
+    
+    setContextLoading(true);
+    
+    try {
+      console.log('Proceeding to Step 2: Context Engineering...');
+      // Initialize context engineering by sending an initialization message
+      // This marks context engineering as started and transitions to Step 2
+      const initMessage = "Ready to add context and attachments.";
+      const result = await api.sendContextEngineeringMessage(currentConversationId, initMessage);
+      
+      if (result && result.conversation) {
+        console.log('Context engineering initialized, updating state...');
+        setCurrentConversation(result.conversation);
+        console.log('Transitioned to Step 2 successfully');
+      } else {
+        // Fallback: reload conversation
+        console.log('No conversation in result, reloading...');
+        await loadConversation(currentConversationId);
+      }
+    } catch (error) {
+      console.error('Failed to proceed to Step 2:', error);
+      alert(`Error: ${error.message || 'Failed to proceed to Step 2. Please try again.'}`);
+      // Reload conversation to ensure state is consistent
+      await loadConversation(currentConversationId);
+    } finally {
+      setContextLoading(false);
+    }
+  };
+
   const handleFinalizePrompt = async (finalizedPrompt) => {
     if (!currentConversationId) {
       console.error('No conversation ID available');
@@ -722,6 +756,7 @@ function App() {
             onSuggestFinal={handleSuggestFinalPrompt}
             onFinalizePrompt={handleFinalizePrompt}
             onReloadConversation={() => loadConversation(currentConversationId)}
+            onProceedToStep2={handleProceedToStep2}
             isLoading={promptLoading}
           />
         );
