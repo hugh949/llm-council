@@ -977,37 +977,47 @@ function App() {
         currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
       }
 
-      // Re-calculate stage based on current conversation state (important for state updates)
+      // Get stage to render - prioritize explicit currentStep state
       let stageToRender;
       try {
-        stageToRender = getCurrentStage() || 'prompt_engineering';
+        // First check explicit currentStep state (most reliable)
+        if (currentStep) {
+          console.log('🎯 Using explicit currentStep state:', currentStep);
+          stageToRender = currentStep;
+        } else {
+          // Fallback to getCurrentStage calculation
+          stageToRender = getCurrentStage() || 'prompt_engineering';
+          console.log('📊 Using calculated stage from getCurrentStage():', stageToRender);
+        }
       } catch (error) {
-        console.error('Error in getCurrentStage:', error);
+        console.error('❌ Error determining stage:', error);
         // Fallback: determine stage directly based on conversation state
         if (promptEng.finalized_prompt && !contextEng.finalized_context) {
           stageToRender = 'context_engineering';
         } else if (!promptEng.finalized_prompt) {
-        stageToRender = 'prompt_engineering';
+          stageToRender = 'prompt_engineering';
         } else {
           stageToRender = 'prompt_engineering'; // Safe default
         }
       }
       
-      // DEFENSIVE CHECK: If prompt is finalized but we're still showing prompt_engineering,
-      // force switch to context_engineering (this should never happen, but just in case)
-      if (stageToRender === 'prompt_engineering' && promptEng.finalized_prompt && !contextEng.finalized_context) {
-        console.warn('⚠️ WARNING: Prompt is finalized but stage is still prompt_engineering. Forcing switch to context_engineering.');
-        stageToRender = 'context_engineering';
+      // CRITICAL SAFETY CHECK: If prompt is finalized, we MUST show Step 2
+      // This overrides everything else as a failsafe
+      if (promptEng.finalized_prompt && !contextEng.finalized_context) {
+        if (stageToRender !== 'context_engineering') {
+          console.warn('⚠️ SAFETY OVERRIDE: Prompt is finalized but stage is', stageToRender, '- Forcing to context_engineering');
+          stageToRender = 'context_engineering';
+        }
       }
       
-      console.log('Rendering stage:', stageToRender, {
+      console.log('🎬 FINAL stage to render:', stageToRender, {
+        explicitCurrentStep: currentStep,
         promptFinalized: !!promptEng.finalized_prompt,
         contextFinalized: !!contextEng.finalized_context,
         contextEngExists: !!currentConversation.context_engineering,
         contextMessages: Array.isArray(contextEng.messages) ? contextEng.messages.length : 0,
         councilMessages: councilDelib.messages?.length || 0,
-        conversationId: currentConversation.id,
-        stageDeterminedBy: 'getCurrentStage()'
+        conversationId: currentConversation.id
       });
 
     switch (stageToRender) {
