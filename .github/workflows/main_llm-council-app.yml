@@ -84,6 +84,9 @@ jobs:
         with:
           name: python-app
       
+      - name: Install Azure CLI
+        uses: azure/setup-az@v1
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -91,10 +94,54 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BA798101DEC34D62ABD58C04BC668CB4 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_67F6A97CB75D41F7B59C50165ADA51A2 }}
 
+      - name: Wait for any ongoing deployments to complete
+        run: |
+          echo "Checking for ongoing deployments..."
+          APP_NAME="llm-council-app"
+          RESOURCE_GROUP=$(az webapp show --name $APP_NAME --query resourceGroup -o tsv)
+          
+          if [ -z "$RESOURCE_GROUP" ]; then
+            echo "Could not find resource group for app. Proceeding with deployment..."
+            exit 0
+          fi
+          
+          MAX_WAIT=600  # 10 minutes max wait
+          WAIT_INTERVAL=15  # Check every 15 seconds
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # Check for active deployments
+            ACTIVE_DEPLOYMENTS=$(az webapp deployment list \
+              --name $APP_NAME \
+              --resource-group $RESOURCE_GROUP \
+              --query "[?status=='Running' || status=='InProgress'].id" \
+              -o tsv 2>/dev/null || echo "")
+            
+            if [ -z "$ACTIVE_DEPLOYMENTS" ]; then
+              echo "No active deployments found. Proceeding..."
+              break
+            fi
+            
+            echo "Active deployment(s) detected. Waiting... (${ELAPSED}s / ${MAX_WAIT}s)"
+            echo "Active deployment IDs: $ACTIVE_DEPLOYMENTS"
+            sleep $WAIT_INTERVAL
+            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "Warning: Timeout waiting for deployments. Proceeding anyway..."
+            echo "You may need to cancel stuck deployments manually in Azure Portal"
+          fi
+          
+          # Additional wait to ensure any locks are cleared
+          echo "Waiting an additional 5 seconds to ensure locks are cleared..."
+          sleep 5
+
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         continue-on-error: false
+        timeout-minutes: 20
         with:
           app-name: 'llm-council-app'
           slot-name: 'Production'
