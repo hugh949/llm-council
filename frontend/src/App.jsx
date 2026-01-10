@@ -16,7 +16,7 @@ function App() {
   const [promptLoading, setPromptLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
-  const [forcedStage, setForcedStage] = useState(null); // Force a specific stage during transitions
+  const [currentStep, setCurrentStep] = useState(null); // Explicitly track current step: 'prompt_engineering', 'context_engineering', 'review', 'council_deliberation'
 
   // Load conversations on mount
   useEffect(() => {
@@ -165,18 +165,14 @@ function App() {
     }
   };
 
-  // Determine current stage
-  const getCurrentStage = () => {
-    // CRITICAL: If we have a forced stage (set during transitions), use it immediately
-    // This ensures smooth transitions without waiting for state propagation
-    if (forcedStage) {
-      console.log('🔍 getCurrentStage: Using FORCED stage:', forcedStage);
-      return forcedStage;
-    }
-    
+  // Sync currentStep with conversation state when conversation changes
+  // IMPORTANT: Only depend on currentConversation to avoid infinite loops
+  useEffect(() => {
     if (!currentConversation) {
-      console.log('🔍 getCurrentStage: No conversation, returning prompt_engineering');
-      return 'prompt_engineering'; // Default to first stage
+      if (currentStep !== null) {
+        setCurrentStep(null);
+      }
+      return;
     }
 
     const promptEng = currentConversation.prompt_engineering || {};
@@ -187,61 +183,66 @@ function App() {
     const contextFinalized = !!contextEng.finalized_context;
     const councilMessages = Array.isArray(councilDelib.messages) ? councilDelib.messages : [];
     
-    // Check if context engineering has been started (has messages/documents/files/links)
-    // Use Array.isArray to safely check array lengths
-    const messagesArray = Array.isArray(contextEng.messages) ? contextEng.messages : [];
-    const documentsArray = Array.isArray(contextEng.documents) ? contextEng.documents : [];
-    const filesArray = Array.isArray(contextEng.files) ? contextEng.files : [];
-    const linksArray = Array.isArray(contextEng.links) ? contextEng.links : [];
+    let calculatedStep;
+    if (!promptFinalized) {
+      calculatedStep = 'prompt_engineering';
+    } else if (!contextFinalized) {
+      calculatedStep = 'context_engineering';
+    } else if (contextFinalized && councilMessages.length === 0) {
+      calculatedStep = 'review';
+    } else {
+      calculatedStep = 'council_deliberation';
+    }
+
+    // Only update if different to avoid unnecessary re-renders
+    // Use a ref check to compare without causing dependency issues
+    setCurrentStep(prevStep => {
+      if (prevStep !== calculatedStep) {
+        console.log('🔄 Auto-syncing currentStep:', {
+          from: prevStep,
+          to: calculatedStep,
+          conversationId: currentConversation.id,
+          promptFinalized,
+          contextFinalized
+        });
+        return calculatedStep;
+      }
+      return prevStep;
+    });
+  }, [currentConversation]); // Only depend on currentConversation - use functional update to avoid currentStep dependency
+
+  // Get the current stage - use explicit currentStep state
+  const getCurrentStage = () => {
+    // If we have an explicit step set, use it (takes precedence)
+    if (currentStep) {
+      return currentStep;
+    }
     
-    const contextStarted = messagesArray.length > 0 ||
-                          documentsArray.length > 0 ||
-                          filesArray.length > 0 ||
-                          linksArray.length > 0;
+    // Fallback: calculate from conversation
+    if (!currentConversation) {
+      return 'prompt_engineering';
+    }
 
-    // Detailed logging for debugging - this helps track the transition
-    const stageDebug = {
-      conversationId: currentConversation.id,
-      promptFinalized,
-      finalizedPromptExists: !!promptEng.finalized_prompt,
-      finalizedPromptLength: promptEng.finalized_prompt?.length || 0,
-      contextStarted,
-      contextFinalized,
-      messagesCount: messagesArray.length,
-      documentsCount: documentsArray.length,
-      filesCount: filesArray.length,
-      linksCount: linksArray.length,
-      councilMessagesCount: councilMessages.length
-    };
-    console.log('🔍 getCurrentStage evaluation:', stageDebug);
+    const promptEng = currentConversation.prompt_engineering || {};
+    const contextEng = currentConversation.context_engineering || {};
+    const councilDelib = currentConversation.council_deliberation || {};
 
-    // CRITICAL STAGE DETERMINATION LOGIC:
-    // Order matters! Check in this exact sequence:
-    // 1. If prompt NOT finalized -> Step 1 (Prompt Engineering)
-    // 2. If prompt IS finalized but context NOT finalized -> Step 2 (Context Engineering) ← WE WANT THIS
-    // 3. If context IS finalized but no council messages -> Review stage
-    // 4. If council messages exist -> Step 3 (Council Deliberation)
+    const promptFinalized = !!promptEng.finalized_prompt;
+    const contextFinalized = !!contextEng.finalized_context;
+    const councilMessages = Array.isArray(councilDelib.messages) ? councilDelib.messages : [];
     
     if (!promptFinalized) {
-      console.log('✅ getCurrentStage: Returning "prompt_engineering" (prompt not finalized)');
       return 'prompt_engineering';
     }
     
-    // THIS IS THE KEY: If prompt is finalized, immediately go to Step 2
-    // We don't wait for context to be "started" - as soon as prompt is finalized, show Step 2
     if (!contextFinalized) {
-      console.log('✅ getCurrentStage: Returning "context_engineering"');
-      console.log('   → Prompt is finalized, context is not finalized');
-      console.log('   → Step 2 (Context Engineering) should now render!');
       return 'context_engineering';
     }
     
     if (contextFinalized && councilMessages.length === 0) {
-      console.log('✅ getCurrentStage: Returning "review" (context finalized, no council messages)');
       return 'review';
     }
     
-    console.log('✅ getCurrentStage: Returning "council_deliberation"');
     return 'council_deliberation';
   };
 
@@ -511,29 +512,23 @@ function App() {
         throw new Error('Prompt finalization verification failed - finalized_prompt is empty');
       }
       
-      // CRITICAL FIX: Force the stage to 'context_engineering' immediately
-      // This ensures the transition happens even if getCurrentStage() logic has issues
-      console.log('🔄 Forcing stage to "context_engineering" for immediate transition...');
-      setForcedStage('context_engineering');
+      // CRITICAL: Update conversation state FIRST, then set step
+      // This ensures useEffect sees the finalized prompt and won't override our explicit step
+      console.log('🔄 Updating conversation state first...');
+      setCurrentConversation(newConversationObject);
+      
+      // THEN explicitly set step - this will trigger immediate re-render with Step 2
+      // The useEffect will see conversation is updated and won't override since calculated step matches
+      console.log('🎯 EXPLICITLY setting currentStep to "context_engineering"');
+      setCurrentStep('context_engineering');
       
       // Clear loading state
       setPromptLoading(false);
       
-      // Update conversation state - this triggers React re-render
-      console.log('🔄 Calling setCurrentConversation() - this triggers re-render...');
-      setCurrentConversation(newConversationObject);
-      
-      // Clear forced stage after a brief moment to let React render with it
-      // Then getCurrentStage() will use the conversation state
-      setTimeout(() => {
-        console.log('🔄 Clearing forced stage - getCurrentStage() will now use conversation state');
-        setForcedStage(null);
-      }, 100);
-      
-      console.log('✅ State update complete!');
-      console.log('✅ Forced stage set to "context_engineering"');
-      console.log('✅ React will now re-render with Step 2 (Context Engineering)');
-      console.log('✅ Step 2 should be visible immediately!');
+      console.log('✅ Transition initiated!');
+      console.log('✅ Conversation state updated with finalized prompt');
+      console.log('✅ currentStep explicitly set to "context_engineering"');
+      console.log('✅ React will re-render NOW - Step 2 (ContextEngineering) should appear!');
       
     } catch (error) {
       console.error('❌ Failed to finalize prompt:', error);
