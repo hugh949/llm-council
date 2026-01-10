@@ -361,46 +361,28 @@ function App() {
       });
       
       // Automatically proceed to Step 2 after prompt is finalized
-      // This provides a smooth, automatic flow - no manual button click needed
-      console.log('Prompt finalized successfully, automatically proceeding to Step 2 (RAG/Context Engineering)...');
+      // The stage logic will automatically show Step 2 once prompt is finalized
+      // We don't need to send an initialization message - just ensure context_engineering structure exists
+      console.log('Prompt finalized successfully, automatically transitioning to Step 2 (RAG/Context Engineering)...');
       
-      // Directly send initialization message to context engineering to mark it as started
-      // This ensures immediate transition to Step 2 without requiring a button click
-      const welcomeMessage = "Ready to add context and attachments.";
-      const contextResult = await api.sendContextEngineeringMessage(currentConversationId, welcomeMessage);
+      // Ensure context_engineering structure exists in the conversation
+      // Even if empty, this ensures Step 2 will render properly
+      const updatedConv = {
+        ...reloadedConv,
+        context_engineering: reloadedConv.context_engineering || {
+          messages: [],
+          documents: [],
+          files: [],
+          links: [],
+          finalized_context: null
+        }
+      };
       
-      if (contextResult && contextResult.conversation && contextResult.conversation.id) {
-        // Update state immediately with the context engineering message
-        const contextConv = contextResult.conversation;
-        const finalUpdatedConv = {
-          ...contextConv,
-          prompt_engineering: contextConv.prompt_engineering || reloadedConv.prompt_engineering || { messages: [], finalized_prompt: null },
-          context_engineering: {
-            ...(contextConv.context_engineering || {}),
-            messages: Array.isArray(contextConv.context_engineering?.messages) ? contextConv.context_engineering.messages : [],
-            documents: Array.isArray(contextConv.context_engineering?.documents) ? contextConv.context_engineering.documents : [],
-            files: Array.isArray(contextConv.context_engineering?.files) ? contextConv.context_engineering.files : [],
-            links: Array.isArray(contextConv.context_engineering?.links) ? contextConv.context_engineering.links : [],
-            finalized_context: contextConv.context_engineering?.finalized_context || null
-          },
-          council_deliberation: contextConv.council_deliberation || reloadedConv.council_deliberation || { messages: [] }
-        };
-        
-        console.log('Updating state with context engineering initialized:', {
-          id: finalUpdatedConv.id,
-          contextMessages: finalUpdatedConv.context_engineering.messages.length,
-          promptFinalized: !!finalUpdatedConv.prompt_engineering.finalized_prompt
-        });
-        
-        // Update state - this will trigger re-render and show Step 2 automatically
-        setCurrentConversation(finalUpdatedConv);
-        
-        console.log('Automatically transitioned to Step 2: Context Engineering (RAG UI)');
-      } else {
-        console.error('Failed to initialize context engineering, falling back to manual transition');
-        // If automatic transition fails, reload to ensure state is consistent
-        await loadConversation(currentConversationId);
-      }
+      // Update state - this will trigger re-render and show Step 2 automatically
+      // getCurrentStage() will return 'context_engineering' since prompt is finalized
+      setCurrentConversation(updatedConv);
+      
+      console.log('Automatically transitioned to Step 2: Context Engineering (RAG UI)');
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
@@ -838,9 +820,16 @@ function App() {
         );
       }
 
+      // Ensure all data structures exist with proper defaults
       const promptEng = currentConversation.prompt_engineering || { messages: [], finalized_prompt: null };
       const contextEng = currentConversation.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null };
       const councilDelib = currentConversation.council_deliberation || { messages: [] };
+
+      // Ensure context_engineering structure is always valid (even if empty)
+      if (!currentConversation.context_engineering) {
+        // If context_engineering doesn't exist yet, ensure it's initialized as empty object
+        currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
+      }
 
       // Re-calculate stage based on current conversation state (important for state updates)
       let stageToRender;
@@ -854,6 +843,8 @@ function App() {
       console.log('Rendering stage:', stageToRender, {
         promptFinalized: !!promptEng.finalized_prompt,
         contextFinalized: !!contextEng.finalized_context,
+        contextEngExists: !!currentConversation.context_engineering,
+        contextMessages: Array.isArray(contextEng.messages) ? contextEng.messages.length : 0,
         councilMessages: councilDelib.messages?.length || 0,
         conversationId: currentConversation.id
       });

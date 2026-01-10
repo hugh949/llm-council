@@ -14,12 +14,12 @@ def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]
         "title": conversation.title or "New Conversation",
     }
     
-    # Get JSON fields with defaults
-    prompt_eng = conversation.prompt_engineering or {}
-    context_eng = conversation.context_engineering or {}
-    council_delib = conversation.council_deliberation or {}
+    # Get JSON fields with defaults - always ensure they exist
+    prompt_eng = conversation.prompt_engineering if conversation.prompt_engineering is not None else {}
+    context_eng = conversation.context_engineering if conversation.context_engineering is not None else {}
+    council_delib = conversation.council_deliberation if conversation.council_deliberation is not None else {}
     
-    # Ensure structure
+    # Ensure structure for prompt_engineering
     if not isinstance(prompt_eng, dict):
         prompt_eng = {}
     if "messages" not in prompt_eng:
@@ -27,6 +27,7 @@ def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]
     if "finalized_prompt" not in prompt_eng:
         prompt_eng["finalized_prompt"] = None
     
+    # Ensure structure for context_engineering - always initialize even if empty
     if not isinstance(context_eng, dict):
         context_eng = {}
     if "messages" not in context_eng:
@@ -40,6 +41,7 @@ def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]
     if "finalized_context" not in context_eng:
         context_eng["finalized_context"] = None
     
+    # Ensure structure for council_deliberation
     if not isinstance(council_delib, dict):
         council_delib = {}
     if "messages" not in council_delib:
