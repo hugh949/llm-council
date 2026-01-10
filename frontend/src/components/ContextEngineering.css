@@ -678,9 +678,95 @@
   border-top: 1px solid #ddd;
 }
 
-/* Add padding to bottom of component to account for sticky bar */
-.context-engineering {
-  padding-bottom: 120px;
+/* Package context bar - always visible when context not finalized */
+.package-context-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  padding: 20px 24px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  border-top: 3px solid #2e7d32;
+}
+
+.package-context-bar .package-bar-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.package-context-bar .package-bar-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.package-context-bar .package-bar-text strong {
+  display: block;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.package-context-bar .package-bar-text p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.package-context-bar .package-button {
+  flex-shrink: 0;
+  padding: 16px 32px;
+  background: white;
+  color: #4caf50;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  min-width: 280px;
+}
+
+.package-context-bar .package-button:hover:not(:disabled) {
+  background: #f0f8f0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.package-context-bar .package-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.package-context-bar .package-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 768px) {
+  .package-context-bar .package-bar-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .package-context-bar .package-button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .package-context-bar {
+    padding: 16px 20px;
+  }
 }
 
 @media (max-width: 768px) {

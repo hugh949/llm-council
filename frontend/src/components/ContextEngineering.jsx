@@ -376,17 +376,32 @@ export default function ContextEngineering({
               >
                 Send
               </button>
-              <button
-                type="button"
-                className="package-button"
-                onClick={handlePackageContext}
-                disabled={isLoading}
-                title="Package context and proceed to review. Attachments are optional."
-              >
-                Package Context & Proceed to Review
-              </button>
             </div>
           </form>
+        </div>
+      )}
+      
+      {/* Always visible package button bar - shown when context is not yet finalized */}
+      {!finalizedContext && (
+        <div className="package-context-bar sticky-bottom">
+          <div className="package-bar-content">
+            <div className="package-bar-text">
+              <strong>Ready to proceed?</strong>
+              <p>
+                {totalAttachments > 0 
+                  ? `You have ${totalAttachments} attachment${totalAttachments !== 1 ? 's' : ''} ready. `
+                  : 'You can add attachments or '}
+                Package your context to continue to the Review stage and then Step 3.
+              </p>
+            </div>
+            <button
+              className="package-button large"
+              onClick={handlePackageContext}
+              disabled={isLoading || contextLoading}
+            >
+              {contextLoading ? 'Packaging...' : '→ Package Context & Continue'}
+            </button>
+          </div>
         </div>
       )}
     </div>
