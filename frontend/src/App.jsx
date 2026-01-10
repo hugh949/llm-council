@@ -410,44 +410,18 @@ function App() {
         return;
       }
       
-      // CRITICAL FIX: Update state with the finalized conversation
-      // This must happen synchronously before any async operations
+      // CRITICAL FIX: Update state immediately with the finalized conversation
+      // This will trigger React to re-render and getCurrentStage() will return 'context_engineering'
       console.log('🔄 Setting conversation state with finalized prompt...');
       setCurrentConversation(updatedConv);
       
-      // Force React to recognize the state change by creating a new object reference
-      // This ensures React's reconciliation detects the change
-      await new Promise(resolve => {
-        // Use requestAnimationFrame to ensure state update is processed
-        requestAnimationFrame(() => {
-          resolve();
-        });
+      console.log('✅ State update completed:', {
+        id: updatedConv.id,
+        promptFinalized: isPromptFinalized,
+        hasContextEng: !!updatedConv.context_engineering,
+        expectedStage: 'context_engineering',
+        note: 'React will now re-render and show Step 2'
       });
-      
-      // Now reload once more to get the absolute latest state from server
-      // This ensures we have the exact same state as the backend
-      console.log('🔄 Final reload to sync with backend state...');
-      const finalConv = await loadConversation(currentConversationId);
-      
-      if (finalConv && finalConv.id) {
-        // Double-check the prompt is finalized
-        const promptIsFinal = !!finalConv.prompt_engineering?.finalized_prompt;
-        console.log('✅ Final conversation state:', {
-          id: finalConv.id,
-          promptFinalized: promptIsFinal,
-          hasContextEng: !!finalConv.context_engineering,
-          stageShouldBe: promptIsFinal ? 'context_engineering' : 'prompt_engineering'
-        });
-        
-        if (promptIsFinal) {
-          // Update state one more time with the server's version
-          setCurrentConversation(finalConv);
-          console.log('✅ State fully synchronized - Step 2 should now render');
-        } else {
-          console.error('❌ ERROR: Prompt not finalized after reload!');
-          alert('Error: Failed to finalize prompt. Please try again.');
-        }
-      }
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
