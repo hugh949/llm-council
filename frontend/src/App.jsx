@@ -151,6 +151,7 @@ function App() {
   // Determine current stage
   const getCurrentStage = () => {
     if (!currentConversation) {
+      console.log('getCurrentStage: No conversation, returning prompt_engineering');
       return 'prompt_engineering'; // Default to first stage
     }
 
@@ -158,29 +159,54 @@ function App() {
     const contextEng = currentConversation.context_engineering || {};
     const councilDelib = currentConversation.council_deliberation || {};
 
-    const promptFinalized = promptEng.finalized_prompt;
-    const contextFinalized = contextEng.finalized_context;
-    const councilMessages = councilDelib.messages || [];
+    const promptFinalized = !!promptEng.finalized_prompt;
+    const contextFinalized = !!contextEng.finalized_context;
+    const councilMessages = Array.isArray(councilDelib.messages) ? councilDelib.messages : [];
     
     // Check if context engineering has been started (has messages/documents/files/links)
-    const contextStarted = (contextEng.messages && contextEng.messages.length > 0) ||
-                          (contextEng.documents && contextEng.documents.length > 0) ||
-                          (contextEng.files && contextEng.files.length > 0) ||
-                          (contextEng.links && contextEng.links.length > 0);
+    // Use Array.isArray to safely check array lengths
+    const messagesArray = Array.isArray(contextEng.messages) ? contextEng.messages : [];
+    const documentsArray = Array.isArray(contextEng.documents) ? contextEng.documents : [];
+    const filesArray = Array.isArray(contextEng.files) ? contextEng.files : [];
+    const linksArray = Array.isArray(contextEng.links) ? contextEng.links : [];
+    
+    const contextStarted = messagesArray.length > 0 ||
+                          documentsArray.length > 0 ||
+                          filesArray.length > 0 ||
+                          linksArray.length > 0;
+
+    // Log stage determination for debugging
+    const stageDebug = {
+      promptFinalized,
+      contextStarted,
+      contextFinalized,
+      messagesCount: messagesArray.length,
+      documentsCount: documentsArray.length,
+      filesCount: filesArray.length,
+      linksCount: linksArray.length,
+      councilMessagesCount: councilMessages.length
+    };
+    console.log('getCurrentStage evaluation:', stageDebug);
 
     // Stage determination logic
     // Stay in prompt_engineering if prompt is finalized but context hasn't been started yet
     // This allows user to see the completion message before moving to Step 2
     if (!promptFinalized) {
+      console.log('getCurrentStage: Returning prompt_engineering (prompt not finalized)');
       return 'prompt_engineering';
     } else if (promptFinalized && !contextStarted && !contextFinalized) {
       // Prompt is finalized but context hasn't been started - show completion UI
+      console.log('getCurrentStage: Returning prompt_engineering (context not started)');
       return 'prompt_engineering';
     } else if (!contextFinalized) {
+      // Context is started but not finalized - show context_engineering stage
+      console.log('getCurrentStage: Returning context_engineering (prompt finalized, context started, not finalized)');
       return 'context_engineering';
     } else if (contextFinalized && councilMessages.length === 0) {
+      console.log('getCurrentStage: Returning review (context finalized, no council messages)');
       return 'review';
     } else {
+      console.log('getCurrentStage: Returning council_deliberation');
       return 'council_deliberation';
     }
   };
@@ -224,6 +250,11 @@ function App() {
     
     try {
       console.log('Proceeding to Step 2: Context Engineering...');
+      console.log('Current conversation before proceeding:', {
+        id: currentConversation?.id,
+        promptFinalized: !!currentConversation?.prompt_engineering?.finalized_prompt,
+        contextMessages: currentConversation?.context_engineering?.messages?.length || 0
+      });
       
       // Send an initialization message to context engineering
       // This marks context engineering as started and transitions to Step 2
@@ -232,48 +263,53 @@ function App() {
       // Use the API directly to avoid double state updates from handleContextEngineeringMessage
       const result = await api.sendContextEngineeringMessage(currentConversationId, welcomeMessage);
       
+      console.log('API response received:', {
+        hasResult: !!result,
+        hasConversation: !!result?.conversation,
+        conversationId: result?.conversation?.id,
+        contextMessages: result?.conversation?.context_engineering?.messages?.length || 0,
+        contextMessagesData: result?.conversation?.context_engineering?.messages
+      });
+      
       if (result && result.conversation && result.conversation.id) {
-        console.log('Context engineering message sent, updating state...', {
-          id: result.conversation.id,
-          contextMessages: result.conversation.context_engineering?.messages?.length || 0
-        });
+        // Always reload from server immediately to get the complete, latest state
+        // This ensures getCurrentStage() will correctly identify context_engineering stage
+        console.log('Reloading conversation to get complete state...');
+        const reloadedConv = await loadConversation(currentConversationId);
         
-        // Update state immediately with API response to provide instant feedback
-        // Ensure complete data structure to prevent blank screens
-        const apiConv = result.conversation;
-        const updatedConv = {
-          ...apiConv,
-          prompt_engineering: apiConv.prompt_engineering || currentConversation?.prompt_engineering || { messages: [], finalized_prompt: null },
-          context_engineering: {
-            messages: apiConv.context_engineering?.messages || [],
-            documents: apiConv.context_engineering?.documents || [],
-            files: apiConv.context_engineering?.files || [],
-            links: apiConv.context_engineering?.links || [],
-            finalized_context: apiConv.context_engineering?.finalized_context || null
-          },
-          council_deliberation: apiConv.council_deliberation || currentConversation?.council_deliberation || { messages: [] }
-        };
-        
-        setCurrentConversation(updatedConv);
-        
-        // Reload from server after a brief delay to ensure complete state
-        // This prevents blank screens while ensuring we have the latest data
-        setTimeout(async () => {
-          console.log('Reloading conversation to ensure complete state...');
-          try {
-            const reloadedConv = await loadConversation(currentConversationId);
-            if (reloadedConv && reloadedConv.id) {
-              console.log('Transitioned to Step 2 successfully:', {
-                id: reloadedConv.id,
-                contextMessages: reloadedConv.context_engineering?.messages?.length || 0,
-                contextStarted: !!(reloadedConv.context_engineering?.messages?.length > 0)
-              });
-            }
-          } catch (reloadError) {
-            console.error('Error reloading conversation, but state is already updated:', reloadError);
-            // State was already updated from API response, so UI should work
-          }
-        }, 300);
+        if (reloadedConv && reloadedConv.id) {
+          console.log('Conversation reloaded successfully, state should now be updated:', {
+            id: reloadedConv.id,
+            contextMessages: reloadedConv.context_engineering?.messages?.length || 0,
+            contextMessagesData: reloadedConv.context_engineering?.messages,
+            contextDocuments: reloadedConv.context_engineering?.documents?.length || 0,
+            contextFiles: reloadedConv.context_engineering?.files?.length || 0,
+            contextLinks: reloadedConv.context_engineering?.links?.length || 0,
+            contextStarted: !!(reloadedConv.context_engineering?.messages?.length > 0 || 
+                              reloadedConv.context_engineering?.documents?.length > 0 ||
+                              reloadedConv.context_engineering?.files?.length > 0 ||
+                              reloadedConv.context_engineering?.links?.length > 0),
+            promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
+            contextFinalized: !!reloadedConv.context_engineering?.finalized_context
+          });
+          
+          // Verify that getCurrentStage will return 'context_engineering'
+          const testContextEng = reloadedConv.context_engineering || {};
+          const testContextStarted = (testContextEng.messages && testContextEng.messages.length > 0) ||
+                                    (testContextEng.documents && testContextEng.documents.length > 0) ||
+                                    (testContextEng.files && testContextEng.files.length > 0) ||
+                                    (testContextEng.links && testContextEng.links.length > 0);
+          
+          console.log('Stage transition check:', {
+            promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
+            contextStarted: testContextStarted,
+            contextFinalized: !!testContextEng.finalized_context,
+            expectedStage: (!!reloadedConv.prompt_engineering?.finalized_prompt && testContextStarted && !testContextEng.finalized_context) ? 'context_engineering' : 'unknown'
+          });
+        } else {
+          console.error('Failed to reload conversation after proceeding to Step 2');
+          alert('Error: Failed to load conversation state. Please refresh the page.');
+        }
       } else {
         console.warn('No valid conversation in result, reloading...');
         await loadConversation(currentConversationId);
