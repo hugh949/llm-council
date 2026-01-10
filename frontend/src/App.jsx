@@ -348,35 +348,58 @@ function App() {
       const result = await api.finalizePrompt(currentConversationId, finalizedPrompt);
       console.log('Finalize prompt result:', result);
       
-      // Always reload from server after finalization to ensure consistent, complete state
-      // This prevents blank screens from incomplete state updates
-      // Don't clear currentConversation during reload - keep existing state visible
-      console.log('Reloading conversation to ensure consistent state...');
-      const reloadedConv = await loadConversation(currentConversationId);
-      
-      // Verify we have valid conversation data before proceeding
-      if (!reloadedConv || !reloadedConv.id) {
-        console.error('Failed to reload conversation - got invalid data');
-        // Don't throw - keep existing conversation state to prevent blank screen
-        // The error was already shown in loadConversation
-        return;
+      // Use the API response immediately to update state
+      if (result && result.conversation && result.conversation.id) {
+        // Update state immediately with the finalized prompt
+        const apiConv = result.conversation;
+        const updatedConv = {
+          ...apiConv,
+          prompt_engineering: apiConv.prompt_engineering || currentConversation?.prompt_engineering || { messages: [], finalized_prompt: null },
+          context_engineering: apiConv.context_engineering || currentConversation?.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null },
+          council_deliberation: apiConv.council_deliberation || currentConversation?.council_deliberation || { messages: [] }
+        };
+        
+        console.log('Updating state with finalized prompt:', {
+          id: updatedConv.id,
+          promptFinalized: !!updatedConv.prompt_engineering.finalized_prompt
+        });
+        
+        setCurrentConversation(updatedConv);
+        
+        // Automatically proceed to Step 2 after prompt is finalized
+        // This provides a smooth, automatic flow without requiring an extra click
+        console.log('Prompt finalized successfully, automatically proceeding to Step 2...');
+        
+        // Small delay to ensure state update is processed, then proceed to Step 2
+        setTimeout(async () => {
+          try {
+            await handleProceedToStep2();
+            console.log('Automatically transitioned to Step 2');
+          } catch (step2Error) {
+            console.error('Error automatically proceeding to Step 2:', step2Error);
+            // Non-critical - user can manually proceed if needed
+          }
+        }, 200);
+      } else {
+        // Fallback: reload conversation if API response is invalid
+        console.log('Reloading conversation to ensure consistent state...');
+        const reloadedConv = await loadConversation(currentConversationId);
+        
+        if (reloadedConv && reloadedConv.id) {
+          console.log('Conversation reloaded successfully, automatically proceeding to Step 2...');
+          
+          // Automatically proceed to Step 2 after reload
+          setTimeout(async () => {
+            try {
+              await handleProceedToStep2();
+            } catch (step2Error) {
+              console.error('Error automatically proceeding to Step 2:', step2Error);
+            }
+          }, 200);
+        }
       }
-      
-      console.log('Conversation reloaded successfully:', {
-        id: reloadedConv.id,
-        promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
-        contextFinalized: !!reloadedConv.context_engineering?.finalized_context,
-        hasMessages: !!reloadedConv.prompt_engineering?.messages?.length
-      });
-      
-      // The reload will update currentConversation state and trigger re-render
-      // getCurrentStage() will detect finalized_prompt and show completion UI
-      // If finalized_prompt exists, it will show the completion section
-      // If not, it will stay in prompt_engineering stage
-      console.log('State updated, UI should re-render automatically');
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
-      // Don't clear currentConversation on error - keep existing state visible
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
       throw error; // Re-throw so component can handle it
     } finally {
