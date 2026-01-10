@@ -96,15 +96,9 @@ jobs:
           echo "Checking for ongoing deployments..."
           APP_NAME="llm-council-app"
           
-          # Try to get resource group - handle errors gracefully
-          RESOURCE_GROUP=""
-          if RESOURCE_GROUP=$(az webapp show --name "$APP_NAME" --query resourceGroup -o tsv 2>/dev/null); then
-            if [ -z "$RESOURCE_GROUP" ]; then
-              echo "Could not determine resource group. Trying alternative method..."
-              # Try listing all web apps and finding by name
-              RESOURCE_GROUP=$(az webapp list --query "[?name=='$APP_NAME'].resourceGroup" -o tsv 2>/dev/null | head -n 1)
-            fi
-          fi
+          # Get resource group by listing all web apps and finding by name
+          # This works because we have the app name
+          RESOURCE_GROUP=$(az webapp list --query "[?name=='$APP_NAME'].resourceGroup" -o tsv 2>/dev/null | head -n 1 || echo "")
           
           if [ -z "$RESOURCE_GROUP" ]; then
             echo "Warning: Could not find resource group for app '$APP_NAME'"
@@ -141,7 +135,8 @@ jobs:
               --resource-group "$RESOURCE_GROUP" \
               --query "[?status=='Running' || status=='InProgress'].id" \
               -o tsv 2>/dev/null); then
-              ACTIVE_COUNT=$(echo "$ACTIVE_LIST" | grep -v '^$' | wc -l || echo "0")
+              # Count non-empty lines
+              ACTIVE_COUNT=$(echo "$ACTIVE_LIST" | grep -c . || echo "0")
             fi
             
             if [ "$ACTIVE_COUNT" = "0" ] || [ -z "$ACTIVE_COUNT" ]; then
