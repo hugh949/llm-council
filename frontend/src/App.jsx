@@ -43,9 +43,22 @@ function App() {
       console.log('   Conversation ID:', currentConversation.id);
       console.log('   Prompt finalized:', promptFinalized);
       console.log('   Finalized prompt length:', promptEng.finalized_prompt?.length || 0);
+      console.log('   Finalized prompt preview:', promptEng.finalized_prompt?.substring(0, 100) || 'NONE');
       console.log('   Context finalized:', contextFinalized);
+      console.log('   Context finalized value:', contextEng.finalized_context);
       console.log('   Expected stage:', promptFinalized && !contextFinalized ? 'context_engineering (Step 2)' : 'other');
-      console.log('   Actual stage (from getCurrentStage):', getCurrentStage());
+      
+      // Calculate what stage should be shown
+      let expectedStage;
+      if (!promptFinalized) {
+        expectedStage = 'prompt_engineering';
+      } else if (!contextFinalized) {
+        expectedStage = 'context_engineering';
+      } else {
+        expectedStage = 'review or council_deliberation';
+      }
+      console.log('   Expected stage:', expectedStage);
+      console.log('   React will now re-render and call renderStage()');
     } else {
       console.log('   No conversation (null)');
     }
