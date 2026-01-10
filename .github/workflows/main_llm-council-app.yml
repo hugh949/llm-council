@@ -84,9 +84,6 @@ jobs:
         with:
           name: python-app
       
-      - name: Install Azure CLI
-        uses: azure/setup-az@v1
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
