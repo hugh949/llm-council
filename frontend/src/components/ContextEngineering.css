@@ -633,7 +633,7 @@
 
 .step-transition-bar .transition-text strong {
   display: block;
-  color: white;
+  color: #e2e8f0;
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 4px;
@@ -641,7 +641,7 @@
 
 .step-transition-bar .transition-text p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(226, 232, 240, 0.9);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -753,9 +753,11 @@
 }
 
 .package-context-bar .package-button:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.8);
+  background: #2d5016;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
