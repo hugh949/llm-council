@@ -18,6 +18,7 @@ function App() {
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
   const [currentStep, setCurrentStep] = useState(null); // Explicitly track current step: 'prompt_engineering', 'context_engineering', 'review', 'council_deliberation'
   const [stepLocked, setStepLocked] = useState(false); // Flag to prevent useEffect from overriding explicit step sets during transitions
+  const [forceShowStep2, setForceShowStep2] = useState(false); // WORKAROUND: Simple flag to force Step 2 display after finalizing prompt
 
   // Load conversations on mount
   useEffect(() => {
@@ -526,32 +527,34 @@ function App() {
         throw new Error('Prompt finalization verification failed - finalized_prompt is empty');
       }
       
-      // CRITICAL: Lock step first to prevent useEffect from overriding
-      console.log('🔒 LOCKING step to prevent auto-sync override');
-      setStepLocked(true);
+      // WORKAROUND: Set simple boolean flag to force Step 2 display
+      // This bypasses all complex state logic and directly triggers Step 2 rendering
+      console.log('🎯 WORKAROUND: Setting forceShowStep2 flag to TRUE');
+      setForceShowStep2(true);
       
       // Update conversation state
       console.log('🔄 Updating conversation state...');
       setCurrentConversation(newConversationObject);
       
-      // EXPLICITLY set step to 'context_engineering' - this MUST happen
-      console.log('🎯 EXPLICITLY setting currentStep to "context_engineering"');
+      // Also set step state (backup)
+      console.log('🎯 Setting currentStep to "context_engineering" (backup)');
       setCurrentStep('context_engineering');
+      setStepLocked(true);
       
       // Clear loading state
       setPromptLoading(false);
       
-      // Unlock after a brief delay to allow render to complete
-      // This ensures the step stays locked during the critical transition period
+      // Clear the workaround flag after a delay (once Step 2 is rendered, normal logic takes over)
       setTimeout(() => {
-        console.log('🔓 Unlocking step after transition');
+        console.log('🔓 Clearing forceShowStep2 flag - normal logic will handle from here');
+        setForceShowStep2(false);
         setStepLocked(false);
-      }, 500);
+      }, 1000);
       
-      console.log('✅ Transition complete!');
-      console.log('✅ Step is LOCKED to "context_engineering"');
-      console.log('✅ Conversation updated with finalized prompt');
+      console.log('✅ WORKAROUND activated!');
+      console.log('✅ forceShowStep2 = true');
       console.log('✅ React will re-render NOW - Step 2 (ContextEngineering) MUST appear!');
+      console.log('✅ This bypasses all complex stage determination logic');
       
     } catch (error) {
       console.error('❌ Failed to finalize prompt:', error);
@@ -976,6 +979,52 @@ function App() {
     }
   };
 
+  // Helper function to render ContextEngineering - extracted for reuse
+  const renderContextEngineering = () => {
+    if (!currentConversationId || !currentConversation) {
+      return (
+        <div className="empty-state">
+          <h2>Loading Context Engineering...</h2>
+          <p>Preparing Step 2...</p>
+          <button onClick={() => loadConversation(currentConversationId)}>Reload</button>
+        </div>
+      );
+    }
+
+    const promptEng = currentConversation.prompt_engineering || { messages: [], finalized_prompt: null };
+    const contextEng = currentConversation.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null };
+    
+    const safeContextEng = {
+      messages: Array.isArray(contextEng.messages) ? contextEng.messages : [],
+      documents: Array.isArray(contextEng.documents) ? contextEng.documents : [],
+      files: Array.isArray(contextEng.files) ? contextEng.files : [],
+      links: Array.isArray(contextEng.links) ? contextEng.links : [],
+      finalized_context: contextEng.finalized_context || null
+    };
+    
+    const finalizedPrompt = promptEng.finalized_prompt || null;
+    
+    return (
+      <ContextEngineering
+        conversationId={currentConversationId}
+        finalizedPrompt={finalizedPrompt}
+        messages={safeContextEng.messages}
+        documents={safeContextEng.documents}
+        files={safeContextEng.files}
+        links={safeContextEng.links}
+        finalizedContext={safeContextEng.finalized_context}
+        onSendMessage={handleContextEngineeringMessage}
+        onAddDocument={handleAddDocument}
+        onUploadFile={handleUploadFile}
+        onAddLink={handleAddLink}
+        onPackageContext={handlePackageContext}
+        onEditPrompt={handleEditPrompt}
+        onReloadConversation={() => loadConversation(currentConversationId)}
+        isLoading={contextLoading}
+      />
+    );
+  };
+
   // Render appropriate stage component
   const renderStage = () => {
     try {
@@ -996,11 +1045,27 @@ function App() {
 
       // Ensure context_engineering structure is always valid (even if empty)
       if (!currentConversation.context_engineering) {
-        // If context_engineering doesn't exist yet, ensure it's initialized as empty object
         currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
       }
 
-      // SIMPLIFIED, BULLETPROOF LOGIC: Directly check prompt finalization status
+      // WORKAROUND: Check simple boolean flag FIRST - this bypasses ALL complex logic
+      // This is the most reliable way to force Step 2 to show after finalizing prompt
+      if (forceShowStep2) {
+        console.log('🎯 WORKAROUND: forceShowStep2 flag is true - FORCING Step 2 (context_engineering)');
+        const promptFinalized = !!promptEng.finalized_prompt;
+        const contextFinalized = !!contextEng.finalized_context;
+        
+        // Only show Step 2 if prompt is actually finalized (safety check)
+        if (promptFinalized && !contextFinalized) {
+          console.log('✅ forceShowStep2 + prompt finalized = Showing Step 2 NOW');
+          return renderContextEngineering();
+        } else {
+          console.log('⚠️ forceShowStep2 is true but conditions not met - clearing flag');
+          setForceShowStep2(false);
+        }
+      }
+      
+      // Continue with normal logic if workaround flag is not set
       const promptFinalized = !!promptEng.finalized_prompt;
       const contextFinalized = !!contextEng.finalized_context;
       const finalizedPromptText = promptEng.finalized_prompt;
@@ -1008,6 +1073,7 @@ function App() {
       // CRITICAL DEBUG: Log everything to understand what's happening
       console.log('🔍 renderStage() DEBUG:', {
         conversationId: currentConversation.id,
+        forceShowStep2: forceShowStep2,
         currentStep: currentStep,
         stepLocked: stepLocked,
         promptFinalized: promptFinalized,
@@ -1022,25 +1088,19 @@ function App() {
       let stageToRender;
       
       // ABSOLUTE RULE #1: If prompt is finalized and context is NOT finalized, show Step 2
-      // This takes absolute precedence over EVERYTHING - no exceptions
       if (promptFinalized && !contextFinalized) {
         console.log('✅✅✅ PROMPT IS FINALIZED AND CONTEXT NOT FINALIZED - FORCING Step 2');
-        console.log('   finalized_prompt length:', finalizedPromptText?.length || 0);
-        console.log('   context_finalized:', contextFinalized);
         stageToRender = 'context_engineering';
       } else if (currentStep && !stepLocked) {
-        // If we have an explicit step set and it's not locked, use it
         console.log('🎯 Using explicit currentStep state:', currentStep);
         stageToRender = currentStep;
       } else {
-        // Fallback: calculate from conversation state
         try {
           const calculated = getCurrentStage();
           stageToRender = calculated || 'prompt_engineering';
           console.log('📊 Using calculated stage from getCurrentStage():', stageToRender);
         } catch (error) {
           console.error('❌ Error in getCurrentStage():', error);
-          // Ultimate fallback: check prompt status directly
           if (promptFinalized && !contextFinalized) {
             stageToRender = 'context_engineering';
           } else if (!promptFinalized) {
@@ -1051,13 +1111,10 @@ function App() {
         }
       }
       
-      // ABSOLUTE SAFETY CHECK: If prompt is finalized, we MUST show Step 2
-      // This is a failsafe that should never be needed, but ensures we never show Step 1 when prompt is done
-      if (promptFinalized && !contextFinalized) {
-        if (stageToRender !== 'context_engineering') {
-          console.error('🚨🚨🚨 CRITICAL: Prompt finalized but stageToRender is', stageToRender, '- FORCING context_engineering');
-          stageToRender = 'context_engineering';
-        }
+      // ABSOLUTE SAFETY CHECK
+      if (promptFinalized && !contextFinalized && stageToRender !== 'context_engineering') {
+        console.error('🚨🚨🚨 CRITICAL: Prompt finalized but stageToRender is', stageToRender, '- FORCING context_engineering');
+        stageToRender = 'context_engineering';
       }
       
       console.log('🎬 FINAL stage to render:', stageToRender, {
@@ -1087,89 +1144,8 @@ function App() {
         );
 
       case 'context_engineering':
-        // Ensure all props are valid before rendering
-        if (!currentConversationId || !currentConversation) {
-          console.error('Invalid conversation state for context_engineering stage:', {
-            hasConversationId: !!currentConversationId,
-            hasConversation: !!currentConversation,
-            conversationId: currentConversationId
-          });
-          return (
-            <div className="empty-state">
-              <h2>Loading Context Engineering...</h2>
-              <p>Preparing Step 2...</p>
-              <button onClick={() => loadConversation(currentConversationId)}>Reload</button>
-            </div>
-          );
-        }
-        
-        // Validate context engineering data structure and ensure it exists
-        const safeContextEng = {
-          messages: Array.isArray(contextEng.messages) ? contextEng.messages : [],
-          documents: Array.isArray(contextEng.documents) ? contextEng.documents : [],
-          files: Array.isArray(contextEng.files) ? contextEng.files : [],
-          links: Array.isArray(contextEng.links) ? contextEng.links : [],
-          finalized_context: contextEng.finalized_context || null
-        };
-        
-        console.log('Rendering ContextEngineering with props:', {
-          conversationId: currentConversationId,
-          messagesCount: safeContextEng.messages.length,
-          documentsCount: safeContextEng.documents.length,
-          filesCount: safeContextEng.files.length,
-          linksCount: safeContextEng.links.length,
-          finalizedContext: !!safeContextEng.finalized_context,
-          isLoading: contextLoading,
-          hasConversation: !!currentConversation,
-          conversationIdMatch: currentConversation?.id === currentConversationId
-        });
-        
-        // If we're loading, show a loading state instead of blank screen
-        if (contextLoading && safeContextEng.messages.length === 0) {
-          return (
-            <div className="empty-state" style={{ padding: '40px' }}>
-              <h2>Loading Step 2: Context Engineering...</h2>
-              <p>Initializing context engineering...</p>
-              <div className="spinner" style={{ margin: '20px auto', width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #4a90e2', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-            </div>
-          );
-        }
-        
-        try {
-          // Get finalized prompt from Step 1 to display in Step 2
-          const finalizedPrompt = promptEng.finalized_prompt || null;
-          
-          return (
-            <ContextEngineering
-              conversationId={currentConversationId}
-              finalizedPrompt={finalizedPrompt}
-              messages={safeContextEng.messages}
-              documents={safeContextEng.documents}
-              files={safeContextEng.files}
-              links={safeContextEng.links}
-              finalizedContext={safeContextEng.finalized_context}
-              onSendMessage={handleContextEngineeringMessage}
-              onAddDocument={handleAddDocument}
-              onUploadFile={handleUploadFile}
-              onAddLink={handleAddLink}
-              onPackageContext={handlePackageContext}
-              onEditPrompt={handleEditPrompt}
-              onReloadConversation={() => loadConversation(currentConversationId)}
-              isLoading={contextLoading}
-            />
-          );
-        } catch (renderError) {
-          console.error('Error rendering ContextEngineering component:', renderError);
-          console.error('Render error stack:', renderError.stack);
-          return (
-            <div className="empty-state" style={{ color: 'red', padding: '40px' }}>
-              <h2>Error Loading Step 2</h2>
-              <p>{renderError.message || 'An error occurred while loading Context Engineering'}</p>
-              <pre style={{ fontSize: '12px', marginTop: '10px', textAlign: 'left' }}>{renderError.stack}</pre>
-              <button onClick={() => loadConversation(currentConversationId)} style={{ marginTop: '20px', padding: '10px 20px' }}>Reload Conversation</button>
-            </div>
-          );
-        }
+        // Use the helper function for consistent rendering
+        return renderContextEngineering();
 
       case 'review':
         // Ensure we have the required data
