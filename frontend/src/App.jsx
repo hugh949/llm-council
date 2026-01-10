@@ -190,7 +190,18 @@ function App() {
           contextFinalized: !!result.conversation.context_engineering?.finalized_context
         });
         // Force a state update with a new object reference to ensure React detects the change
-        setCurrentConversation({ ...result.conversation });
+        // Use spread operator to create new object references at all levels
+        setCurrentConversation({
+          ...result.conversation,
+          prompt_engineering: {
+            ...result.conversation.prompt_engineering,
+          },
+        });
+        
+        // Force a re-render by updating the stage calculation
+        // The getCurrentStage() will now return 'context_engineering' if prompt is finalized
+        // This triggers a re-render which will show Step 2
+        console.log('State updated, should transition to Step 2');
       } else {
         console.log('No conversation in response, reloading from server');
         // Otherwise reload from server
@@ -199,6 +210,7 @@ function App() {
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
+      throw error; // Re-throw so component can handle it
     }
   };
 
