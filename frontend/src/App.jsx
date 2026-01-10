@@ -44,10 +44,19 @@ function App() {
     try {
       const conv = await api.getConversation(id);
       console.log('Loaded conversation:', conv?.id, 'Prompt finalized:', !!conv?.prompt_engineering?.finalized_prompt);
-      setCurrentConversation(conv);
-      return conv;
+      
+      // Only update state if we got valid conversation data
+      // This prevents blank screens from invalid data
+      if (conv && conv.id) {
+        setCurrentConversation(conv);
+        return conv;
+      } else {
+        console.error('Invalid conversation data received:', conv);
+        throw new Error('Invalid conversation data received from server');
+      }
     } catch (error) {
       console.error('Failed to load conversation:', error);
+      // Don't clear current conversation on error - keep existing state to prevent blank screen
       // Show user-friendly error message
       alert(`Error: ${error.message || 'Failed to load conversation. Please try again.'}`);
       return null;
@@ -186,26 +195,33 @@ function App() {
       
       // Always reload from server after finalization to ensure consistent, complete state
       // This prevents blank screens from incomplete state updates
+      // Don't clear currentConversation during reload - keep existing state visible
       console.log('Reloading conversation to ensure consistent state...');
       const reloadedConv = await loadConversation(currentConversationId);
       
-      // Verify we have valid conversation data
-      if (reloadedConv && reloadedConv.id) {
-        console.log('Conversation reloaded successfully:', {
-          id: reloadedConv.id,
-          promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
-          contextFinalized: !!reloadedConv.context_engineering?.finalized_context
-        });
-      } else {
+      // Verify we have valid conversation data before proceeding
+      if (!reloadedConv || !reloadedConv.id) {
         console.error('Failed to reload conversation - got invalid data');
-        throw new Error('Failed to reload conversation after finalization');
+        // Don't throw - keep existing conversation state to prevent blank screen
+        // The error was already shown in loadConversation
+        return;
       }
+      
+      console.log('Conversation reloaded successfully:', {
+        id: reloadedConv.id,
+        promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
+        contextFinalized: !!reloadedConv.context_engineering?.finalized_context,
+        hasMessages: !!reloadedConv.prompt_engineering?.messages?.length
+      });
       
       // The reload will update currentConversation state and trigger re-render
       // getCurrentStage() will detect finalized_prompt and show completion UI
-      console.log('Conversation reloaded, UI should update automatically');
+      // If finalized_prompt exists, it will show the completion section
+      // If not, it will stay in prompt_engineering stage
+      console.log('State updated, UI should re-render automatically');
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
+      // Don't clear currentConversation on error - keep existing state visible
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
       throw error; // Re-throw so component can handle it
     } finally {
