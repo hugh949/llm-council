@@ -238,36 +238,42 @@ function App() {
           contextMessages: result.conversation.context_engineering?.messages?.length || 0
         });
         
-        // Update state with the conversation from the API response
-        // Ensure we preserve all existing data structure
+        // Update state immediately with API response to provide instant feedback
+        // Ensure complete data structure to prevent blank screens
+        const apiConv = result.conversation;
         const updatedConv = {
-          ...result.conversation,
+          ...apiConv,
+          prompt_engineering: apiConv.prompt_engineering || currentConversation?.prompt_engineering || { messages: [], finalized_prompt: null },
           context_engineering: {
-            ...(result.conversation.context_engineering || {}),
-            messages: result.conversation.context_engineering?.messages || [],
-            documents: result.conversation.context_engineering?.documents || [],
-            files: result.conversation.context_engineering?.files || [],
-            links: result.conversation.context_engineering?.links || []
-          }
+            messages: apiConv.context_engineering?.messages || [],
+            documents: apiConv.context_engineering?.documents || [],
+            files: apiConv.context_engineering?.files || [],
+            links: apiConv.context_engineering?.links || [],
+            finalized_context: apiConv.context_engineering?.finalized_context || null
+          },
+          council_deliberation: apiConv.council_deliberation || currentConversation?.council_deliberation || { messages: [] }
         };
         
         setCurrentConversation(updatedConv);
         
-        // Small delay to allow React to process the state update, then reload for consistency
+        // Reload from server after a brief delay to ensure complete state
+        // This prevents blank screens while ensuring we have the latest data
         setTimeout(async () => {
           console.log('Reloading conversation to ensure complete state...');
-          const reloadedConv = await loadConversation(currentConversationId);
-          
-          if (reloadedConv && reloadedConv.id) {
-            console.log('Transitioned to Step 2 successfully:', {
-              id: reloadedConv.id,
-              contextMessages: reloadedConv.context_engineering?.messages?.length || 0,
-              hasDocuments: !!(reloadedConv.context_engineering?.documents?.length > 0),
-              hasFiles: !!(reloadedConv.context_engineering?.files?.length > 0),
-              stage: getCurrentStage()
-            });
+          try {
+            const reloadedConv = await loadConversation(currentConversationId);
+            if (reloadedConv && reloadedConv.id) {
+              console.log('Transitioned to Step 2 successfully:', {
+                id: reloadedConv.id,
+                contextMessages: reloadedConv.context_engineering?.messages?.length || 0,
+                contextStarted: !!(reloadedConv.context_engineering?.messages?.length > 0)
+              });
+            }
+          } catch (reloadError) {
+            console.error('Error reloading conversation, but state is already updated:', reloadError);
+            // State was already updated from API response, so UI should work
           }
-        }, 200);
+        }, 300);
       } else {
         console.warn('No valid conversation in result, reloading...');
         await loadConversation(currentConversationId);
@@ -798,7 +804,11 @@ function App() {
       case 'context_engineering':
         // Ensure all props are valid before rendering
         if (!currentConversationId || !currentConversation) {
-          console.error('Invalid conversation state for context_engineering stage');
+          console.error('Invalid conversation state for context_engineering stage:', {
+            hasConversationId: !!currentConversationId,
+            hasConversation: !!currentConversation,
+            conversationId: currentConversationId
+          });
           return (
             <div className="empty-state">
               <h2>Loading Context Engineering...</h2>
@@ -808,23 +818,45 @@ function App() {
           );
         }
         
-        return (
-          <ContextEngineering
-            conversationId={currentConversationId}
-            messages={contextEng.messages || []}
-            documents={contextEng.documents || []}
-            files={contextEng.files || []}
-            links={contextEng.links || []}
-            finalizedContext={contextEng.finalized_context || null}
-            onSendMessage={handleContextEngineeringMessage}
-            onAddDocument={handleAddDocument}
-            onUploadFile={handleUploadFile}
-            onAddLink={handleAddLink}
-            onPackageContext={handlePackageContext}
-            onReloadConversation={() => loadConversation(currentConversationId)}
-            isLoading={contextLoading}
-          />
-        );
+        // Validate context engineering data structure
+        console.log('Rendering ContextEngineering with props:', {
+          conversationId: currentConversationId,
+          messagesCount: contextEng.messages?.length || 0,
+          documentsCount: contextEng.documents?.length || 0,
+          filesCount: contextEng.files?.length || 0,
+          linksCount: contextEng.links?.length || 0,
+          finalizedContext: !!contextEng.finalized_context,
+          isLoading: contextLoading
+        });
+        
+        try {
+          return (
+            <ContextEngineering
+              conversationId={currentConversationId}
+              messages={contextEng.messages || []}
+              documents={contextEng.documents || []}
+              files={contextEng.files || []}
+              links={contextEng.links || []}
+              finalizedContext={contextEng.finalized_context || null}
+              onSendMessage={handleContextEngineeringMessage}
+              onAddDocument={handleAddDocument}
+              onUploadFile={handleUploadFile}
+              onAddLink={handleAddLink}
+              onPackageContext={handlePackageContext}
+              onReloadConversation={() => loadConversation(currentConversationId)}
+              isLoading={contextLoading}
+            />
+          );
+        } catch (renderError) {
+          console.error('Error rendering ContextEngineering component:', renderError);
+          return (
+            <div className="empty-state" style={{ color: 'red', padding: '40px' }}>
+              <h2>Error Loading Step 2</h2>
+              <p>{renderError.message || 'An error occurred while loading Context Engineering'}</p>
+              <button onClick={() => loadConversation(currentConversationId)}>Reload Conversation</button>
+            </div>
+          );
+        }
 
       case 'review':
         // Ensure we have the required data
