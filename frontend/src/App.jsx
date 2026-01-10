@@ -176,41 +176,40 @@ function App() {
       console.error('No conversation ID available');
       return;
     }
+    
+    setPromptLoading(true); // Set loading state to show UI is processing
+    
     try {
       console.log('Finalizing prompt...', finalizedPrompt.substring(0, 50));
       const result = await api.finalizePrompt(currentConversationId, finalizedPrompt);
       console.log('Finalize prompt result:', result);
       
-      // Update conversation state immediately if we got a response
-      if (result && result.conversation) {
-        console.log('Updating conversation state from API response');
-        console.log('New conversation state:', {
-          id: result.conversation.id,
-          promptFinalized: !!result.conversation.prompt_engineering?.finalized_prompt,
-          contextFinalized: !!result.conversation.context_engineering?.finalized_context
+      // Always reload from server after finalization to ensure consistent, complete state
+      // This prevents blank screens from incomplete state updates
+      console.log('Reloading conversation to ensure consistent state...');
+      const reloadedConv = await loadConversation(currentConversationId);
+      
+      // Verify we have valid conversation data
+      if (reloadedConv && reloadedConv.id) {
+        console.log('Conversation reloaded successfully:', {
+          id: reloadedConv.id,
+          promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
+          contextFinalized: !!reloadedConv.context_engineering?.finalized_context
         });
-        // Force a state update with a new object reference to ensure React detects the change
-        // Use spread operator to create new object references at all levels
-        setCurrentConversation({
-          ...result.conversation,
-          prompt_engineering: {
-            ...result.conversation.prompt_engineering,
-          },
-        });
-        
-        // Force a re-render by updating the stage calculation
-        // The getCurrentStage() will now return 'context_engineering' if prompt is finalized
-        // This triggers a re-render which will show Step 2
-        console.log('State updated, should transition to Step 2');
       } else {
-        console.log('No conversation in response, reloading from server');
-        // Otherwise reload from server
-        await loadConversation(currentConversationId);
+        console.error('Failed to reload conversation - got invalid data');
+        throw new Error('Failed to reload conversation after finalization');
       }
+      
+      // The reload will update currentConversation state and trigger re-render
+      // getCurrentStage() will detect finalized_prompt and show completion UI
+      console.log('Conversation reloaded, UI should update automatically');
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
       throw error; // Re-throw so component can handle it
+    } finally {
+      setPromptLoading(false); // Always clear loading state
     }
   };
 

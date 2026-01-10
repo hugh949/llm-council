@@ -210,31 +210,24 @@ export default function PromptEngineering({
                       try {
                         console.log('Finalizing prompt...', promptToFinalize.substring(0, 50));
                         
-                        // Call the finalize handler - this updates backend and state in App.jsx
+                        // Call the finalize handler - this updates backend and reloads state in App.jsx
                         await onFinalizePrompt(promptToFinalize);
                         
-                        console.log('Prompt finalized successfully - state updated');
+                        console.log('Prompt finalized successfully');
                         
-                        // Clear form immediately
+                        // Clear form immediately after successful API call
                         setShowFinalizeForm(false);
                         setFinalizeInput('');
+                        setIsFinalizing(false);
                         
-                        // Reload conversation to ensure UI reflects the updated state
-                        // This fetches from server without page reload - stays in same window
-                        if (onReloadConversation) {
-                          // Small delay to ensure backend has saved the update
-                          setTimeout(async () => {
-                            await onReloadConversation();
-                            setIsFinalizing(false);
-                            // Scroll to top smoothly to see completion message
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }, 400);
-                        } else {
-                          // If no reload function, just reset loading state
-                          setIsFinalizing(false);
-                          // Scroll to top
+                        // The onFinalizePrompt handler in App.jsx will reload the conversation
+                        // which will update the state and trigger a re-render
+                        // This ensures we have consistent, complete state - prevents blank screen
+                        
+                        // Small delay to allow state to update, then scroll to top
+                        setTimeout(() => {
                           window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
+                        }, 300);
                       } catch (error) {
                         console.error('Error finalizing prompt:', error);
                         setIsFinalizing(false);
