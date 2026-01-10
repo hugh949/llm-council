@@ -854,26 +854,47 @@ function App() {
           );
         }
         
-        // Validate context engineering data structure
+        // Validate context engineering data structure and ensure it exists
+        const safeContextEng = {
+          messages: Array.isArray(contextEng.messages) ? contextEng.messages : [],
+          documents: Array.isArray(contextEng.documents) ? contextEng.documents : [],
+          files: Array.isArray(contextEng.files) ? contextEng.files : [],
+          links: Array.isArray(contextEng.links) ? contextEng.links : [],
+          finalized_context: contextEng.finalized_context || null
+        };
+        
         console.log('Rendering ContextEngineering with props:', {
           conversationId: currentConversationId,
-          messagesCount: contextEng.messages?.length || 0,
-          documentsCount: contextEng.documents?.length || 0,
-          filesCount: contextEng.files?.length || 0,
-          linksCount: contextEng.links?.length || 0,
-          finalizedContext: !!contextEng.finalized_context,
-          isLoading: contextLoading
+          messagesCount: safeContextEng.messages.length,
+          documentsCount: safeContextEng.documents.length,
+          filesCount: safeContextEng.files.length,
+          linksCount: safeContextEng.links.length,
+          finalizedContext: !!safeContextEng.finalized_context,
+          isLoading: contextLoading,
+          hasConversation: !!currentConversation,
+          conversationIdMatch: currentConversation?.id === currentConversationId
         });
+        
+        // If we're loading, show a loading state instead of blank screen
+        if (contextLoading && safeContextEng.messages.length === 0) {
+          return (
+            <div className="empty-state" style={{ padding: '40px' }}>
+              <h2>Loading Step 2: Context Engineering...</h2>
+              <p>Initializing context engineering...</p>
+              <div className="spinner" style={{ margin: '20px auto', width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #4a90e2', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+            </div>
+          );
+        }
         
         try {
           return (
             <ContextEngineering
               conversationId={currentConversationId}
-              messages={contextEng.messages || []}
-              documents={contextEng.documents || []}
-              files={contextEng.files || []}
-              links={contextEng.links || []}
-              finalizedContext={contextEng.finalized_context || null}
+              messages={safeContextEng.messages}
+              documents={safeContextEng.documents}
+              files={safeContextEng.files}
+              links={safeContextEng.links}
+              finalizedContext={safeContextEng.finalized_context}
               onSendMessage={handleContextEngineeringMessage}
               onAddDocument={handleAddDocument}
               onUploadFile={handleUploadFile}
@@ -885,11 +906,13 @@ function App() {
           );
         } catch (renderError) {
           console.error('Error rendering ContextEngineering component:', renderError);
+          console.error('Render error stack:', renderError.stack);
           return (
             <div className="empty-state" style={{ color: 'red', padding: '40px' }}>
               <h2>Error Loading Step 2</h2>
               <p>{renderError.message || 'An error occurred while loading Context Engineering'}</p>
-              <button onClick={() => loadConversation(currentConversationId)}>Reload Conversation</button>
+              <pre style={{ fontSize: '12px', marginTop: '10px', textAlign: 'left' }}>{renderError.stack}</pre>
+              <button onClick={() => loadConversation(currentConversationId)} style={{ marginTop: '20px', padding: '10px 20px' }}>Reload Conversation</button>
             </div>
           );
         }
