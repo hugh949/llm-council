@@ -112,14 +112,16 @@ export default function PromptEngineering({
               <button
                 className="proceed-button large"
                 onClick={async () => {
-                  // Reload conversation to trigger state update and automatic stage transition
+                  // The state update should have already happened when prompt was finalized
+                  // Just reload conversation to ensure we have the latest state
+                  // This stays in the same window - no page reload
                   if (onReloadConversation) {
                     await onReloadConversation();
                   }
-                  // Small delay to ensure state propagation
+                  // Scroll to top smoothly
                   setTimeout(() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 200);
+                  }, 100);
                 }}
               >
                 → Continue to Step 2: Context Engineering
@@ -189,6 +191,7 @@ export default function PromptEngineering({
                     type="button"
                     className="finalize-button large"
                     onClick={async (e) => {
+                      // Prevent any default behavior or navigation
                       e.preventDefault();
                       e.stopPropagation();
                       
@@ -210,27 +213,27 @@ export default function PromptEngineering({
                         // Call the finalize handler - this updates backend and state in App.jsx
                         await onFinalizePrompt(promptToFinalize);
                         
-                        console.log('Prompt finalized successfully');
+                        console.log('Prompt finalized successfully - state updated');
                         
-                        // Clear form after successful API call
+                        // Clear form immediately
                         setShowFinalizeForm(false);
                         setFinalizeInput('');
                         
-                        // Reload conversation to get updated state with finalized_prompt
+                        // Reload conversation to ensure UI reflects the updated state
+                        // This fetches from server without page reload - stays in same window
                         if (onReloadConversation) {
-                          // Small delay to ensure backend has processed the update
+                          // Small delay to ensure backend has saved the update
                           setTimeout(async () => {
-                            console.log('Reloading conversation to update UI...');
                             await onReloadConversation();
                             setIsFinalizing(false);
-                            // Scroll to top to see the completion message
+                            // Scroll to top smoothly to see completion message
                             window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }, 600);
+                          }, 400);
                         } else {
-                          // Fallback: reload page if reload function not available
-                          setTimeout(() => {
-                            window.location.reload();
-                          }, 600);
+                          // If no reload function, just reset loading state
+                          setIsFinalizing(false);
+                          // Scroll to top
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                       } catch (error) {
                         console.error('Error finalizing prompt:', error);

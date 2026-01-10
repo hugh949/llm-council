@@ -341,14 +341,16 @@ export default function ContextEngineering({
               <button
                 className="proceed-button large"
                 onClick={async () => {
-                  // Reload conversation to trigger state update and automatic stage transition
+                  // The state update should have already happened when context was packaged
+                  // Just reload conversation to ensure we have the latest state
+                  // This stays in the same window - no page reload
                   if (onReloadConversation) {
                     await onReloadConversation();
                   }
-                  // Small delay to ensure state propagation
+                  // Scroll to top smoothly
                   setTimeout(() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 200);
+                  }, 100);
                 }}
               >
                 → Continue to Review & Step 3
