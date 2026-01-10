@@ -348,55 +348,61 @@ function App() {
       const result = await api.finalizePrompt(currentConversationId, finalizedPrompt);
       console.log('Finalize prompt result:', result);
       
-      // Use the API response immediately to update state
-      if (result && result.conversation && result.conversation.id) {
-        // Update state immediately with the finalized prompt
-        const apiConv = result.conversation;
-        const updatedConv = {
-          ...apiConv,
-          prompt_engineering: apiConv.prompt_engineering || currentConversation?.prompt_engineering || { messages: [], finalized_prompt: null },
-          context_engineering: apiConv.context_engineering || currentConversation?.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null },
-          council_deliberation: apiConv.council_deliberation || currentConversation?.council_deliberation || { messages: [] }
+      // Reload conversation to get complete state after finalization
+      console.log('Reloading conversation after finalization...');
+      const reloadedConv = await loadConversation(currentConversationId);
+      
+      if (!reloadedConv || !reloadedConv.id) {
+        console.error('Failed to reload conversation - got invalid data');
+        return;
+      }
+      
+      console.log('Conversation reloaded after finalization:', {
+        id: reloadedConv.id,
+        promptFinalized: !!reloadedConv.prompt_engineering?.finalized_prompt,
+        contextStarted: !!(reloadedConv.context_engineering?.messages?.length > 0)
+      });
+      
+      // Automatically proceed to Step 2 after prompt is finalized
+      // This provides a smooth, automatic flow - no manual button click needed
+      console.log('Prompt finalized successfully, automatically proceeding to Step 2 (RAG/Context Engineering)...');
+      
+      // Directly send initialization message to context engineering to mark it as started
+      // This ensures immediate transition to Step 2 without requiring a button click
+      const welcomeMessage = "Ready to add context and attachments.";
+      const contextResult = await api.sendContextEngineeringMessage(currentConversationId, welcomeMessage);
+      
+      if (contextResult && contextResult.conversation && contextResult.conversation.id) {
+        // Update state immediately with the context engineering message
+        const contextConv = contextResult.conversation;
+        const finalUpdatedConv = {
+          ...contextConv,
+          prompt_engineering: contextConv.prompt_engineering || reloadedConv.prompt_engineering || { messages: [], finalized_prompt: null },
+          context_engineering: {
+            ...(contextConv.context_engineering || {}),
+            messages: Array.isArray(contextConv.context_engineering?.messages) ? contextConv.context_engineering.messages : [],
+            documents: Array.isArray(contextConv.context_engineering?.documents) ? contextConv.context_engineering.documents : [],
+            files: Array.isArray(contextConv.context_engineering?.files) ? contextConv.context_engineering.files : [],
+            links: Array.isArray(contextConv.context_engineering?.links) ? contextConv.context_engineering.links : [],
+            finalized_context: contextConv.context_engineering?.finalized_context || null
+          },
+          council_deliberation: contextConv.council_deliberation || reloadedConv.council_deliberation || { messages: [] }
         };
         
-        console.log('Updating state with finalized prompt:', {
-          id: updatedConv.id,
-          promptFinalized: !!updatedConv.prompt_engineering.finalized_prompt
+        console.log('Updating state with context engineering initialized:', {
+          id: finalUpdatedConv.id,
+          contextMessages: finalUpdatedConv.context_engineering.messages.length,
+          promptFinalized: !!finalUpdatedConv.prompt_engineering.finalized_prompt
         });
         
-        setCurrentConversation(updatedConv);
+        // Update state - this will trigger re-render and show Step 2 automatically
+        setCurrentConversation(finalUpdatedConv);
         
-        // Automatically proceed to Step 2 after prompt is finalized
-        // This provides a smooth, automatic flow without requiring an extra click
-        console.log('Prompt finalized successfully, automatically proceeding to Step 2...');
-        
-        // Small delay to ensure state update is processed, then proceed to Step 2
-        setTimeout(async () => {
-          try {
-            await handleProceedToStep2();
-            console.log('Automatically transitioned to Step 2');
-          } catch (step2Error) {
-            console.error('Error automatically proceeding to Step 2:', step2Error);
-            // Non-critical - user can manually proceed if needed
-          }
-        }, 200);
+        console.log('Automatically transitioned to Step 2: Context Engineering (RAG UI)');
       } else {
-        // Fallback: reload conversation if API response is invalid
-        console.log('Reloading conversation to ensure consistent state...');
-        const reloadedConv = await loadConversation(currentConversationId);
-        
-        if (reloadedConv && reloadedConv.id) {
-          console.log('Conversation reloaded successfully, automatically proceeding to Step 2...');
-          
-          // Automatically proceed to Step 2 after reload
-          setTimeout(async () => {
-            try {
-              await handleProceedToStep2();
-            } catch (step2Error) {
-              console.error('Error automatically proceeding to Step 2:', step2Error);
-            }
-          }, 200);
-        }
+        console.error('Failed to initialize context engineering, falling back to manual transition');
+        // If automatic transition fails, reload to ensure state is consistent
+        await loadConversation(currentConversationId);
       }
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
