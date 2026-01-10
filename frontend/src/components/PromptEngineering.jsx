@@ -97,40 +97,16 @@ export default function PromptEngineering({
       </div>
 
       {finalizedPrompt ? (
-        <>
-          <div className="finalized-section">
-            <h3>✓ Step 1 Complete: Finalized Prompt</h3>
-            <div className="finalized-content">
-              <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
-            </div>
+        <div className="finalized-section">
+          <h3>✓ Step 1 Complete: Finalized Prompt</h3>
+          <div className="finalized-content">
+            <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
           </div>
-          <div className="step-transition-bar sticky-bottom">
-            <div className="transition-content">
-              <div className="transition-text">
-                <strong>✓ Prompt finalized!</strong>
-                <p>Add context and background information in Step 2 to help the council provide more accurate responses.</p>
-              </div>
-              <button
-                className="proceed-button large"
-                onClick={async () => {
-                  // Trigger transition to Step 2
-                  if (onProceedToStep2) {
-                    await onProceedToStep2();
-                  } else if (onReloadConversation) {
-                    // Fallback: reload conversation and let stage logic handle it
-                    await onReloadConversation();
-                  }
-                  // Scroll to top smoothly
-                  setTimeout(() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 200);
-                }}
-              >
-                → Continue to Step 2: Context Engineering
-              </button>
-            </div>
+          <div className="transitioning-message">
+            <p><strong>Transitioning to Step 2: Context Engineering...</strong></p>
+            <p className="transition-hint">The Context Engineer screen will appear automatically where you can add context, documents, and background information.</p>
           </div>
-        </>
+        </div>
       ) : (
         <div className="input-section">
           <form onSubmit={handleSubmit} className="input-form">

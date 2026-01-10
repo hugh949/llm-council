@@ -189,18 +189,15 @@ function App() {
     console.log('getCurrentStage evaluation:', stageDebug);
 
     // Stage determination logic
-    // Stay in prompt_engineering if prompt is finalized but context hasn't been started yet
-    // This allows user to see the completion message before moving to Step 2
+    // Once prompt is finalized, automatically transition to context_engineering (Step 2)
+    // The Context Engineer screen should appear immediately after finalizing the prompt
     if (!promptFinalized) {
       console.log('getCurrentStage: Returning prompt_engineering (prompt not finalized)');
       return 'prompt_engineering';
-    } else if (promptFinalized && !contextStarted && !contextFinalized) {
-      // Prompt is finalized but context hasn't been started - show completion UI
-      console.log('getCurrentStage: Returning prompt_engineering (context not started)');
-      return 'prompt_engineering';
     } else if (!contextFinalized) {
-      // Context is started but not finalized - show context_engineering stage
-      console.log('getCurrentStage: Returning context_engineering (prompt finalized, context started, not finalized)');
+      // Prompt is finalized - automatically show context_engineering stage (Step 2)
+      // This ensures Context Engineer screen appears immediately after finalizing prompt
+      console.log('getCurrentStage: Returning context_engineering (prompt finalized, context not finalized)');
       return 'context_engineering';
     } else if (contextFinalized && councilMessages.length === 0) {
       console.log('getCurrentStage: Returning review (context finalized, no council messages)');

@@ -110,6 +110,31 @@
   line-height: 1.6;
 }
 
+.transitioning-message {
+  background-color: #e8f5e9;
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.transitioning-message p {
+  margin: 0 0 8px 0;
+  color: #2e7d32;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.transitioning-message p:last-child {
+  margin-bottom: 0;
+}
+
+.transition-hint {
+  color: #558b2f !important;
+  font-size: 13px !important;
+  font-style: italic;
+}
+
 .info-text {
   color: #666;
   font-size: 14px;
