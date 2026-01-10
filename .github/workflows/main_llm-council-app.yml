@@ -70,6 +70,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    # Prevent multiple deployments from running simultaneously
+    concurrency:
+      group: deploy-llm-council-app
+      cancel-in-progress: false
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -87,35 +91,6 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BA798101DEC34D62ABD58C04BC668CB4 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_67F6A97CB75D41F7B59C50165ADA51A2 }}
 
-      - name: Check for ongoing deployments
-        id: check-deployment
-        run: |
-          echo "Checking for ongoing deployments..."
-          MAX_WAIT=300  # 5 minutes max wait
-          WAIT_INTERVAL=10  # Check every 10 seconds
-          ELAPSED=0
-          
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            DEPLOYMENT_STATUS=$(az webapp deployment list \
-              --name llm-council-app \
-              --resource-group $(az webapp show --name llm-council-app --query resourceGroup -o tsv) \
-              --query "[?status=='Running' || status=='InProgress'].{id:id,status:status}" \
-              -o json 2>/dev/null || echo "[]")
-            
-            if [ "$DEPLOYMENT_STATUS" = "[]" ] || [ -z "$DEPLOYMENT_STATUS" ]; then
-              echo "No ongoing deployments found. Proceeding..."
-              echo "ready=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-            
-            echo "Ongoing deployment detected. Waiting... (${ELAPSED}s / ${MAX_WAIT}s)"
-            sleep $WAIT_INTERVAL
-            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
-          done
-          
-          echo "Timeout waiting for deployments to complete. Proceeding anyway..."
-          echo "ready=true" >> $GITHUB_OUTPUT
-
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
@@ -123,6 +98,5 @@ jobs:
         with:
           app-name: 'llm-council-app'
           slot-name: 'Production'
-          retry-count: 3
-          retry-interval: 30
+          startup-command: ''
           
