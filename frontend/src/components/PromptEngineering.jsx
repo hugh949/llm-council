@@ -16,6 +16,7 @@ export default function PromptEngineering({
   const [input, setInput] = useState('');
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const [finalizeInput, setFinalizeInput] = useState('');
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,19 +38,21 @@ export default function PromptEngineering({
       const result = await onSuggestFinal();
       setFinalizeInput(result.suggested_prompt || '');
       setShowFinalizeForm(true);
+      // Scroll to show the finalize form and button
+      setTimeout(() => {
+        const finalizeForm = document.querySelector('.finalize-form');
+        if (finalizeForm) {
+          finalizeForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        // Also scroll window to bottom to ensure button is visible
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }, 100);
     } catch (error) {
       console.error('Failed to suggest final prompt:', error);
     }
   };
 
-  const handleFinalize = async (e) => {
-    e.preventDefault();
-    if (finalizeInput.trim()) {
-      await onFinalizePrompt(finalizeInput.trim());
-      setShowFinalizeForm(false);
-      setFinalizeInput('');
-    }
-  };
+  // Removed handleFinalize - now handled directly in button onClick
 
   return (
     <div className="prompt-engineering">
@@ -158,36 +161,98 @@ export default function PromptEngineering({
           </form>
 
           {showFinalizeForm && (
-            <div className="finalize-form">
-              <h4>Review and Finalize Prompt</h4>
-              <textarea
-                className="finalize-input"
-                value={finalizeInput}
-                onChange={(e) => setFinalizeInput(e.target.value)}
-                rows={6}
-                placeholder="Review and edit the suggested prompt..."
-              />
-              <div className="finalize-actions">
-                <button
-                  type="button"
-                  className="finalize-button"
-                  onClick={handleFinalize}
-                  disabled={!finalizeInput.trim()}
-                >
-                  Finalize Prompt
-                </button>
-                <button
-                  type="button"
-                  className="cancel-button"
-                  onClick={() => {
-                    setShowFinalizeForm(false);
-                    setFinalizeInput('');
-                  }}
-                >
-                  Cancel
-                </button>
+            <>
+              <div className="finalize-form">
+                <h4>Review and Finalize Prompt</h4>
+                <p className="finalize-hint">Edit the suggested prompt if needed, then click Finalize below to proceed.</p>
+                <textarea
+                  className="finalize-input"
+                  value={finalizeInput}
+                  onChange={(e) => setFinalizeInput(e.target.value)}
+                  rows={10}
+                  placeholder="Review and edit the suggested prompt..."
+                />
               </div>
-            </div>
+              <div className="finalize-actions-bar sticky-bottom">
+                <div className="finalize-actions-content">
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={() => {
+                      setShowFinalizeForm(false);
+                      setFinalizeInput('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="finalize-button large"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      if (!finalizeInput.trim()) {
+                        alert('Please enter a prompt to finalize');
+                        return;
+                      }
+                      
+                      if (isFinalizing || isLoading) {
+                        return; // Prevent double-clicking
+                      }
+                      
+                      const promptToFinalize = finalizeInput.trim();
+                      setIsFinalizing(true);
+                      
+                      try {
+                        console.log('Finalizing prompt...', promptToFinalize.substring(0, 50));
+                        
+                        // Call the finalize handler - this updates backend and state in App.jsx
+                        await onFinalizePrompt(promptToFinalize);
+                        
+                        console.log('Prompt finalized successfully');
+                        
+                        // Clear form after successful API call
+                        setShowFinalizeForm(false);
+                        setFinalizeInput('');
+                        
+                        // Reload conversation to get updated state with finalized_prompt
+                        if (onReloadConversation) {
+                          // Small delay to ensure backend has processed the update
+                          setTimeout(async () => {
+                            console.log('Reloading conversation to update UI...');
+                            await onReloadConversation();
+                            setIsFinalizing(false);
+                            // Scroll to top to see the completion message
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }, 600);
+                        } else {
+                          // Fallback: reload page if reload function not available
+                          setTimeout(() => {
+                            window.location.reload();
+                          }, 600);
+                        }
+                      } catch (error) {
+                        console.error('Error finalizing prompt:', error);
+                        setIsFinalizing(false);
+                        alert(`Failed to finalize prompt: ${error.message || 'Unknown error'}`);
+                        // Don't clear form on error - let user try again
+                      }
+                    }}
+                    disabled={!finalizeInput.trim() || isLoading || isFinalizing}
+                  >
+                    {isFinalizing || isLoading ? (
+                      <>
+                        <span className="button-spinner"></span>
+                        Finalizing...
+                      </>
+                    ) : (
+                      '✓ Finalize Prompt'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}
