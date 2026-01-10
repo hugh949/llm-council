@@ -5,6 +5,8 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 20px;
+  padding-bottom: 140px; /* Space for sticky button bar */
+  min-height: calc(100vh - 140px);
 }
 
 .stage-header {
@@ -602,59 +604,98 @@
   cursor: not-allowed;
 }
 
-.step-completion-actions {
+.step-transition-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  padding: 20px 24px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  border-top: 3px solid #e65100;
+}
+
+.step-transition-bar .transition-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.step-transition-bar .transition-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.step-transition-bar .transition-text strong {
+  display: block;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.step-transition-bar .transition-text p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.step-transition-bar .proceed-button {
+  flex-shrink: 0;
+  padding: 16px 32px;
+  background: white;
+  color: #ff9800;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  min-width: 280px;
+}
+
+.step-transition-bar .proceed-button:hover {
+  background: #fff8f0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.step-transition-bar .proceed-button:active {
+  transform: translateY(0);
+}
+
+.step-completion-info {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #ddd;
 }
 
-.proceed-to-next-step-button {
-  margin-top: 16px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
-  width: 100%;
+/* Add padding to bottom of component to account for sticky bar */
+.context-engineering {
+  padding-bottom: 120px;
 }
 
-.proceed-to-next-step-button:hover {
-  background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
-}
-
-.proceed-to-next-step-button:active {
-  transform: translateY(0);
-}
-
-.next-step-guidance {
-  margin-top: 16px;
-  padding: 16px;
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  border-radius: 8px;
-  border-left: 4px solid #ff9800;
-}
-
-.guidance-text {
-  margin: 0;
-  color: #e65100;
-  font-size: 15px;
-  line-height: 1.6;
-  font-weight: 500;
-}
-
-.guidance-text small {
-  display: block;
-  margin-top: 8px;
-  font-size: 13px;
-  font-weight: 400;
-  color: #ff9800;
-  font-style: italic;
+@media (max-width: 768px) {
+  .step-transition-bar .transition-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .step-transition-bar .proceed-button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .step-transition-bar {
+    padding: 16px 20px;
+  }
 }
 

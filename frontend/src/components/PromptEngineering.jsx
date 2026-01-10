@@ -10,6 +10,7 @@ export default function PromptEngineering({
   onSendMessage,
   onSuggestFinal,
   onFinalizePrompt,
+  onReloadConversation,
   isLoading,
 }) {
   const [input, setInput] = useState('');
@@ -92,24 +93,37 @@ export default function PromptEngineering({
       </div>
 
       {finalizedPrompt ? (
-        <div className="finalized-section">
-          <h3>✓ Step 1 Complete: Finalized Prompt</h3>
-          <div className="finalized-content">
-            <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
-          </div>
-          <div className="step-completion-actions">
-            <p className="info-text">
-              Great! Your prompt is ready. Next, add context and background information in Step 2 to help the council provide more accurate responses.
-            </p>
-            <div className="next-step-guidance">
-              <p className="guidance-text">
-                ✓ Your prompt is finalized! The system will automatically take you to Step 2.
-                <br />
-                <small>If you don't see Step 2, the page will update shortly.</small>
-              </p>
+        <>
+          <div className="finalized-section">
+            <h3>✓ Step 1 Complete: Finalized Prompt</h3>
+            <div className="finalized-content">
+              <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
             </div>
           </div>
-        </div>
+          <div className="step-transition-bar sticky-bottom">
+            <div className="transition-content">
+              <div className="transition-text">
+                <strong>✓ Prompt finalized!</strong>
+                <p>Add context and background information in Step 2 to help the council provide more accurate responses.</p>
+              </div>
+              <button
+                className="proceed-button large"
+                onClick={async () => {
+                  // Reload conversation to trigger state update and automatic stage transition
+                  if (onReloadConversation) {
+                    await onReloadConversation();
+                  }
+                  // Small delay to ensure state propagation
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 200);
+                }}
+              >
+                → Continue to Step 2: Context Engineering
+              </button>
+            </div>
+          </div>
+        </>
       ) : (
         <div className="input-section">
           <form onSubmit={handleSubmit} className="input-form">

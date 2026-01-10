@@ -15,6 +15,7 @@ export default function ContextEngineering({
   onUploadFile,
   onAddLink,
   onPackageContext,
+  onReloadConversation,
   isLoading,
 }) {
   const [input, setInput] = useState('');
@@ -321,23 +322,40 @@ export default function ContextEngineering({
       </div>
 
       {finalizedContext ? (
-        <div className="finalized-section">
-          <h3>✓ Step 2 Complete: Context Packaged</h3>
-          <div className="step-completion-actions">
-            <p className="info-text">
-              Excellent! Your context is ready with {totalAttachments} attachment{totalAttachments !== 1 ? 's' : ''}. 
-              {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant chunks when needed.'}
-              Review everything in the next step, then proceed to council deliberation.
-            </p>
-            <div className="next-step-guidance">
-              <p className="guidance-text">
-                ✓ Your context is packaged! The system will automatically take you to the Review stage, then Step 3.
-                <br />
-                <small>If you don't see the Review stage, the page will update shortly.</small>
+        <>
+          <div className="finalized-section">
+            <h3>✓ Step 2 Complete: Context Packaged</h3>
+            <div className="step-completion-info">
+              <p className="info-text">
+                Excellent! Your context is ready with <strong>{totalAttachments} attachment{totalAttachments !== 1 ? 's' : ''}</strong>.
+                {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant chunks when needed.'}
               </p>
             </div>
           </div>
-        </div>
+          <div className="step-transition-bar sticky-bottom">
+            <div className="transition-content">
+              <div className="transition-text">
+                <strong>✓ Context packaged!</strong>
+                <p>Review your prompt and context, then proceed to council deliberation in Step 3.</p>
+              </div>
+              <button
+                className="proceed-button large"
+                onClick={async () => {
+                  // Reload conversation to trigger state update and automatic stage transition
+                  if (onReloadConversation) {
+                    await onReloadConversation();
+                  }
+                  // Small delay to ensure state propagation
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 200);
+                }}
+              >
+                → Continue to Review & Step 3
+              </button>
+            </div>
+          </div>
+        </>
       ) : (
         <div className="input-section">
           <form onSubmit={handleSubmit} className="input-form">

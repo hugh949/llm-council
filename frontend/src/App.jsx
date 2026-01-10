@@ -660,6 +660,7 @@ function App() {
             onSendMessage={handlePromptEngineeringMessage}
             onSuggestFinal={handleSuggestFinalPrompt}
             onFinalizePrompt={handleFinalizePrompt}
+            onReloadConversation={() => loadConversation(currentConversationId)}
             isLoading={promptLoading}
           />
         );
@@ -678,6 +679,7 @@ function App() {
             onUploadFile={handleUploadFile}
             onAddLink={handleAddLink}
             onPackageContext={handlePackageContext}
+            onReloadConversation={() => loadConversation(currentConversationId)}
             isLoading={contextLoading}
           />
         );
