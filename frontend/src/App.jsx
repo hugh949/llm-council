@@ -17,8 +17,62 @@ function App() {
   const [contextLoading, setContextLoading] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
 
+  // Define functions FIRST before useEffects that use them
+  const loadConversations = async () => {
+    try {
+      console.log('🔄 loadConversations: Loading conversations list...');
+      const convs = await api.listConversations();
+      console.log('✅ loadConversations: Loaded', convs.length, 'conversations');
+      setConversations(convs);
+    } catch (error) {
+      console.error('❌ loadConversations: Failed to load conversations:', error);
+    }
+  };
+
+  const loadConversation = async (id) => {
+    try {
+      console.log('🔄 loadConversation: Loading conversation:', id);
+      const conv = await api.getConversation(id);
+      console.log('✅ loadConversation: Loaded conversation:', {
+        id: conv?.id,
+        promptFinalized: !!conv?.prompt_engineering?.finalized_prompt
+      });
+      
+      // Only update state if we got valid conversation data
+      if (conv && conv.id) {
+        const previousConv = currentConversation;
+        try {
+          setCurrentConversation(conv);
+          console.log('✅ loadConversation: State updated successfully');
+          return conv;
+        } catch (setError) {
+          console.error('❌ loadConversation: Error updating state:', setError);
+          if (previousConv) {
+            console.log('⚠️ loadConversation: Keeping previous conversation state');
+            setCurrentConversation(previousConv);
+          }
+          return previousConv || conv;
+        }
+      } else {
+        console.error('❌ loadConversation: Invalid conversation data received:', conv);
+        if (currentConversation && currentConversation.id === id) {
+          console.log('⚠️ loadConversation: Keeping existing conversation');
+          return currentConversation;
+        }
+        throw new Error('Invalid conversation data received from server');
+      }
+    } catch (error) {
+      console.error('❌ loadConversation: Failed:', error);
+      if (!currentConversation) {
+        alert(`Error: ${error.message || 'Failed to load conversation. Please try again.'}`);
+      }
+      return currentConversation || null;
+    }
+  };
+
   // Load conversations on mount
   useEffect(() => {
+    console.log('🔄 useEffect: Component mounted, loading conversations...');
     loadConversations();
   }, []);
 
@@ -46,7 +100,6 @@ function App() {
       console.log('   Finalized prompt preview:', promptEng.finalized_prompt?.substring(0, 100) || 'NONE');
       console.log('   Context finalized:', contextFinalized);
       console.log('   Context finalized value:', contextEng.finalized_context);
-      console.log('   Expected stage:', promptFinalized && !contextFinalized ? 'context_engineering (Step 2)' : 'other');
       
       // Calculate what stage should be shown
       let expectedStage;
@@ -64,62 +117,6 @@ function App() {
     }
     console.log('═══════════════════════════════════════════════════════════');
   }, [currentConversation]);
-
-
-  const loadConversations = async () => {
-    try {
-      const convs = await api.listConversations();
-      setConversations(convs);
-    } catch (error) {
-      console.error('Failed to load conversations:', error);
-    }
-  };
-
-  const loadConversation = async (id) => {
-    try {
-      console.log('Loading conversation:', id);
-      const conv = await api.getConversation(id);
-      console.log('Loaded conversation:', conv?.id, 'Prompt finalized:', !!conv?.prompt_engineering?.finalized_prompt);
-      
-      // Only update state if we got valid conversation data
-      // This prevents blank screens from invalid data
-      if (conv && conv.id) {
-        // Preserve existing conversation if reload fails to prevent blank screen
-        const previousConv = currentConversation;
-        try {
-          setCurrentConversation(conv);
-          console.log('Conversation state updated successfully');
-          return conv;
-        } catch (setError) {
-          console.error('Error updating conversation state:', setError);
-          // If state update fails, keep previous conversation to prevent blank screen
-          if (previousConv) {
-            console.log('Keeping previous conversation state to prevent blank screen');
-            setCurrentConversation(previousConv);
-          }
-          return previousConv || conv;
-        }
-      } else {
-        console.error('Invalid conversation data received:', conv);
-        // Keep existing conversation if we have one to prevent blank screen
-        if (currentConversation && currentConversation.id === id) {
-          console.log('Invalid data but keeping existing conversation to prevent blank screen');
-          return currentConversation;
-        }
-        throw new Error('Invalid conversation data received from server');
-      }
-    } catch (error) {
-      console.error('Failed to load conversation:', error);
-      // Don't clear current conversation on error - keep existing state to prevent blank screen
-      // Only show error if we don't have a current conversation
-      if (!currentConversation) {
-        alert(`Error: ${error.message || 'Failed to load conversation. Please try again.'}`);
-      } else {
-        console.log('Error loading conversation, but keeping existing state to prevent blank screen');
-      }
-      return currentConversation || null;
-    }
-  };
 
   const handleNewConversation = async () => {
     try {
@@ -183,76 +180,21 @@ function App() {
     }
   };
 
-  // Sync currentStep with conversation state when conversation changes
-  // BUT: Respect stepLocked flag to prevent overriding explicit step sets
-  useEffect(() => {
-    // If step is explicitly locked (e.g., during transition), don't auto-sync
-    if (stepLocked) {
-      console.log('🔒 Step is locked - skipping auto-sync');
-      return;
-    }
-
-    if (!currentConversation) {
-      setCurrentStep(prev => {
-        if (prev !== null && !stepLocked) {
-          return null;
-        }
-        return prev;
-      });
-      return;
-    }
-
-    const promptEng = currentConversation.prompt_engineering || {};
-    const contextEng = currentConversation.context_engineering || {};
-    const councilDelib = currentConversation.council_deliberation || {};
-
-    const promptFinalized = !!promptEng.finalized_prompt;
-    const contextFinalized = !!contextEng.finalized_context;
-    const councilMessages = Array.isArray(councilDelib.messages) ? councilDelib.messages : [];
-    
-    let calculatedStep;
-    if (!promptFinalized) {
-      calculatedStep = 'prompt_engineering';
-    } else if (!contextFinalized) {
-      calculatedStep = 'context_engineering';
-    } else if (contextFinalized && councilMessages.length === 0) {
-      calculatedStep = 'review';
-    } else {
-      calculatedStep = 'council_deliberation';
-    }
-
-    // Only update if different and not locked
-    setCurrentStep(prevStep => {
-      if (stepLocked) {
-        console.log('🔒 Step locked - keeping current step:', prevStep);
-        return prevStep;
-      }
-      if (prevStep !== calculatedStep) {
-        console.log('🔄 Auto-syncing currentStep:', {
-          from: prevStep,
-          to: calculatedStep,
-          conversationId: currentConversation.id,
-          promptFinalized,
-          contextFinalized,
-          stepLocked
-        });
-        return calculatedStep;
-      }
-      return prevStep;
-    });
-  }, [currentConversation, stepLocked]); // Include stepLocked in dependencies
-
-  // Get the current stage - use explicit currentStep state
+  // Simple function to determine current stage based on conversation state
   const getCurrentStage = () => {
-    // If we have an explicit step set, use it (takes precedence)
-    if (currentStep) {
-      return currentStep;
-    }
+    console.log('🔍 getCurrentStage: Called');
     
-    // Fallback: calculate from conversation
     if (!currentConversation) {
+      console.log('🔍 getCurrentStage: No conversation, returning prompt_engineering');
       return 'prompt_engineering';
     }
+
+    console.log('🔍 getCurrentStage: Conversation exists:', {
+      id: currentConversation.id,
+      hasPromptEng: !!currentConversation.prompt_engineering,
+      hasContextEng: !!currentConversation.context_engineering,
+      hasCouncilDelib: !!currentConversation.council_deliberation
+    });
 
     const promptEng = currentConversation.prompt_engineering || {};
     const contextEng = currentConversation.context_engineering || {};
@@ -262,22 +204,31 @@ function App() {
     const contextFinalized = !!contextEng.finalized_context;
     const councilMessages = Array.isArray(councilDelib.messages) ? councilDelib.messages : [];
     
+    console.log('🔍 getCurrentStage: Stage determination:', {
+      promptFinalized,
+      finalizedPromptExists: !!promptEng.finalized_prompt,
+      finalizedPromptLength: promptEng.finalized_prompt?.length || 0,
+      contextFinalized,
+      contextFinalizedValue: contextEng.finalized_context,
+      councilMessagesCount: councilMessages.length
+    });
+    
+    // Simple logic: check conditions in order
     if (!promptFinalized) {
+      console.log('🔍 getCurrentStage: Returning prompt_engineering (prompt not finalized)');
       return 'prompt_engineering';
     }
-    
     if (!contextFinalized) {
+      console.log('✅ getCurrentStage: Returning context_engineering (prompt finalized, context not finalized)');
       return 'context_engineering';
     }
-    
     if (contextFinalized && councilMessages.length === 0) {
+      console.log('🔍 getCurrentStage: Returning review (context finalized, no council messages)');
       return 'review';
     }
-    
+    console.log('🔍 getCurrentStage: Returning council_deliberation');
     return 'council_deliberation';
   };
-
-  const currentStage = getCurrentStage();
 
   // Prompt Engineering handlers
   const handlePromptEngineeringMessage = async (content) => {
@@ -1351,6 +1302,44 @@ function App() {
     }
   };
 
+  // Wrap renderStage in try-catch to prevent app from crashing
+  let stageContent;
+  try {
+    console.log('🎨 App render: Calling renderStage()...');
+    stageContent = renderStage();
+    console.log('✅ App render: renderStage() completed successfully');
+  } catch (renderError) {
+    console.error('═══════════════════════════════════════════════════════════');
+    console.error('❌ FATAL ERROR in App render - renderStage() threw error');
+    console.error('   Error:', renderError);
+    console.error('   Error message:', renderError.message);
+    console.error('   Error stack:', renderError.stack);
+    console.error('═══════════════════════════════════════════════════════════');
+    
+    stageContent = (
+      <div className="empty-state" style={{ color: 'red', padding: '40px' }}>
+        <h2>⚠️ Critical Error</h2>
+        <p>The application encountered a fatal error while rendering.</p>
+        <details style={{ marginTop: '20px', textAlign: 'left' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Error Details</summary>
+          <pre style={{ fontSize: '12px', marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5' }}>
+            {renderError.message}
+            {'\n\n'}
+            {renderError.stack}
+          </pre>
+        </details>
+        <button 
+          onClick={() => window.location.reload()}
+          style={{ marginTop: '20px', padding: '12px 24px', fontSize: '16px' }}
+        >
+          Reload Application
+        </button>
+      </div>
+    );
+  }
+
+  console.log('🎨 App render: Rendering main app structure');
+
   return (
     <div className="app">
       <Sidebar
@@ -1370,7 +1359,7 @@ function App() {
             onBack={() => setViewingStep(null)}
           />
         ) : (
-          renderStage()
+          stageContent
         )}
       </div>
     </div>
