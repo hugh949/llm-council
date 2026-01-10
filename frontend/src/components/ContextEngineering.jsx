@@ -140,6 +140,22 @@ export default function ContextEngineering({
     }
   };
 
+  // Ensure we always have valid props
+  if (!conversationId) {
+    console.error('ContextEngineering: Missing conversationId prop');
+    return (
+      <div className="empty-state" style={{ padding: '40px' }}>
+        <h2>Error: Missing Conversation ID</h2>
+        <p>Please reload the conversation.</p>
+        {onReloadConversation && (
+          <button onClick={onReloadConversation} style={{ marginTop: '12px' }}>
+            Reload
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="context-engineering">
       <ProgressIndicator 

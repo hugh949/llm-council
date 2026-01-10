@@ -29,7 +29,19 @@ function App() {
     }
   }, [currentConversationId]);
 
-  // Debug: Log stage transitions (for troubleshooting) - removed to avoid dependency issues
+  // Force re-render when conversation state changes (especially after finalizing prompt)
+  useEffect(() => {
+    if (currentConversation) {
+      const promptFinalized = !!currentConversation.prompt_engineering?.finalized_prompt;
+      const contextFinalized = !!currentConversation.context_engineering?.finalized_context;
+      console.log('Conversation state changed:', {
+        id: currentConversation.id,
+        promptFinalized,
+        contextFinalized,
+        expectedStage: promptFinalized && !contextFinalized ? 'context_engineering' : 'unknown'
+      });
+    }
+  }, [currentConversation]);
 
   const loadConversations = async () => {
     try {
@@ -388,7 +400,8 @@ function App() {
       console.log('Verifying prompt finalization:', {
         isPromptFinalized,
         finalizedPromptExists: !!updatedConv.prompt_engineering?.finalized_prompt,
-        promptLength: updatedConv.prompt_engineering?.finalized_prompt?.length || 0
+        promptLength: updatedConv.prompt_engineering?.finalized_prompt?.length || 0,
+        conversationId: updatedConv.id
       });
       
       if (!isPromptFinalized) {
@@ -397,24 +410,44 @@ function App() {
         return;
       }
       
-      // Update state - this will trigger re-render
-      // React will call renderStage() again, which calls getCurrentStage()
-      // getCurrentStage() will see promptFinalized=true and return 'context_engineering'
+      // CRITICAL FIX: Update state with the finalized conversation
+      // This must happen synchronously before any async operations
+      console.log('🔄 Setting conversation state with finalized prompt...');
       setCurrentConversation(updatedConv);
       
-      console.log('State updated with conversation:', {
-        id: updatedConv.id,
-        promptFinalized: isPromptFinalized,
-        hasContextEng: !!updatedConv.context_engineering,
-        contextEngStructure: {
-          messages: updatedConv.context_engineering.messages.length,
-          documents: updatedConv.context_engineering.documents.length,
-          files: updatedConv.context_engineering.files.length,
-          links: updatedConv.context_engineering.links.length
-        },
-        expectedStage: 'context_engineering'
+      // Force React to recognize the state change by creating a new object reference
+      // This ensures React's reconciliation detects the change
+      await new Promise(resolve => {
+        // Use requestAnimationFrame to ensure state update is processed
+        requestAnimationFrame(() => {
+          resolve();
+        });
       });
-      console.log('✅ State updated - React will re-render and show Step 2 (Context Engineering)');
+      
+      // Now reload once more to get the absolute latest state from server
+      // This ensures we have the exact same state as the backend
+      console.log('🔄 Final reload to sync with backend state...');
+      const finalConv = await loadConversation(currentConversationId);
+      
+      if (finalConv && finalConv.id) {
+        // Double-check the prompt is finalized
+        const promptIsFinal = !!finalConv.prompt_engineering?.finalized_prompt;
+        console.log('✅ Final conversation state:', {
+          id: finalConv.id,
+          promptFinalized: promptIsFinal,
+          hasContextEng: !!finalConv.context_engineering,
+          stageShouldBe: promptIsFinal ? 'context_engineering' : 'prompt_engineering'
+        });
+        
+        if (promptIsFinal) {
+          // Update state one more time with the server's version
+          setCurrentConversation(finalConv);
+          console.log('✅ State fully synchronized - Step 2 should now render');
+        } else {
+          console.error('❌ ERROR: Prompt not finalized after reload!');
+          alert('Error: Failed to finalize prompt. Please try again.');
+        }
+      }
     } catch (error) {
       console.error('Failed to finalize prompt:', error);
       alert(`Error: ${error.message || 'Failed to finalize prompt'}`);
@@ -869,7 +902,21 @@ function App() {
         stageToRender = getCurrentStage() || 'prompt_engineering';
       } catch (error) {
         console.error('Error in getCurrentStage:', error);
-        stageToRender = 'prompt_engineering';
+        // Fallback: determine stage directly based on conversation state
+        if (promptEng.finalized_prompt && !contextEng.finalized_context) {
+          stageToRender = 'context_engineering';
+        } else if (!promptEng.finalized_prompt) {
+          stageToRender = 'prompt_engineering';
+        } else {
+          stageToRender = 'prompt_engineering'; // Safe default
+        }
+      }
+      
+      // DEFENSIVE CHECK: If prompt is finalized but we're still showing prompt_engineering,
+      // force switch to context_engineering (this should never happen, but just in case)
+      if (stageToRender === 'prompt_engineering' && promptEng.finalized_prompt && !contextEng.finalized_context) {
+        console.warn('⚠️ WARNING: Prompt is finalized but stage is still prompt_engineering. Forcing switch to context_engineering.');
+        stageToRender = 'context_engineering';
       }
       
       console.log('Rendering stage:', stageToRender, {
@@ -878,7 +925,8 @@ function App() {
         contextEngExists: !!currentConversation.context_engineering,
         contextMessages: Array.isArray(contextEng.messages) ? contextEng.messages.length : 0,
         councilMessages: councilDelib.messages?.length || 0,
-        conversationId: currentConversation.id
+        conversationId: currentConversation.id,
+        stageDeterminedBy: 'getCurrentStage()'
       });
 
     switch (stageToRender) {
@@ -1050,13 +1098,20 @@ function App() {
 
       default:
         // Fallback for any unexpected stage value
-        console.warn('Unknown stage:', stageToRender, 'Current conversation:', currentConversation);
-        // Try to determine what stage we should be in
+        console.warn('⚠️ Unknown stage:', stageToRender, 'Current conversation:', {
+          id: currentConversation?.id,
+          promptFinalized: !!promptEng.finalized_prompt,
+          contextFinalized: !!contextEng.finalized_context
+        });
+        
+        // DEFENSIVE: If prompt is finalized, always show Step 2
         if (promptEng.finalized_prompt && !contextEng.finalized_context) {
-          // Should be in context_engineering
+          console.log('🔧 Fallback: Showing context_engineering because prompt is finalized');
+          const finalizedPrompt = promptEng.finalized_prompt || null;
           return (
             <ContextEngineering
               conversationId={currentConversationId}
+              finalizedPrompt={finalizedPrompt}
               messages={contextEng.messages || []}
               documents={contextEng.documents || []}
               files={contextEng.files || []}
@@ -1067,15 +1122,25 @@ function App() {
               onUploadFile={handleUploadFile}
               onAddLink={handleAddLink}
               onPackageContext={handlePackageContext}
+              onEditPrompt={handleEditPrompt}
+              onReloadConversation={() => loadConversation(currentConversationId)}
               isLoading={contextLoading}
             />
           );
         }
+        
         return (
           <div className="empty-state">
             <h2>Loading...</h2>
             <p>Preparing the next stage... (Stage: {stageToRender})</p>
-            <button onClick={() => loadConversation(currentConversationId)}>Reload Conversation</button>
+            <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+              Conversation ID: {currentConversation?.id}<br/>
+              Prompt Finalized: {promptEng.finalized_prompt ? 'Yes' : 'No'}<br/>
+              Context Finalized: {contextEng.finalized_context ? 'Yes' : 'No'}
+            </p>
+            <button onClick={() => loadConversation(currentConversationId)} style={{ marginTop: '12px' }}>
+              Reload Conversation
+            </button>
           </div>
         );
     }
