@@ -224,18 +224,52 @@ function App() {
     
     try {
       console.log('Proceeding to Step 2: Context Engineering...');
-      // Initialize context engineering by sending an initialization message
-      // This marks context engineering as started and transitions to Step 2
-      const initMessage = "Ready to add context and attachments.";
-      const result = await api.sendContextEngineeringMessage(currentConversationId, initMessage);
       
-      if (result && result.conversation) {
-        console.log('Context engineering initialized, updating state...');
-        setCurrentConversation(result.conversation);
-        console.log('Transitioned to Step 2 successfully');
+      // Send an initialization message to context engineering
+      // This marks context engineering as started and transitions to Step 2
+      const welcomeMessage = "Ready to add context and attachments.";
+      
+      // Use the API directly to avoid double state updates from handleContextEngineeringMessage
+      const result = await api.sendContextEngineeringMessage(currentConversationId, welcomeMessage);
+      
+      if (result && result.conversation && result.conversation.id) {
+        console.log('Context engineering message sent, updating state...', {
+          id: result.conversation.id,
+          contextMessages: result.conversation.context_engineering?.messages?.length || 0
+        });
+        
+        // Update state with the conversation from the API response
+        // Ensure we preserve all existing data structure
+        const updatedConv = {
+          ...result.conversation,
+          context_engineering: {
+            ...(result.conversation.context_engineering || {}),
+            messages: result.conversation.context_engineering?.messages || [],
+            documents: result.conversation.context_engineering?.documents || [],
+            files: result.conversation.context_engineering?.files || [],
+            links: result.conversation.context_engineering?.links || []
+          }
+        };
+        
+        setCurrentConversation(updatedConv);
+        
+        // Small delay to allow React to process the state update, then reload for consistency
+        setTimeout(async () => {
+          console.log('Reloading conversation to ensure complete state...');
+          const reloadedConv = await loadConversation(currentConversationId);
+          
+          if (reloadedConv && reloadedConv.id) {
+            console.log('Transitioned to Step 2 successfully:', {
+              id: reloadedConv.id,
+              contextMessages: reloadedConv.context_engineering?.messages?.length || 0,
+              hasDocuments: !!(reloadedConv.context_engineering?.documents?.length > 0),
+              hasFiles: !!(reloadedConv.context_engineering?.files?.length > 0),
+              stage: getCurrentStage()
+            });
+          }
+        }, 200);
       } else {
-        // Fallback: reload conversation
-        console.log('No conversation in result, reloading...');
+        console.warn('No valid conversation in result, reloading...');
         await loadConversation(currentConversationId);
       }
     } catch (error) {
@@ -762,6 +796,18 @@ function App() {
         );
 
       case 'context_engineering':
+        // Ensure all props are valid before rendering
+        if (!currentConversationId || !currentConversation) {
+          console.error('Invalid conversation state for context_engineering stage');
+          return (
+            <div className="empty-state">
+              <h2>Loading Context Engineering...</h2>
+              <p>Preparing Step 2...</p>
+              <button onClick={() => loadConversation(currentConversationId)}>Reload</button>
+            </div>
+          );
+        }
+        
         return (
           <ContextEngineering
             conversationId={currentConversationId}
@@ -769,7 +815,7 @@ function App() {
             documents={contextEng.documents || []}
             files={contextEng.files || []}
             links={contextEng.links || []}
-            finalizedContext={contextEng.finalized_context}
+            finalizedContext={contextEng.finalized_context || null}
             onSendMessage={handleContextEngineeringMessage}
             onAddDocument={handleAddDocument}
             onUploadFile={handleUploadFile}

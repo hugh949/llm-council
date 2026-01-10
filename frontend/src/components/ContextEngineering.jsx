@@ -94,11 +94,17 @@ export default function ContextEngineering({
     }
   };
 
-  const totalAttachments = (documents?.length || 0) + (files?.length || 0) + (links?.length || 0);
+  // Validate props to prevent rendering errors - must be before using them
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const safeDocuments = Array.isArray(documents) ? documents : [];
+  const safeFiles = Array.isArray(files) ? files : [];
+  const safeLinks = Array.isArray(links) ? links : [];
+
+  const totalAttachments = (safeDocuments.length || 0) + (safeFiles.length || 0) + (safeLinks.length || 0);
 
   // Helper function to get file icon
   const getFileIcon = (file) => {
-    const type = (file.type || '').toLowerCase();
+    const type = (file?.type || '').toLowerCase();
     if (type === 'pdf') return '📄';
     if (type === 'docx' || type === 'doc') return '📝';
     if (type === 'xlsx' || type === 'xls') return '📊';
@@ -110,7 +116,7 @@ export default function ContextEngineering({
 
   // Helper function to get file preview (first few lines of content)
   const getFilePreview = (file) => {
-    const content = file.content || '';
+    const content = file?.content || '';
     if (!content) return 'No content preview available';
     const preview = content.substring(0, 150).replace(/\n/g, ' ').trim();
     return preview + (content.length > 150 ? '...' : '');
@@ -214,13 +220,14 @@ export default function ContextEngineering({
         )}
 
         {/* Files List */}
-        {files && files.length > 0 && (
+        {safeFiles && safeFiles.length > 0 && (
           <div className="files-list">
-            <h4>Uploaded Files ({files.length})</h4>
+            <h4>Uploaded Files ({safeFiles.length})</h4>
             <div className="files-grid">
-              {files.map((file, index) => {
-                const fileName = file.name || file.get?.('name') || 'Untitled';
-                const fileType = file.type || file.get?.('type') || 'unknown';
+              {safeFiles.map((file, index) => {
+                if (!file) return null;
+                const fileName = file?.name || file?.get?.('name') || 'Untitled';
+                const fileType = file?.type || file?.get?.('type') || 'unknown';
                 const preview = getFilePreview(file);
                 return (
                   <div key={index} className="file-item with-preview">
@@ -228,9 +235,9 @@ export default function ContextEngineering({
                     <div className="file-info">
                       <div className="file-name">{fileName}</div>
                       <div className="file-type-badge">{fileType.toUpperCase()}</div>
-                      {file.page_count && <div className="file-meta">📑 {file.page_count} pages</div>}
-                      {file.slide_count && <div className="file-meta">🎞️ {file.slide_count} slides</div>}
-                      {file.content && (
+                      {file?.page_count && <div className="file-meta">📑 {file.page_count} pages</div>}
+                      {file?.slide_count && <div className="file-meta">🎞️ {file.slide_count} slides</div>}
+                      {file?.content && (
                         <div className="file-preview-text" title={preview}>
                           {preview}
                         </div>
@@ -244,34 +251,40 @@ export default function ContextEngineering({
         )}
 
         {/* Links List */}
-        {links && links.length > 0 && (
+        {safeLinks && safeLinks.length > 0 && (
           <div className="links-list">
-            <h4>External Links ({links.length})</h4>
+            <h4>External Links ({safeLinks.length})</h4>
             <ul>
-              {links.map((link, index) => (
-                <li key={index}>
-                  <a
-                    href={link.original_url || link.name || link.get?.('original_url') || link.get?.('name')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {link.original_url || link.name || link.get?.('original_url') || link.get?.('name')}
-                  </a>
-                  {link.error && <span className="error-badge">Error</span>}
-                </li>
-              ))}
+              {safeLinks.map((link, index) => {
+                if (!link) return null;
+                const linkUrl = link?.original_url || link?.name || link?.get?.('original_url') || link?.get?.('name') || '#';
+                const linkText = link?.original_url || link?.name || link?.get?.('original_url') || link?.get?.('name') || 'Link';
+                return (
+                  <li key={index}>
+                    <a
+                      href={linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {linkText}
+                    </a>
+                    {link?.error && <span className="error-badge">Error</span>}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
 
         {/* Documents List */}
-        {documents && documents.length > 0 && (
+        {safeDocuments && safeDocuments.length > 0 && (
           <div className="documents-list">
-            <h4>Text Documents ({documents.length})</h4>
+            <h4>Text Documents ({safeDocuments.length})</h4>
             <div className="documents-grid">
-              {documents.map((doc, index) => {
-                const docName = doc.name || doc.get?.('name') || 'Untitled';
-                const docContent = doc.content || doc.get?.('content') || '';
+              {safeDocuments.map((doc, index) => {
+                if (!doc) return null;
+                const docName = doc?.name || doc?.get?.('name') || 'Untitled';
+                const docContent = doc?.content || doc?.get?.('content') || '';
                 const preview = docContent.substring(0, 200);
                 return (
                   <div key={index} className="document-item with-preview">
@@ -296,21 +309,24 @@ export default function ContextEngineering({
 
       {/* Messages Section */}
       <div className="messages-container">
-        {messages.length === 0 && totalAttachments === 0 ? (
+        {safeMessages.length === 0 && totalAttachments === 0 ? (
           <div className="empty-state">
             <p>Add files, documents, links, or describe what context would be helpful...</p>
           </div>
         ) : (
-          messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.role}`}>
-              <div className="message-label">
-                {msg.role === 'user' ? 'You' : 'Context Assistant'}
+          safeMessages.map((msg, index) => {
+            if (!msg || !msg.content) return null;
+            return (
+              <div key={index} className={`message ${msg.role || 'user'}`}>
+                <div className="message-label">
+                  {msg.role === 'user' ? 'You' : 'Context Assistant'}
+                </div>
+                <div className="message-content">
+                  <ReactMarkdown>{msg.content || ''}</ReactMarkdown>
+                </div>
               </div>
-              <div className="message-content">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
 
         {isLoading && (
