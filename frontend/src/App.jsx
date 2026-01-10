@@ -17,6 +17,7 @@ function App() {
   const [contextLoading, setContextLoading] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
   const [currentStep, setCurrentStep] = useState(null); // Explicitly track current step: 'prompt_engineering', 'context_engineering', 'review', 'council_deliberation'
+  const [stepLocked, setStepLocked] = useState(false); // Flag to prevent useEffect from overriding explicit step sets during transitions
 
   // Load conversations on mount
   useEffect(() => {
@@ -166,12 +167,21 @@ function App() {
   };
 
   // Sync currentStep with conversation state when conversation changes
-  // IMPORTANT: Only depend on currentConversation to avoid infinite loops
+  // BUT: Respect stepLocked flag to prevent overriding explicit step sets
   useEffect(() => {
+    // If step is explicitly locked (e.g., during transition), don't auto-sync
+    if (stepLocked) {
+      console.log('🔒 Step is locked - skipping auto-sync');
+      return;
+    }
+
     if (!currentConversation) {
-      if (currentStep !== null) {
-        setCurrentStep(null);
-      }
+      setCurrentStep(prev => {
+        if (prev !== null && !stepLocked) {
+          return null;
+        }
+        return prev;
+      });
       return;
     }
 
@@ -194,22 +204,26 @@ function App() {
       calculatedStep = 'council_deliberation';
     }
 
-    // Only update if different to avoid unnecessary re-renders
-    // Use a ref check to compare without causing dependency issues
+    // Only update if different and not locked
     setCurrentStep(prevStep => {
+      if (stepLocked) {
+        console.log('🔒 Step locked - keeping current step:', prevStep);
+        return prevStep;
+      }
       if (prevStep !== calculatedStep) {
         console.log('🔄 Auto-syncing currentStep:', {
           from: prevStep,
           to: calculatedStep,
           conversationId: currentConversation.id,
           promptFinalized,
-          contextFinalized
+          contextFinalized,
+          stepLocked
         });
         return calculatedStep;
       }
       return prevStep;
     });
-  }, [currentConversation]); // Only depend on currentConversation - use functional update to avoid currentStep dependency
+  }, [currentConversation, stepLocked]); // Include stepLocked in dependencies
 
   // Get the current stage - use explicit currentStep state
   const getCurrentStage = () => {
@@ -512,23 +526,32 @@ function App() {
         throw new Error('Prompt finalization verification failed - finalized_prompt is empty');
       }
       
-      // CRITICAL: Update conversation state FIRST, then set step
-      // This ensures useEffect sees the finalized prompt and won't override our explicit step
-      console.log('🔄 Updating conversation state first...');
+      // CRITICAL: Lock step first to prevent useEffect from overriding
+      console.log('🔒 LOCKING step to prevent auto-sync override');
+      setStepLocked(true);
+      
+      // Update conversation state
+      console.log('🔄 Updating conversation state...');
       setCurrentConversation(newConversationObject);
       
-      // THEN explicitly set step - this will trigger immediate re-render with Step 2
-      // The useEffect will see conversation is updated and won't override since calculated step matches
+      // EXPLICITLY set step to 'context_engineering' - this MUST happen
       console.log('🎯 EXPLICITLY setting currentStep to "context_engineering"');
       setCurrentStep('context_engineering');
       
       // Clear loading state
       setPromptLoading(false);
       
-      console.log('✅ Transition initiated!');
-      console.log('✅ Conversation state updated with finalized prompt');
-      console.log('✅ currentStep explicitly set to "context_engineering"');
-      console.log('✅ React will re-render NOW - Step 2 (ContextEngineering) should appear!');
+      // Unlock after a brief delay to allow render to complete
+      // This ensures the step stays locked during the critical transition period
+      setTimeout(() => {
+        console.log('🔓 Unlocking step after transition');
+        setStepLocked(false);
+      }, 500);
+      
+      console.log('✅ Transition complete!');
+      console.log('✅ Step is LOCKED to "context_engineering"');
+      console.log('✅ Conversation updated with finalized prompt');
+      console.log('✅ React will re-render NOW - Step 2 (ContextEngineering) MUST appear!');
       
     } catch (error) {
       console.error('❌ Failed to finalize prompt:', error);
@@ -977,35 +1000,62 @@ function App() {
         currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
       }
 
-      // Get stage to render - prioritize explicit currentStep state
+      // SIMPLIFIED, BULLETPROOF LOGIC: Directly check prompt finalization status
+      const promptFinalized = !!promptEng.finalized_prompt;
+      const contextFinalized = !!contextEng.finalized_context;
+      const finalizedPromptText = promptEng.finalized_prompt;
+      
+      // CRITICAL DEBUG: Log everything to understand what's happening
+      console.log('🔍 renderStage() DEBUG:', {
+        conversationId: currentConversation.id,
+        currentStep: currentStep,
+        stepLocked: stepLocked,
+        promptFinalized: promptFinalized,
+        finalizedPromptExists: !!finalizedPromptText,
+        finalizedPromptLength: finalizedPromptText?.length || 0,
+        finalizedPromptPreview: finalizedPromptText?.substring(0, 50) || 'NONE',
+        contextFinalized: contextFinalized,
+        promptEngKeys: Object.keys(promptEng),
+        contextEngKeys: Object.keys(contextEng)
+      });
+      
       let stageToRender;
-      try {
-        // First check explicit currentStep state (most reliable)
-        if (currentStep) {
-          console.log('🎯 Using explicit currentStep state:', currentStep);
-          stageToRender = currentStep;
-        } else {
-          // Fallback to getCurrentStage calculation
-          stageToRender = getCurrentStage() || 'prompt_engineering';
+      
+      // ABSOLUTE RULE #1: If prompt is finalized and context is NOT finalized, show Step 2
+      // This takes absolute precedence over EVERYTHING - no exceptions
+      if (promptFinalized && !contextFinalized) {
+        console.log('✅✅✅ PROMPT IS FINALIZED AND CONTEXT NOT FINALIZED - FORCING Step 2');
+        console.log('   finalized_prompt length:', finalizedPromptText?.length || 0);
+        console.log('   context_finalized:', contextFinalized);
+        stageToRender = 'context_engineering';
+      } else if (currentStep && !stepLocked) {
+        // If we have an explicit step set and it's not locked, use it
+        console.log('🎯 Using explicit currentStep state:', currentStep);
+        stageToRender = currentStep;
+      } else {
+        // Fallback: calculate from conversation state
+        try {
+          const calculated = getCurrentStage();
+          stageToRender = calculated || 'prompt_engineering';
           console.log('📊 Using calculated stage from getCurrentStage():', stageToRender);
-        }
-      } catch (error) {
-        console.error('❌ Error determining stage:', error);
-        // Fallback: determine stage directly based on conversation state
-        if (promptEng.finalized_prompt && !contextEng.finalized_context) {
-          stageToRender = 'context_engineering';
-        } else if (!promptEng.finalized_prompt) {
-          stageToRender = 'prompt_engineering';
-        } else {
-          stageToRender = 'prompt_engineering'; // Safe default
+        } catch (error) {
+          console.error('❌ Error in getCurrentStage():', error);
+          // Ultimate fallback: check prompt status directly
+          if (promptFinalized && !contextFinalized) {
+            stageToRender = 'context_engineering';
+          } else if (!promptFinalized) {
+            stageToRender = 'prompt_engineering';
+          } else {
+            stageToRender = 'prompt_engineering';
+          }
         }
       }
       
-      // CRITICAL SAFETY CHECK: If prompt is finalized, we MUST show Step 2
-      // This overrides everything else as a failsafe
-      if (promptEng.finalized_prompt && !contextEng.finalized_context) {
+      // ABSOLUTE SAFETY CHECK: If prompt is finalized, we MUST show Step 2
+      // This is a failsafe that should never be needed, but ensures we never show Step 1 when prompt is done
+      if (promptFinalized && !contextFinalized) {
         if (stageToRender !== 'context_engineering') {
-          console.warn('⚠️ SAFETY OVERRIDE: Prompt is finalized but stage is', stageToRender, '- Forcing to context_engineering');
+          console.error('🚨🚨🚨 CRITICAL: Prompt finalized but stageToRender is', stageToRender, '- FORCING context_engineering');
           stageToRender = 'context_engineering';
         }
       }
