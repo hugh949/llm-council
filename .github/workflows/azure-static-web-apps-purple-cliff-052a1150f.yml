@@ -1,13 +1,17 @@
 name: Azure Static Web Apps CI/CD
 
+# DISABLED: This workflow is disabled because we're using Azure App Service instead of Static Web Apps
+# To enable: Remove this workflow_dispatch trigger and uncomment the push/pull_request triggers
+
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
+  workflow_dispatch: # Manual trigger only - disabled automatic deployment
+  # push:
+  #   branches:
+  #     - main
+  # pull_request:
+  #   types: [opened, synchronize, reopened, closed]
+  #   branches:
+  #     - main
 
 jobs:
   build_and_deploy_job:
