@@ -20,6 +20,21 @@ export default function ContextEngineering({
   onReloadConversation,
   isLoading,
 }) {
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🎯 ContextEngineering: COMPONENT RENDERING');
+  console.log('   Props received:', {
+    conversationId,
+    hasFinalizedPrompt: !!finalizedPrompt,
+    finalizedPromptLength: finalizedPrompt?.length || 0,
+    messagesCount: Array.isArray(messages) ? messages.length : 'NOT_ARRAY',
+    documentsCount: Array.isArray(documents) ? documents.length : 'NOT_ARRAY',
+    filesCount: Array.isArray(files) ? files.length : 'NOT_ARRAY',
+    linksCount: Array.isArray(links) ? links.length : 'NOT_ARRAY',
+    hasFinalizedContext: !!finalizedContext,
+    isLoading
+  });
+  console.log('═══════════════════════════════════════════════════════════');
+  
   const [input, setInput] = useState('');
   const [documentName, setDocumentName] = useState('');
   const [documentContent, setDocumentContent] = useState('');
@@ -33,10 +48,23 @@ export default function ContextEngineering({
 
   // Sync editedPrompt when finalizedPrompt prop changes
   useEffect(() => {
+    console.log('🔄 ContextEngineering useEffect: finalizedPrompt changed:', {
+      hasFinalizedPrompt: !!finalizedPrompt,
+      finalizedPromptLength: finalizedPrompt?.length || 0,
+      editingPrompt
+    });
     if (finalizedPrompt && !editingPrompt) {
       setEditedPrompt(finalizedPrompt);
     }
   }, [finalizedPrompt, editingPrompt]);
+  
+  // Log component mount/unmount
+  useEffect(() => {
+    console.log('✅ ContextEngineering: Component mounted');
+    return () => {
+      console.log('🔴 ContextEngineering: Component unmounting');
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

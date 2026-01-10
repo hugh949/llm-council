@@ -25,9 +25,32 @@ function App() {
   // Load conversation details when selected
   useEffect(() => {
     if (currentConversationId) {
+      console.log('🔄 useEffect: currentConversationId changed, loading conversation:', currentConversationId);
       loadConversation(currentConversationId);
     }
   }, [currentConversationId]);
+
+  // CRITICAL: Log whenever currentConversation state changes
+  useEffect(() => {
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔄 useEffect: currentConversation state changed');
+    if (currentConversation) {
+      const promptEng = currentConversation.prompt_engineering || {};
+      const contextEng = currentConversation.context_engineering || {};
+      const promptFinalized = !!promptEng.finalized_prompt;
+      const contextFinalized = !!contextEng.finalized_context;
+      
+      console.log('   Conversation ID:', currentConversation.id);
+      console.log('   Prompt finalized:', promptFinalized);
+      console.log('   Finalized prompt length:', promptEng.finalized_prompt?.length || 0);
+      console.log('   Context finalized:', contextFinalized);
+      console.log('   Expected stage:', promptFinalized && !contextFinalized ? 'context_engineering (Step 2)' : 'other');
+      console.log('   Actual stage (from getCurrentStage):', getCurrentStage());
+    } else {
+      console.log('   No conversation (null)');
+    }
+    console.log('═══════════════════════════════════════════════════════════');
+  }, [currentConversation]);
 
 
   const loadConversations = async () => {
@@ -366,60 +389,129 @@ function App() {
   };
 
   const handleFinalizePrompt = async (finalizedPrompt) => {
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔵 handleFinalizePrompt: START');
+    console.log('   conversationId:', currentConversationId);
+    console.log('   finalizedPrompt length:', finalizedPrompt?.length || 0);
+    console.log('   finalizedPrompt preview:', finalizedPrompt?.substring(0, 100));
+    
     if (!currentConversationId) {
-      console.error('No conversation ID available');
+      console.error('❌ handleFinalizePrompt: No conversation ID available');
+      alert('Error: No conversation ID. Please create a new conversation.');
       return;
     }
     
     setPromptLoading(true);
+    console.log('🔵 handleFinalizePrompt: Set loading state to true');
     
     try {
-      // Finalize the prompt via API
+      console.log('🔵 handleFinalizePrompt: Calling API finalizePrompt...');
       const result = await api.finalizePrompt(currentConversationId, finalizedPrompt);
+      console.log('🔵 handleFinalizePrompt: API response received:', {
+        hasResult: !!result,
+        hasConversation: !!result?.conversation,
+        conversationId: result?.conversation?.id,
+        hasFinalizedPrompt: !!result?.conversation?.prompt_engineering?.finalized_prompt
+      });
       
       // Get the updated conversation from API response
       let updatedConversation = result?.conversation;
       if (!updatedConversation) {
-        // Fallback: fetch conversation directly
+        console.warn('⚠️ handleFinalizePrompt: API response missing conversation, fetching directly...');
         updatedConversation = await api.getConversation(currentConversationId);
+        console.log('🔵 handleFinalizePrompt: Fetched conversation directly:', {
+          hasConversation: !!updatedConversation,
+          conversationId: updatedConversation?.id
+        });
       }
       
       if (!updatedConversation || !updatedConversation.id) {
+        console.error('❌ handleFinalizePrompt: Failed to retrieve conversation after finalization');
         throw new Error('Failed to retrieve conversation after finalization');
       }
+      
+      console.log('🔵 handleFinalizePrompt: Building conversation with defaults...');
+      console.log('   Raw conversation structure:', {
+        id: updatedConversation.id,
+        hasPromptEng: !!updatedConversation.prompt_engineering,
+        hasContextEng: !!updatedConversation.context_engineering,
+        promptEngKeys: updatedConversation.prompt_engineering ? Object.keys(updatedConversation.prompt_engineering) : [],
+        contextEngKeys: updatedConversation.context_engineering ? Object.keys(updatedConversation.context_engineering) : []
+      });
       
       // Ensure proper structure exists
       const conversationWithDefaults = {
         ...updatedConversation,
         prompt_engineering: {
-          messages: updatedConversation.prompt_engineering?.messages || [],
+          messages: Array.isArray(updatedConversation.prompt_engineering?.messages) 
+            ? updatedConversation.prompt_engineering.messages 
+            : [],
           finalized_prompt: updatedConversation.prompt_engineering?.finalized_prompt || finalizedPrompt
         },
         context_engineering: {
-          messages: updatedConversation.context_engineering?.messages || [],
-          documents: updatedConversation.context_engineering?.documents || [],
-          files: updatedConversation.context_engineering?.files || [],
-          links: updatedConversation.context_engineering?.links || [],
+          messages: Array.isArray(updatedConversation.context_engineering?.messages) 
+            ? updatedConversation.context_engineering.messages 
+            : [],
+          documents: Array.isArray(updatedConversation.context_engineering?.documents) 
+            ? updatedConversation.context_engineering.documents 
+            : [],
+          files: Array.isArray(updatedConversation.context_engineering?.files) 
+            ? updatedConversation.context_engineering.files 
+            : [],
+          links: Array.isArray(updatedConversation.context_engineering?.links) 
+            ? updatedConversation.context_engineering.links 
+            : [],
           finalized_context: updatedConversation.context_engineering?.finalized_context || null
         },
         council_deliberation: {
-          messages: updatedConversation.council_deliberation?.messages || []
+          messages: Array.isArray(updatedConversation.council_deliberation?.messages) 
+            ? updatedConversation.council_deliberation.messages 
+            : []
         }
       };
       
+      console.log('🔵 handleFinalizePrompt: Conversation structure prepared:', {
+        id: conversationWithDefaults.id,
+        finalizedPromptExists: !!conversationWithDefaults.prompt_engineering.finalized_prompt,
+        finalizedPromptLength: conversationWithDefaults.prompt_engineering.finalized_prompt?.length || 0,
+        contextEngExists: !!conversationWithDefaults.context_engineering,
+        contextEngMessages: conversationWithDefaults.context_engineering.messages.length,
+        contextEngDocuments: conversationWithDefaults.context_engineering.documents.length
+      });
+      
       // Verify prompt was finalized
       if (!conversationWithDefaults.prompt_engineering.finalized_prompt) {
+        console.error('❌ handleFinalizePrompt: Prompt finalization verification failed - finalized_prompt is missing');
         throw new Error('Prompt finalization failed - finalized_prompt is missing');
       }
+      
+      console.log('🔵 handleFinalizePrompt: Calling setCurrentConversation...');
+      console.log('   BEFORE update - current conversation:', {
+        id: currentConversation?.id,
+        hasFinalizedPrompt: !!currentConversation?.prompt_engineering?.finalized_prompt
+      });
       
       // Update conversation state - React will re-render and getCurrentStage() will return 'context_engineering'
       setCurrentConversation(conversationWithDefaults);
       setPromptLoading(false);
       
-      console.log('Prompt finalized successfully. Conversation state updated. React will re-render.');
+      console.log('✅ handleFinalizePrompt: State update completed');
+      console.log('   React should now re-render');
+      console.log('   Expected: getCurrentStage() should return "context_engineering"');
+      console.log('   New conversation state:', {
+        id: conversationWithDefaults.id,
+        finalizedPrompt: !!conversationWithDefaults.prompt_engineering.finalized_prompt,
+        contextFinalized: !!conversationWithDefaults.context_engineering.finalized_context
+      });
+      console.log('═══════════════════════════════════════════════════════════');
       
     } catch (error) {
-      console.error('Failed to finalize prompt:', error);
+      console.error('═══════════════════════════════════════════════════════════');
+      console.error('❌ handleFinalizePrompt: ERROR CAUGHT');
+      console.error('   Error message:', error.message);
+      console.error('   Error stack:', error.stack);
+      console.error('   Error object:', error);
+      console.error('═══════════════════════════════════════════════════════════');
       setPromptLoading(false);
       alert(`Error: ${error.message || 'Failed to finalize prompt. Please try again.'}`);
     }
@@ -842,18 +934,39 @@ function App() {
 
   // Helper function to render ContextEngineering - extracted for reuse
   const renderContextEngineering = () => {
+    console.log('🎨 renderContextEngineering: START');
+    console.log('   conversationId:', currentConversationId);
+    console.log('   currentConversation exists:', !!currentConversation);
+    
     if (!currentConversationId || !currentConversation) {
+      console.warn('⚠️ renderContextEngineering: Missing conversationId or currentConversation');
       return (
         <div className="empty-state">
           <h2>Loading Context Engineering...</h2>
           <p>Preparing Step 2...</p>
-          <button onClick={() => loadConversation(currentConversationId)}>Reload</button>
+          <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+            Conversation ID: {currentConversationId || 'MISSING'}<br/>
+            Conversation exists: {currentConversation ? 'Yes' : 'No'}
+          </p>
+          <button onClick={() => {
+            console.log('🔄 Reloading conversation from renderContextEngineering...');
+            loadConversation(currentConversationId);
+          }}>Reload</button>
         </div>
       );
     }
 
     const promptEng = currentConversation.prompt_engineering || { messages: [], finalized_prompt: null };
     const contextEng = currentConversation.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null };
+    
+    console.log('🎨 renderContextEngineering: Extracted data:', {
+      finalizedPromptExists: !!promptEng.finalized_prompt,
+      finalizedPromptLength: promptEng.finalized_prompt?.length || 0,
+      contextEngMessages: Array.isArray(contextEng.messages) ? contextEng.messages.length : 'NOT_ARRAY',
+      contextEngDocuments: Array.isArray(contextEng.documents) ? contextEng.documents.length : 'NOT_ARRAY',
+      contextEngFiles: Array.isArray(contextEng.files) ? contextEng.files.length : 'NOT_ARRAY',
+      contextEngLinks: Array.isArray(contextEng.links) ? contextEng.links.length : 'NOT_ARRAY'
+    });
     
     const safeContextEng = {
       messages: Array.isArray(contextEng.messages) ? contextEng.messages : [],
@@ -865,32 +978,56 @@ function App() {
     
     const finalizedPrompt = promptEng.finalized_prompt || null;
     
-    return (
-      <ContextEngineering
-        conversationId={currentConversationId}
-        finalizedPrompt={finalizedPrompt}
-        messages={safeContextEng.messages}
-        documents={safeContextEng.documents}
-        files={safeContextEng.files}
-        links={safeContextEng.links}
-        finalizedContext={safeContextEng.finalized_context}
-        onSendMessage={handleContextEngineeringMessage}
-        onAddDocument={handleAddDocument}
-        onUploadFile={handleUploadFile}
-        onAddLink={handleAddLink}
-        onPackageContext={handlePackageContext}
-        onEditPrompt={handleEditPrompt}
-        onReloadConversation={() => loadConversation(currentConversationId)}
-        isLoading={contextLoading}
-      />
-    );
+    console.log('🎨 renderContextEngineering: Preparing props for ContextEngineering component:', {
+      conversationId: currentConversationId,
+      finalizedPromptExists: !!finalizedPrompt,
+      finalizedPromptLength: finalizedPrompt?.length || 0,
+      messagesCount: safeContextEng.messages.length,
+      documentsCount: safeContextEng.documents.length,
+      filesCount: safeContextEng.files.length,
+      linksCount: safeContextEng.links.length,
+      hasFinalizedContext: !!safeContextEng.finalized_context,
+      contextLoading
+    });
+    
+    console.log('🎨 renderContextEngineering: Rendering ContextEngineering component...');
+    
+    try {
+      const component = (
+        <ContextEngineering
+          conversationId={currentConversationId}
+          finalizedPrompt={finalizedPrompt}
+          messages={safeContextEng.messages}
+          documents={safeContextEng.documents}
+          files={safeContextEng.files}
+          links={safeContextEng.links}
+          finalizedContext={safeContextEng.finalized_context}
+          onSendMessage={handleContextEngineeringMessage}
+          onAddDocument={handleAddDocument}
+          onUploadFile={handleUploadFile}
+          onAddLink={handleAddLink}
+          onPackageContext={handlePackageContext}
+          onEditPrompt={handleEditPrompt}
+          onReloadConversation={() => loadConversation(currentConversationId)}
+          isLoading={contextLoading}
+        />
+      );
+      console.log('✅ renderContextEngineering: Component created successfully');
+      return component;
+    } catch (componentError) {
+      console.error('❌ renderContextEngineering: Error creating component:', componentError);
+      throw componentError;
+    }
   };
 
   // Render appropriate stage component
   const renderStage = () => {
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🎨 renderStage: START');
+    
     try {
       if (!currentConversation) {
-        console.log('No current conversation, showing welcome');
+        console.log('🎨 renderStage: No conversation, showing welcome');
         return (
           <div className="empty-state">
             <h2>Welcome to LLM Council</h2>
@@ -899,23 +1036,46 @@ function App() {
         );
       }
 
+      console.log('🎨 renderStage: Conversation exists:', {
+        id: currentConversation.id,
+        conversationKeys: Object.keys(currentConversation)
+      });
+
       // Ensure all data structures exist with proper defaults
       const promptEng = currentConversation.prompt_engineering || { messages: [], finalized_prompt: null };
       const contextEng = currentConversation.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null };
       const councilDelib = currentConversation.council_deliberation || { messages: [] };
 
+      console.log('🎨 renderStage: Extracted structures:', {
+        promptEngType: typeof promptEng,
+        promptEngKeys: Object.keys(promptEng),
+        finalizedPromptExists: !!promptEng.finalized_prompt,
+        finalizedPromptLength: promptEng.finalized_prompt?.length || 0,
+        contextEngType: typeof contextEng,
+        contextEngKeys: Object.keys(contextEng),
+        contextFinalized: contextEng.finalized_context,
+        councilDelibType: typeof councilDelib,
+        councilDelibKeys: Object.keys(councilDelib)
+      });
+
       // Ensure context_engineering structure is always valid (even if empty)
       if (!currentConversation.context_engineering) {
+        console.warn('⚠️ renderStage: context_engineering missing, initializing...');
         currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
       }
 
       // Simple logic: determine stage based on conversation state
+      console.log('🎨 renderStage: Calling getCurrentStage()...');
       const stageToRender = getCurrentStage();
       
-      console.log('Rendering stage:', stageToRender, {
+      console.log('🎨 renderStage: Stage determined:', stageToRender);
+      console.log('🎨 renderStage: Conversation state summary:', {
+        conversationId: currentConversation.id,
+        stageToRender,
         promptFinalized: !!promptEng.finalized_prompt,
+        finalizedPromptPreview: promptEng.finalized_prompt?.substring(0, 50) || 'NONE',
         contextFinalized: !!contextEng.finalized_context,
-        conversationId: currentConversation.id
+        contextEngStructureValid: !!contextEng
       });
 
     switch (stageToRender) {
@@ -935,8 +1095,45 @@ function App() {
         );
 
       case 'context_engineering':
-        // Use the helper function for consistent rendering
-        return renderContextEngineering();
+        console.log('🎨 renderStage: Rendering context_engineering stage');
+        console.log('   conversationId:', currentConversationId);
+        console.log('   currentConversation exists:', !!currentConversation);
+        console.log('   finalizedPrompt exists:', !!promptEng.finalized_prompt);
+        console.log('   Calling renderContextEngineering()...');
+        
+        try {
+          const rendered = renderContextEngineering();
+          console.log('✅ renderStage: renderContextEngineering() returned successfully');
+          console.log('   Returned component type:', rendered?.type?.name || 'Unknown');
+          return rendered;
+        } catch (renderError) {
+          console.error('❌ renderStage: Error in renderContextEngineering():', renderError);
+          console.error('   Error message:', renderError.message);
+          console.error('   Error stack:', renderError.stack);
+          return (
+            <div className="empty-state" style={{ color: 'red', padding: '40px' }}>
+              <h2>Error Rendering Step 2</h2>
+              <p>An error occurred while rendering the Context Engineering screen.</p>
+              <details style={{ marginTop: '20px', textAlign: 'left' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>Error Details</summary>
+                <pre style={{ fontSize: '12px', marginTop: '10px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                  {renderError.message}
+                  {'\n\n'}
+                  {renderError.stack}
+                </pre>
+              </details>
+              <button 
+                onClick={() => {
+                  console.log('🔄 Reloading conversation after render error...');
+                  loadConversation(currentConversationId);
+                }} 
+                style={{ marginTop: '20px', padding: '10px 20px' }}
+              >
+                Reload Conversation
+              </button>
+            </div>
+          );
+        }
 
       case 'review':
         // Ensure we have the required data
@@ -1053,31 +1250,91 @@ function App() {
         );
     }
     } catch (error) {
-      console.error('Error in renderStage:', error);
+      console.error('═══════════════════════════════════════════════════════════');
+      console.error('❌ renderStage: FATAL ERROR CAUGHT');
+      console.error('   Error message:', error.message);
+      console.error('   Error stack:', error.stack);
+      console.error('   Error name:', error.name);
+      console.error('   Current conversation:', {
+        id: currentConversation?.id,
+        exists: !!currentConversation
+      });
+      console.error('═══════════════════════════════════════════════════════════');
+      
       return (
-        <div className="empty-state" style={{ color: 'red', padding: '40px' }}>
-          <h2>Error Rendering Stage</h2>
-          <p>{error.message || 'An error occurred while rendering the stage'}</p>
+        <div className="empty-state" style={{ color: 'red', padding: '40px', textAlign: 'left' }}>
+          <h2>⚠️ Fatal Error Rendering Stage</h2>
+          <p><strong>Error:</strong> {error.message || 'An unknown error occurred'}</p>
+          <details style={{ marginTop: '20px' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>Full Error Details</summary>
+            <pre style={{ 
+              fontSize: '11px', 
+              padding: '15px', 
+              backgroundColor: '#f5f5f5', 
+              borderRadius: '4px',
+              overflow: 'auto',
+              maxHeight: '300px'
+            }}>
+              <strong>Error Name:</strong> {error.name}
+              {'\n\n'}
+              <strong>Error Message:</strong> {error.message}
+              {'\n\n'}
+              <strong>Stack Trace:</strong>
+              {'\n'}
+              {error.stack}
+            </pre>
+          </details>
+          <div style={{ marginTop: '20px' }}>
+            <p><strong>Diagnostic Info:</strong></p>
+            <ul style={{ fontSize: '12px', marginTop: '10px' }}>
+              <li>Conversation ID: {currentConversationId || 'NONE'}</li>
+              <li>Conversation exists: {currentConversation ? 'Yes' : 'No'}</li>
+              <li>Current conversation ID: {currentConversation?.id || 'NONE'}</li>
+            </ul>
+          </div>
           <button 
             onClick={() => {
+              console.log('🔄 Reloading conversation after fatal error...');
               if (currentConversationId) {
                 loadConversation(currentConversationId);
+              } else {
+                window.location.reload();
               }
             }}
             style={{
-              marginTop: '12px',
-              padding: '8px 16px',
+              marginTop: '20px',
+              padding: '12px 24px',
               backgroundColor: '#4a90e2',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize: '14px'
             }}
           >
             Reload Conversation
           </button>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              marginTop: '10px',
+              marginLeft: '10px',
+              padding: '12px 24px',
+              backgroundColor: '#666',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Reload Page
+          </button>
         </div>
       );
+    } finally {
+      console.log('🎨 renderStage: END');
+      console.log('═══════════════════════════════════════════════════════════');
     }
   };
 
