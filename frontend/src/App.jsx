@@ -42,24 +42,47 @@ function App() {
 
   const loadConversation = async (id) => {
     try {
+      console.log('Loading conversation:', id);
       const conv = await api.getConversation(id);
       console.log('Loaded conversation:', conv?.id, 'Prompt finalized:', !!conv?.prompt_engineering?.finalized_prompt);
       
       // Only update state if we got valid conversation data
       // This prevents blank screens from invalid data
       if (conv && conv.id) {
-        setCurrentConversation(conv);
-        return conv;
+        // Preserve existing conversation if reload fails to prevent blank screen
+        const previousConv = currentConversation;
+        try {
+          setCurrentConversation(conv);
+          console.log('Conversation state updated successfully');
+          return conv;
+        } catch (setError) {
+          console.error('Error updating conversation state:', setError);
+          // If state update fails, keep previous conversation to prevent blank screen
+          if (previousConv) {
+            console.log('Keeping previous conversation state to prevent blank screen');
+            setCurrentConversation(previousConv);
+          }
+          return previousConv || conv;
+        }
       } else {
         console.error('Invalid conversation data received:', conv);
+        // Keep existing conversation if we have one to prevent blank screen
+        if (currentConversation && currentConversation.id === id) {
+          console.log('Invalid data but keeping existing conversation to prevent blank screen');
+          return currentConversation;
+        }
         throw new Error('Invalid conversation data received from server');
       }
     } catch (error) {
       console.error('Failed to load conversation:', error);
       // Don't clear current conversation on error - keep existing state to prevent blank screen
-      // Show user-friendly error message
-      alert(`Error: ${error.message || 'Failed to load conversation. Please try again.'}`);
-      return null;
+      // Only show error if we don't have a current conversation
+      if (!currentConversation) {
+        alert(`Error: ${error.message || 'Failed to load conversation. Please try again.'}`);
+      } else {
+        console.log('Error loading conversation, but keeping existing state to prevent blank screen');
+      }
+      return currentConversation || null;
     }
   };
 
@@ -138,9 +161,20 @@ function App() {
     const promptFinalized = promptEng.finalized_prompt;
     const contextFinalized = contextEng.finalized_context;
     const councilMessages = councilDelib.messages || [];
+    
+    // Check if context engineering has been started (has messages/documents/files/links)
+    const contextStarted = (contextEng.messages && contextEng.messages.length > 0) ||
+                          (contextEng.documents && contextEng.documents.length > 0) ||
+                          (contextEng.files && contextEng.files.length > 0) ||
+                          (contextEng.links && contextEng.links.length > 0);
 
     // Stage determination logic
+    // Stay in prompt_engineering if prompt is finalized but context hasn't been started yet
+    // This allows user to see the completion message before moving to Step 2
     if (!promptFinalized) {
+      return 'prompt_engineering';
+    } else if (promptFinalized && !contextStarted && !contextFinalized) {
+      // Prompt is finalized but context hasn't been started - show completion UI
       return 'prompt_engineering';
     } else if (!contextFinalized) {
       return 'context_engineering';
