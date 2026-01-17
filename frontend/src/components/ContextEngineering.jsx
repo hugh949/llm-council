@@ -541,9 +541,9 @@ export default function ContextEngineering({
             <button
               className="package-button large"
               onClick={handlePackageContext}
-              disabled={isLoading || contextLoading}
+              disabled={isLoading}
             >
-              {contextLoading ? 'Packaging...' : '→ Package Context & Continue'}
+              {isLoading ? 'Packaging...' : '→ Package Context & Continue'}
             </button>
           </div>
         </div>

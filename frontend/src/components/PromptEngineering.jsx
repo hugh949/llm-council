@@ -106,6 +106,18 @@ export default function PromptEngineering({
             <p><strong>Transitioning to Step 2: Context Engineering...</strong></p>
             <p className="transition-hint">The Context Engineer screen will appear automatically where you can add context, documents, and background information.</p>
           </div>
+          {onProceedToStep2 && (
+            <div className="transition-actions">
+              <button
+                type="button"
+                className="proceed-button"
+                onClick={onProceedToStep2}
+                disabled={isLoading}
+              >
+                → Continue to Step 2
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="input-section">
@@ -197,6 +209,11 @@ export default function PromptEngineering({
                         setShowFinalizeForm(false);
                         setFinalizeInput('');
                         setIsFinalizing(false);
+
+                        // Explicitly proceed to Step 2 to avoid UI getting stuck on Step 1
+                        if (onProceedToStep2) {
+                          await onProceedToStep2();
+                        }
                         
                         // The onFinalizePrompt handler in App.jsx will reload the conversation
                         // which will update the state and trigger a re-render
