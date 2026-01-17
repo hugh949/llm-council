@@ -679,7 +679,11 @@ function App() {
             setCurrentConversation((prev) => {
               const messages = [...(prev.council_deliberation?.messages || [])];
               const lastMsg = messages[messages.length - 1];
-              if (lastMsg) lastMsg.loading.stage3 = true;
+              if (lastMsg) {
+                lastMsg.loading.stage1 = false;
+                lastMsg.loading.stage2 = false;
+                lastMsg.loading.stage3 = true;
+              }
               return {
                 ...prev,
                 council_deliberation: {
@@ -696,6 +700,8 @@ function App() {
               const lastMsg = messages[messages.length - 1];
               if (lastMsg) {
                 lastMsg.stage3 = event.data;
+                lastMsg.loading.stage1 = false;
+                lastMsg.loading.stage2 = false;
                 lastMsg.loading.stage3 = false;
               }
               return {
@@ -716,6 +722,22 @@ function App() {
           case 'complete':
             // Stream complete, reload conversations list
             loadConversations();
+            setCurrentConversation((prev) => {
+              const messages = [...(prev.council_deliberation?.messages || [])];
+              const lastMsg = messages[messages.length - 1];
+              if (lastMsg?.loading) {
+                lastMsg.loading.stage1 = false;
+                lastMsg.loading.stage2 = false;
+                lastMsg.loading.stage3 = false;
+              }
+              return {
+                ...prev,
+                council_deliberation: {
+                  ...prev.council_deliberation,
+                  messages,
+                },
+              };
+            });
             setIsLoading(false);
             break;
 
@@ -843,7 +865,11 @@ function App() {
             setCurrentConversation((prev) => {
               const messages = [...(prev.council_deliberation?.messages || [])];
               const lastMsg = messages[messages.length - 1];
-              if (lastMsg) lastMsg.loading.stage3 = true;
+              if (lastMsg) {
+                lastMsg.loading.stage1 = false;
+                lastMsg.loading.stage2 = false;
+                lastMsg.loading.stage3 = true;
+              }
               return {
                 ...prev,
                 council_deliberation: {
@@ -860,6 +886,8 @@ function App() {
               const lastMsg = messages[messages.length - 1];
               if (lastMsg) {
                 lastMsg.stage3 = event.data;
+                lastMsg.loading.stage1 = false;
+                lastMsg.loading.stage2 = false;
                 lastMsg.loading.stage3 = false;
               }
               return {
@@ -878,6 +906,22 @@ function App() {
 
           case 'complete':
             loadConversations();
+            setCurrentConversation((prev) => {
+              const messages = [...(prev.council_deliberation?.messages || [])];
+              const lastMsg = messages[messages.length - 1];
+              if (lastMsg?.loading) {
+                lastMsg.loading.stage1 = false;
+                lastMsg.loading.stage2 = false;
+                lastMsg.loading.stage3 = false;
+              }
+              return {
+                ...prev,
+                council_deliberation: {
+                  ...prev.council_deliberation,
+                  messages,
+                },
+              };
+            });
             setIsLoading(false);
             break;
 
