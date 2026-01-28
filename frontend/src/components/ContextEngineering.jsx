@@ -29,6 +29,7 @@ export default function ContextEngineering({
   const [uploadingFile, setUploadingFile] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(finalizedPrompt || '');
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const fileInputRef = useRef(null);
 
   // Sync editedPrompt when finalizedPrompt prop changes
@@ -88,6 +89,12 @@ export default function ContextEngineering({
   };
 
   const handlePackageContext = async () => {
+    // Show review modal first
+    setShowReviewModal(true);
+  };
+
+  const handleConfirmPackage = async () => {
+    setShowReviewModal(false);
     try {
       await onPackageContext();
     } catch (error) {
@@ -109,6 +116,9 @@ export default function ContextEngineering({
   const safeFiles = Array.isArray(files) ? files : [];
   const safeLinks = Array.isArray(links) ? links : [];
   const totalAttachments = safeDocuments.length + safeFiles.length + safeLinks.length;
+  
+  // Only show "Context Added" if user has actually added context (not just the initial prompt)
+  const hasUserAddedContext = safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user');
 
   // Helper functions
   const getFileIcon = (file) => {
@@ -196,11 +206,11 @@ export default function ContextEngineering({
               </div>
             )}
             
-            {/* Show added context */}
-            {safeMessages.length > 0 && (
+            {/* Show added context - only if user has actually added context in Step 2 */}
+            {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') && (
               <div className="added-context-preview">
                 <h4>✓ Context Added</h4>
-                {safeMessages.map((msg, index) => (
+                {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
                   <div key={index} className="context-message-item">
                     <div className="context-message-text">{msg.content}</div>
                   </div>
@@ -258,15 +268,21 @@ export default function ContextEngineering({
             <div className="quick-actions">
               <button
                 type="button"
-                className="quick-action-btn"
-                onClick={() => setShowLinkForm(!showLinkForm)}
+                className={`quick-action-btn ${showLinkForm ? 'active' : ''}`}
+                onClick={() => {
+                  setShowLinkForm(!showLinkForm);
+                  setShowDocumentForm(false); // Close the other form
+                }}
               >
                 🔗 Add Link
               </button>
               <button
                 type="button"
-                className="quick-action-btn"
-                onClick={() => setShowDocumentForm(!showDocumentForm)}
+                className={`quick-action-btn ${showDocumentForm ? 'active' : ''}`}
+                onClick={() => {
+                  setShowDocumentForm(!showDocumentForm);
+                  setShowLinkForm(false); // Close the other form
+                }}
               >
                 📄 Paste Text
               </button>
@@ -516,6 +532,92 @@ export default function ContextEngineering({
         </>
       )}
 
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="review-modal-overlay" onClick={() => setShowReviewModal(false)}>
+          <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="review-modal-header">
+              <h3>📋 Review Your Context Package</h3>
+              <p>Review what will be included in your context package before proceeding to Step 3</p>
+            </div>
+            
+            <div className="review-modal-content">
+              {/* Finalized Prompt */}
+              {finalizedPrompt && (
+                <div className="review-section">
+                  <h4>📝 Your Finalized Prompt (from Step 1)</h4>
+                  <div className="review-box">
+                    <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
+
+              {/* Manual Context */}
+              {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') && (
+                <div className="review-section">
+                  <h4>✍️ Additional Context (Manual)</h4>
+                  {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
+                    <div key={index} className="review-box">
+                      {msg.content}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Attachments Summary */}
+              {totalAttachments > 0 && (
+                <div className="review-section">
+                  <h4>📎 RAG Attachments ({totalAttachments})</h4>
+                  <div className="review-attachments-list">
+                    {safeFiles.map((file, index) => (
+                      <div key={`file-${index}`} className="review-attachment-item">
+                        {getFileIcon(file)} {file?.name || 'Untitled'}
+                      </div>
+                    ))}
+                    {safeLinks.map((link, index) => (
+                      <div key={`link-${index}`} className="review-attachment-item">
+                        🔗 {link?.original_url || link?.name || 'Link'}
+                      </div>
+                    ))}
+                    {safeDocuments.map((doc, index) => (
+                      <div key={`doc-${index}`} className="review-attachment-item">
+                        📄 {doc?.name || 'Untitled'}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!finalizedPrompt && safeMessages.length === 0 && totalAttachments === 0 && (
+                <div className="review-empty">
+                  <p>⚠️ You haven't added any context or attachments yet.</p>
+                  <p>You can still proceed, but the council will only work with your original prompt from Step 1.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="review-modal-actions">
+              <button
+                type="button"
+                className="review-modal-btn cancel"
+                onClick={() => setShowReviewModal(false)}
+              >
+                ← Go Back & Edit
+              </button>
+              <button
+                type="button"
+                className="review-modal-btn confirm"
+                onClick={handleConfirmPackage}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Packaging...' : '✓ Confirm & Package'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Package Button */}
       {!finalizedContext && (
         <div className="package-context-bar sticky-bottom">
@@ -530,7 +632,7 @@ export default function ContextEngineering({
                   : safeMessages.length > 0
                   ? 'You have added context text. '
                   : 'You can add attachments or context, or '}
-                Package to finalize and continue to Review & Step 3.
+                Click Package to review and finalize.
               </p>
             </div>
             <button
@@ -538,7 +640,7 @@ export default function ContextEngineering({
               onClick={handlePackageContext}
               disabled={isLoading}
             >
-              {isLoading ? 'Packaging...' : '→ Package & Continue'}
+              {isLoading ? 'Packaging...' : '→ Review & Package'}
             </button>
           </div>
         </div>
