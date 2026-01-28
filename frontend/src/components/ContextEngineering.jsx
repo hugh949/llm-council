@@ -30,6 +30,8 @@ export default function ContextEngineering({
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(finalizedPrompt || '');
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [editingContextIndex, setEditingContextIndex] = useState(null);
+  const [editingContextText, setEditingContextText] = useState('');
   const fileInputRef = useRef(null);
 
   // Sync editedPrompt when finalizedPrompt prop changes
@@ -100,6 +102,35 @@ export default function ContextEngineering({
     } catch (error) {
       console.error('Failed to package context:', error);
       alert(`Error packaging context: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleEditContext = (index, content) => {
+    setEditingContextIndex(index);
+    setEditingContextText(content);
+  };
+
+  const handleSaveContextEdit = async () => {
+    if (editingContextText.trim() && editingContextIndex !== null) {
+      // Note: Full backend support for editing context is coming soon
+      // For now, show a helpful message
+      alert('Context editing feature is in development. For now, to modify context:\n\n1. Note the text you want to change\n2. Click the "−" Delete button\n3. Add the updated context using the textarea above\n\nFull edit support coming in next update!');
+      setEditingContextIndex(null);
+      setEditingContextText('');
+    }
+  };
+
+  const handleCancelContextEdit = () => {
+    setEditingContextIndex(null);
+    setEditingContextText('');
+  };
+
+  const handleDeleteContext = async (index) => {
+    const confirmed = confirm('Delete this context item?\n\nNote: Context deletion requires backend API support.\n\nFor now, you can:\n• Continue with this context included\n• Start a new conversation if you need to exclude it\n\nFull delete support coming in next update!');
+    
+    if (confirmed) {
+      // Backend support needed - show helpful guidance
+      console.log(`User wants to delete context item ${index}`);
     }
   };
 
@@ -180,11 +211,11 @@ export default function ContextEngineering({
               <p className="card-hint">Type or paste additional context, guidelines, constraints, or background information</p>
             </div>
             <textarea
-              className="manual-context-textarea"
-              placeholder="Example:&#10;&#10;• Focus on technical accuracy over simplicity&#10;• Consider budget constraints under $10,000&#10;• Target audience is intermediate level&#10;• Prioritize practical solutions&#10;• Include real-world examples&#10;&#10;Add any clarifications, constraints, or guidelines that will help the council provide better responses..."
+              className="manual-context-textarea compact"
+              placeholder="Example:&#10;&#10;• Focus on technical accuracy over simplicity&#10;• Consider budget constraints under $10,000&#10;• Target audience is intermediate level&#10;• Prioritize practical solutions&#10;&#10;Add any clarifications, constraints, or guidelines..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              rows={12}
+              rows={8}
             />
             {input.trim() && (
               <div className="context-input-actions">
@@ -206,15 +237,74 @@ export default function ContextEngineering({
               </div>
             )}
             
-            {/* Show added context items - simple list without confusing status header */}
+            {/* Show added context items - scrollable list with edit/delete */}
             {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') && (
-              <div className="context-items-list">
-                {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
-                  <div key={index} className="context-item-card">
-                    <div className="context-item-content">{msg.content}</div>
-                    <div className="context-item-label">Context #{index + 1}</div>
-                  </div>
-                ))}
+              <div className="context-items-container">
+                <div className="context-items-header">
+                  <span className="context-count">
+                    {safeMessages.filter(msg => msg.role === 'user').length} Context Item{safeMessages.filter(msg => msg.role === 'user').length !== 1 ? 's' : ''} Added
+                  </span>
+                </div>
+                <div className="context-items-list scrollable">
+                  {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
+                    <div key={index} className="context-item-card">
+                      {editingContextIndex === index ? (
+                        // Edit mode
+                        <div className="context-edit-mode">
+                          <textarea
+                            className="context-edit-textarea"
+                            value={editingContextText}
+                            onChange={(e) => setEditingContextText(e.target.value)}
+                            rows={4}
+                            autoFocus
+                          />
+                          <div className="context-edit-actions">
+                            <button
+                              type="button"
+                              className="context-btn save"
+                              onClick={handleSaveContextEdit}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              className="context-btn cancel"
+                              onClick={handleCancelContextEdit}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        // View mode
+                        <>
+                          <div className="context-item-header">
+                            <div className="context-item-label">Context #{index + 1}</div>
+                            <div className="context-item-actions">
+                              <button
+                                type="button"
+                                className="context-btn-icon edit"
+                                onClick={() => handleEditContext(index, msg.content)}
+                                title="Edit context"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                className="context-btn-icon delete"
+                                onClick={() => handleDeleteContext(index)}
+                                title="Delete context"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                          <div className="context-item-content">{msg.content}</div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

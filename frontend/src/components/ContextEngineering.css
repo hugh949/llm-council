@@ -101,8 +101,13 @@
   resize: vertical;
   line-height: 1.6;
   transition: border-color 0.2s;
-  flex: 1;
-  min-height: 300px;
+  min-height: 180px;
+  max-height: 250px;
+}
+
+.manual-context-textarea.compact {
+  min-height: 150px;
+  max-height: 200px;
 }
 
 .manual-context-textarea:focus {
@@ -161,12 +166,62 @@
   background: #cbd5e0;
 }
 
-/* Context Items List - Clean display without status message */
-.context-items-list {
+/* Context Items Container - Scrollable with header */
+.context-items-container {
   margin-top: 16px;
   display: flex;
   flex-direction: column;
+  max-height: 350px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f7fafc;
+}
+
+.context-items-header {
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+  border-bottom: 2px solid #cbd5e0;
+  border-radius: 6px 6px 0 0;
+}
+
+.context-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2d3748;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.context-items-list {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  padding: 12px;
+}
+
+.context-items-list.scrollable {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+.context-items-list.scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.context-items-list.scrollable::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+.context-items-list.scrollable::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.context-items-list.scrollable::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
 }
 
 .context-item-card {
@@ -184,11 +239,10 @@
   box-shadow: 0 2px 8px rgba(66, 153, 225, 0.15);
 }
 
-.context-item-content {
-  color: #2d3748;
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
+.context-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 8px;
 }
 
@@ -198,6 +252,102 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.context-item-actions {
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.context-item-card:hover .context-item-actions {
+  opacity: 1;
+}
+
+.context-btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.context-btn-icon.edit:hover {
+  background: #ebf8ff;
+}
+
+.context-btn-icon.delete:hover {
+  background: #fff5f5;
+}
+
+.context-item-content {
+  color: #2d3748;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Edit Mode */
+.context-edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.context-edit-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #4299e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.context-edit-textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+}
+
+.context-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.context-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.context-btn.save {
+  background: #48bb78;
+  color: white;
+}
+
+.context-btn.save:hover {
+  background: #38a169;
+}
+
+.context-btn.cancel {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.context-btn.cancel:hover {
+  background: #cbd5e0;
 }
 
 /* =========================
