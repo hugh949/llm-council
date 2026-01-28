@@ -38,6 +38,8 @@ async def query_model(
         return None
     
     try:
+        print(f"[OPENROUTER] Querying {model} with timeout={timeout}s", file=sys.stderr, flush=True)
+        
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
                 OPENROUTER_API_URL,
@@ -48,25 +50,40 @@ async def query_model(
             # Log response status for debugging
             if response.status_code != 200:
                 error_text = response.text[:500] if hasattr(response, 'text') else str(response.status_code)
-                print(f"Error querying model {model}: HTTP {response.status_code} - {error_text}", file=sys.stderr, flush=True)
+                print(f"[OPENROUTER] Error querying model {model}: HTTP {response.status_code} - {error_text}", file=sys.stderr, flush=True)
                 return None
             
             response.raise_for_status()
 
             data = response.json()
+            
+            # Validate response structure
+            if 'choices' not in data or not data['choices']:
+                print(f"[OPENROUTER] Error: Invalid response structure from {model} - no choices", file=sys.stderr, flush=True)
+                return None
+            
             message = data['choices'][0]['message']
+            content = message.get('content', '')
+            
+            if not content:
+                print(f"[OPENROUTER] Warning: {model} returned empty content", file=sys.stderr, flush=True)
+            else:
+                print(f"[OPENROUTER] SUCCESS: {model} returned {len(content)} characters", file=sys.stderr, flush=True)
 
             return {
-                'content': message.get('content'),
+                'content': content,
                 'reasoning_details': message.get('reasoning_details')
             }
 
+    except httpx.TimeoutException as e:
+        print(f"[OPENROUTER] TIMEOUT querying model {model} after {timeout}s", file=sys.stderr, flush=True)
+        return None
     except httpx.HTTPStatusError as e:
         error_text = str(e.response.text)[:500] if hasattr(e, 'response') and hasattr(e.response, 'text') else str(e)
-        print(f"HTTP error querying model {model}: {error_text}", file=sys.stderr, flush=True)
+        print(f"[OPENROUTER] HTTP error querying model {model}: {error_text}", file=sys.stderr, flush=True)
         return None
     except Exception as e:
-        print(f"Error querying model {model}: {type(e).__name__}: {str(e)}", file=sys.stderr, flush=True)
+        print(f"[OPENROUTER] Error querying model {model}: {type(e).__name__}: {str(e)}", file=sys.stderr, flush=True)
         import traceback
         traceback.print_exc(file=sys.stderr)
         return None

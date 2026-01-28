@@ -663,7 +663,9 @@ async def send_council_deliberation_stream(conversation_id: str):
 
             # Stage 1: Collect responses
             yield f"data: {json.dumps({'type': 'stage1_start'})}\n\n"
+            print(f"[COUNCIL] Starting Stage 1: Collecting responses from {len(__import__('backend.config', fromlist=['COUNCIL_MODELS']).COUNCIL_MODELS)} models", file=sys.stderr, flush=True)
             stage1_results = await stage1_collect_responses(full_query)
+            print(f"[COUNCIL] Stage 1 complete: Received {len(stage1_results)} successful responses", file=sys.stderr, flush=True)
             yield f"data: {json.dumps({'type': 'stage1_complete', 'data': stage1_results})}\n\n"
 
             # Check if Stage 1 failed (no responses)
@@ -683,13 +685,37 @@ async def send_council_deliberation_stream(conversation_id: str):
             else:
                 # Stage 2: Collect rankings
                 yield f"data: {json.dumps({'type': 'stage2_start'})}\n\n"
+                print(f"[COUNCIL] Starting Stage 2: Collecting peer rankings", file=sys.stderr, flush=True)
                 stage2_results, label_to_model = await stage2_collect_rankings(full_query, stage1_results)
+                print(f"[COUNCIL] Stage 2 complete: Received {len(stage2_results)} rankings", file=sys.stderr, flush=True)
                 aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
+                print(f"[COUNCIL] Aggregate rankings calculated: {len(aggregate_rankings)} models ranked", file=sys.stderr, flush=True)
                 yield f"data: {json.dumps({'type': 'stage2_complete', 'data': stage2_results, 'metadata': {'label_to_model': label_to_model, 'aggregate_rankings': aggregate_rankings}})}\n\n"
 
                 # Stage 3: Synthesize final answer
                 yield f"data: {json.dumps({'type': 'stage3_start'})}\n\n"
-                stage3_result = await stage3_synthesize_final(full_query, stage1_results, stage2_results)
+                print(f"[COUNCIL] Starting Stage 3 synthesis with chairman model", file=sys.stderr, flush=True)
+                try:
+                    stage3_result = await stage3_synthesize_final(full_query, stage1_results, stage2_results)
+                    if stage3_result is None:
+                        print(f"[COUNCIL] ERROR: Stage 3 returned None", file=sys.stderr, flush=True)
+                        stage3_result = {
+                            "model": "error",
+                            "response": "Error: Stage 3 synthesis failed - chairman model returned no response."
+                        }
+                    elif not stage3_result.get('response'):
+                        print(f"[COUNCIL] ERROR: Stage 3 returned empty response", file=sys.stderr, flush=True)
+                        stage3_result['response'] = "Error: Stage 3 synthesis failed - chairman model returned empty response."
+                    else:
+                        print(f"[COUNCIL] Stage 3 completed successfully. Response length: {len(stage3_result.get('response', ''))}", file=sys.stderr, flush=True)
+                except Exception as stage3_error:
+                    print(f"[COUNCIL] ERROR in Stage 3: {type(stage3_error).__name__}: {str(stage3_error)}", file=sys.stderr, flush=True)
+                    import traceback
+                    traceback.print_exc(file=sys.stderr)
+                    stage3_result = {
+                        "model": "error",
+                        "response": f"Error in Stage 3 synthesis: {str(stage3_error)}"
+                    }
                 yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result})}\n\n"
 
             # Wait for title generation if it was started
@@ -750,11 +776,14 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
 
             # Stage 1: Collect responses
             yield f"data: {json.dumps({'type': 'stage1_start'})}\n\n"
+            print(f"[COUNCIL] Starting Stage 1 for follow-up message: Collecting responses", file=sys.stderr, flush=True)
             stage1_results = await stage1_collect_responses(request.content)
+            print(f"[COUNCIL] Stage 1 complete: Received {len(stage1_results)} successful responses", file=sys.stderr, flush=True)
             yield f"data: {json.dumps({'type': 'stage1_complete', 'data': stage1_results})}\n\n"
 
             # Check if Stage 1 failed (no responses)
             if not stage1_results:
+                print(f"[COUNCIL] ERROR: No Stage 1 responses - all models failed", file=sys.stderr, flush=True)
                 # Return error message instead of continuing
                 stage3_result = {
                     "model": "error",
@@ -770,13 +799,37 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             else:
                 # Stage 2: Collect rankings
                 yield f"data: {json.dumps({'type': 'stage2_start'})}\n\n"
+                print(f"[COUNCIL] Starting Stage 2 for follow-up: Collecting peer rankings", file=sys.stderr, flush=True)
                 stage2_results, label_to_model = await stage2_collect_rankings(request.content, stage1_results)
+                print(f"[COUNCIL] Stage 2 complete: Received {len(stage2_results)} rankings", file=sys.stderr, flush=True)
                 aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
+                print(f"[COUNCIL] Aggregate rankings calculated: {len(aggregate_rankings)} models ranked", file=sys.stderr, flush=True)
                 yield f"data: {json.dumps({'type': 'stage2_complete', 'data': stage2_results, 'metadata': {'label_to_model': label_to_model, 'aggregate_rankings': aggregate_rankings}})}\n\n"
 
                 # Stage 3: Synthesize final answer
                 yield f"data: {json.dumps({'type': 'stage3_start'})}\n\n"
-                stage3_result = await stage3_synthesize_final(request.content, stage1_results, stage2_results)
+                print(f"[COUNCIL] Starting Stage 3 synthesis for follow-up message", file=sys.stderr, flush=True)
+                try:
+                    stage3_result = await stage3_synthesize_final(request.content, stage1_results, stage2_results)
+                    if stage3_result is None:
+                        print(f"[COUNCIL] ERROR: Stage 3 returned None", file=sys.stderr, flush=True)
+                        stage3_result = {
+                            "model": "error",
+                            "response": "Error: Stage 3 synthesis failed - chairman model returned no response."
+                        }
+                    elif not stage3_result.get('response'):
+                        print(f"[COUNCIL] ERROR: Stage 3 returned empty response", file=sys.stderr, flush=True)
+                        stage3_result['response'] = "Error: Stage 3 synthesis failed - chairman model returned empty response."
+                    else:
+                        print(f"[COUNCIL] Stage 3 completed successfully. Response length: {len(stage3_result.get('response', ''))}", file=sys.stderr, flush=True)
+                except Exception as stage3_error:
+                    print(f"[COUNCIL] ERROR in Stage 3: {type(stage3_error).__name__}: {str(stage3_error)}", file=sys.stderr, flush=True)
+                    import traceback
+                    traceback.print_exc(file=sys.stderr)
+                    stage3_result = {
+                        "model": "error",
+                        "response": f"Error in Stage 3 synthesis: {str(stage3_error)}"
+                    }
                 yield f"data: {json.dumps({'type': 'stage3_complete', 'data': stage3_result})}\n\n"
 
             # Wait for title generation if it was started

@@ -6,14 +6,29 @@ export default function Stage3({ finalResponse }) {
     return null;
   }
 
+  const isError = finalResponse.model === 'error' || 
+                  (finalResponse.response && finalResponse.response.startsWith('Error:'));
+  
+  const modelName = finalResponse.model === 'error' 
+    ? 'Error' 
+    : (finalResponse.model.split('/')[1] || finalResponse.model);
+
   return (
-    <div className="stage stage3">
-      <h3 className="stage-title">Stage 3: Final Council Answer</h3>
-      <div className="final-response">
+    <div className={`stage stage3 ${isError ? 'stage3-error' : ''}`}>
+      <h3 className="stage-title">
+        {isError ? '⚠️ Stage 3: Synthesis Error' : 'Stage 3: Final Council Answer'}
+      </h3>
+      <div className={`final-response ${isError ? 'error-response' : ''}`}>
         <div className="chairman-label">
-          Chairman: {finalResponse.model.split('/')[1] || finalResponse.model}
+          {isError ? 'Error' : `Chairman: ${modelName}`}
         </div>
         <div className="final-text markdown-content">
+          {isError && (
+            <div className="error-banner">
+              <strong>⚠️ Synthesis Failed</strong>
+              <p>The chairman model encountered an error. Please see details below and try again.</p>
+            </div>
+          )}
           <ReactMarkdown>{finalResponse.response}</ReactMarkdown>
         </div>
       </div>

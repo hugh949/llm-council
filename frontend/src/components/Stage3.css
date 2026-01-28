@@ -3,11 +3,21 @@
   border-color: #c8e6c8;
 }
 
+.stage3.stage3-error {
+  background: #fff5f5;
+  border-color: #ffa8a8;
+}
+
 .final-response {
   background: #ffffff;
   padding: 20px;
   border-radius: 6px;
   border: 1px solid #c8e6c8;
+}
+
+.final-response.error-response {
+  border: 2px solid #ff6b6b;
+  background: #fff9f9;
 }
 
 .chairman-label {
@@ -18,8 +28,34 @@
   font-weight: 600;
 }
 
+.error-response .chairman-label {
+  color: #c92a2a;
+}
+
 .final-text {
   color: #333;
   line-height: 1.7;
   font-size: 15px;
+}
+
+.error-banner {
+  background: #ffe3e3;
+  border-left: 4px solid #ff6b6b;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.error-banner strong {
+  display: block;
+  color: #c92a2a;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.error-banner p {
+  margin: 0;
+  color: #862e2e;
+  font-size: 14px;
+  line-height: 1.5;
 }

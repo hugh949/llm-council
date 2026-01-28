@@ -128,12 +128,17 @@ async def stage3_synthesize_final(
     Returns:
         Dict with 'model' and 'response' keys
     """
+    import sys
+    
     # Safety check: if no stage1 results, return error
     if not stage1_results:
+        print("[STAGE3] ERROR: No Stage 1 results available", file=sys.stderr, flush=True)
         return {
             "model": CHAIRMAN_MODEL,
             "response": "Error: No responses available from Stage 1 to synthesize."
         }
+    
+    print(f"[STAGE3] Starting synthesis with {len(stage1_results)} Stage 1 results and {len(stage2_results)} Stage 2 rankings", file=sys.stderr, flush=True)
     
     # Build comprehensive context for chairman
     stage1_text = "\n\n".join([
@@ -144,7 +149,7 @@ async def stage3_synthesize_final(
     stage2_text = "\n\n".join([
         f"Model: {result['model']}\nRanking: {result['ranking']}"
         for result in stage2_results
-    ])
+    ]) if stage2_results else "No rankings available."
 
     chairman_prompt = f"""You are the Chairman of an LLM Council. Multiple AI models have provided responses to a user's question, and then ranked each other's responses.
 
@@ -165,20 +170,42 @@ Provide a clear, well-reasoned final answer that represents the council's collec
 
     messages = [{"role": "user", "content": chairman_prompt}]
 
-    # Query the chairman model with longer timeout for synthesis (150s for best quality)
-    response = await query_model(CHAIRMAN_MODEL, messages, timeout=150.0)
+    print(f"[STAGE3] Querying chairman model: {CHAIRMAN_MODEL} with timeout=150s", file=sys.stderr, flush=True)
+    
+    try:
+        # Query the chairman model with longer timeout for synthesis (150s for best quality)
+        response = await query_model(CHAIRMAN_MODEL, messages, timeout=150.0)
 
-    if response is None:
-        # Fallback if chairman fails
+        if response is None:
+            print(f"[STAGE3] ERROR: Chairman model returned None", file=sys.stderr, flush=True)
+            # Fallback if chairman fails
+            return {
+                "model": CHAIRMAN_MODEL,
+                "response": "Error: Chairman model failed to respond. Please try again or check your OpenRouter API key and credits."
+            }
+        
+        content = response.get('content', '')
+        if not content:
+            print(f"[STAGE3] ERROR: Chairman model returned empty content", file=sys.stderr, flush=True)
+            return {
+                "model": CHAIRMAN_MODEL,
+                "response": "Error: Chairman model returned empty response. Please try again."
+            }
+        
+        print(f"[STAGE3] SUCCESS: Chairman model returned {len(content)} characters", file=sys.stderr, flush=True)
         return {
             "model": CHAIRMAN_MODEL,
-            "response": "Error: Unable to generate final synthesis."
+            "response": content
         }
-
-    return {
-        "model": CHAIRMAN_MODEL,
-        "response": response.get('content', '')
-    }
+    
+    except Exception as e:
+        print(f"[STAGE3] EXCEPTION in chairman synthesis: {type(e).__name__}: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return {
+            "model": CHAIRMAN_MODEL,
+            "response": f"Error in final synthesis: {type(e).__name__}: {str(e)}. Please try again."
+        }
 
 
 def parse_ranking_from_text(ranking_text: str) -> List[str]:
