@@ -194,7 +194,7 @@ export default function ContextEngineering({
                   onClick={handleSubmit}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Adding...' : '✓ Add This Context'}
+                  {isLoading ? 'Adding...' : '+ Add Context'}
                 </button>
                 <button
                   type="button"
@@ -206,13 +206,13 @@ export default function ContextEngineering({
               </div>
             )}
             
-            {/* Show added context - only if user has actually added context in Step 2 */}
+            {/* Show added context items - simple list without confusing status header */}
             {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') && (
-              <div className="added-context-preview">
-                <h4>✓ Context Added</h4>
+              <div className="context-items-list">
                 {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
-                  <div key={index} className="context-message-item">
-                    <div className="context-message-text">{msg.content}</div>
+                  <div key={index} className="context-item-card">
+                    <div className="context-item-content">{msg.content}</div>
+                    <div className="context-item-label">Context #{index + 1}</div>
                   </div>
                 ))}
               </div>
@@ -537,64 +537,90 @@ export default function ContextEngineering({
         <div className="review-modal-overlay" onClick={() => setShowReviewModal(false)}>
           <div className="review-modal" onClick={(e) => e.stopPropagation()}>
             <div className="review-modal-header">
-              <h3>📋 Review Your Context Package</h3>
-              <p>Review what will be included in your context package before proceeding to Step 3</p>
+              <h3>📋 Review Everything Before Proceeding to Step 3</h3>
+              <p>Review all content from <strong>Step 1</strong> and <strong>Step 2</strong> that will be provided to the council for deliberation</p>
             </div>
             
             <div className="review-modal-content">
-              {/* Finalized Prompt */}
-              {finalizedPrompt && (
-                <div className="review-section">
-                  <h4>📝 Your Finalized Prompt (from Step 1)</h4>
+              {/* Step 1 Content */}
+              <div className="review-step-section">
+                <div className="review-step-header">
+                  <span className="review-step-badge">Step 1</span>
+                  <h3>Your Question/Prompt</h3>
+                </div>
+                {finalizedPrompt ? (
                   <div className="review-box">
                     <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="review-box empty-notice">
+                    <em>No prompt from Step 1</em>
+                  </div>
+                )}
+              </div>
 
-              {/* Manual Context */}
-              {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') && (
-                <div className="review-section">
-                  <h4>✍️ Additional Context (Manual)</h4>
-                  {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
-                    <div key={index} className="review-box">
-                      {msg.content}
-                    </div>
-                  ))}
+              {/* Step 2 Content */}
+              <div className="review-step-section">
+                <div className="review-step-header">
+                  <span className="review-step-badge">Step 2</span>
+                  <h3>Additional Context & Attachments</h3>
                 </div>
-              )}
 
-              {/* Attachments Summary */}
-              {totalAttachments > 0 && (
-                <div className="review-section">
-                  <h4>📎 RAG Attachments ({totalAttachments})</h4>
-                  <div className="review-attachments-list">
-                    {safeFiles.map((file, index) => (
-                      <div key={`file-${index}`} className="review-attachment-item">
-                        {getFileIcon(file)} {file?.name || 'Untitled'}
-                      </div>
-                    ))}
-                    {safeLinks.map((link, index) => (
-                      <div key={`link-${index}`} className="review-attachment-item">
-                        🔗 {link?.original_url || link?.name || 'Link'}
-                      </div>
-                    ))}
-                    {safeDocuments.map((doc, index) => (
-                      <div key={`doc-${index}`} className="review-attachment-item">
-                        📄 {doc?.name || 'Untitled'}
+                {/* Manual Context */}
+                {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') ? (
+                  <div className="review-subsection">
+                    <h4>✍️ Manual Context ({safeMessages.filter(msg => msg.role === 'user').length})</h4>
+                    {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
+                      <div key={index} className="review-box">
+                        <div className="review-box-label">Context #{index + 1}</div>
+                        {msg.content}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : null}
 
-              {/* Empty State */}
-              {!finalizedPrompt && safeMessages.length === 0 && totalAttachments === 0 && (
-                <div className="review-empty">
-                  <p>⚠️ You haven't added any context or attachments yet.</p>
-                  <p>You can still proceed, but the council will only work with your original prompt from Step 1.</p>
-                </div>
-              )}
+                {/* Attachments Summary */}
+                {totalAttachments > 0 ? (
+                  <div className="review-subsection">
+                    <h4>📎 RAG Attachments ({totalAttachments})</h4>
+                    <div className="review-attachments-list">
+                      {safeFiles.map((file, index) => (
+                        <div key={`file-${index}`} className="review-attachment-item">
+                          {getFileIcon(file)} <strong>{file?.name || 'Untitled'}</strong>
+                          {file?.page_count && <span className="attachment-meta"> • {file.page_count} pages</span>}
+                          {file?.slide_count && <span className="attachment-meta"> • {file.slide_count} slides</span>}
+                        </div>
+                      ))}
+                      {safeLinks.map((link, index) => (
+                        <div key={`link-${index}`} className="review-attachment-item">
+                          🔗 <strong>{link?.original_url || link?.name || 'Link'}</strong>
+                        </div>
+                      ))}
+                      {safeDocuments.map((doc, index) => (
+                        <div key={`doc-${index}`} className="review-attachment-item">
+                          📄 <strong>{doc?.name || 'Untitled'}</strong>
+                          {doc?.content && <span className="attachment-meta"> • {doc.content.length} characters</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Empty Step 2 */}
+                {safeMessages.length === 0 && totalAttachments === 0 && (
+                  <div className="review-box empty-notice">
+                    <em>No additional context or attachments added in Step 2</em>
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
+              <div className="review-summary">
+                <strong>Summary:</strong> The council will deliberate using your prompt
+                {safeMessages.length > 0 && ' + manual context'}
+                {totalAttachments > 0 && ` + ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}`}.
+                {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant information during deliberation.'}
+              </div>
             </div>
 
             <div className="review-modal-actions">
