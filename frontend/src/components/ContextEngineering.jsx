@@ -66,18 +66,10 @@ export default function ContextEngineering({
     };
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (input.trim() && !isLoading) {
       await onSendMessage(input);
       setInput('');
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
     }
   };
 
@@ -195,11 +187,8 @@ export default function ContextEngineering({
       <div className="stage-header">
         <h2>Step 2: Context Engineering</h2>
         <p className="stage-description">
-          Review your finalized prompt from Step 1, add context to refine it, and attach documents. Both your prompt and context will be used by the council for deliberation.
+          Enhance your finalized prompt with additional context and/or attach documents for intelligent retrieval (RAG).
         </p>
-        <div className="rag-info-banner">
-          <strong>💡 How RAG Works:</strong> Your documents are automatically chunked and indexed. When the council deliberates, only the most relevant chunks are retrieved and included in the context, making responses more focused and accurate.
-        </div>
       </div>
 
       {/* Finalized Prompt from Step 1 */}
@@ -258,16 +247,91 @@ export default function ContextEngineering({
         </div>
       )}
 
-      {/* Add Context to Prompt Section */}
+      {/* Add Context Section - For Direct Text Context */}
       <div className="add-context-section">
-        <h3>💬 Add Context to Your Prompt</h3>
+        <div className="section-header-with-icon">
+          <h3>✍️ Additional Context (Optional)</h3>
+          <span className="section-badge">Direct Text - Not RAG</span>
+        </div>
         <p className="context-hint">
-          You can provide additional context, clarifications, constraints, or guidelines that will be combined with your prompt above and sent to the council for deliberation.
+          Add clarifications, constraints, background information, or guidelines that will be <strong>directly combined</strong> with your prompt above.
         </p>
+        <p className="context-hint-secondary">
+          💡 <em>This is for text context you want included verbatim, not for documents that need intelligent retrieval.</em>
+        </p>
+        
+        {/* Expandable context text area */}
+        <div className="context-text-input-wrapper">
+          <textarea
+            className="context-text-input"
+            placeholder="Example: Focus on technical accuracy, consider budget constraints, assume audience is beginner level, prioritize practical solutions over theoretical ones..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={4}
+          />
+          {input.trim() && (
+            <div className="context-input-actions">
+              <button
+                type="button"
+                className="add-context-button"
+                onClick={handleSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Adding...' : '+ Add This Context'}
+              </button>
+              <button
+                type="button"
+                className="clear-context-button"
+                onClick={() => setInput('')}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Show added context messages */}
+        {safeMessages.length > 0 && (
+          <div className="added-context-preview">
+            <h4>📌 Context Added:</h4>
+            <div className="context-messages-list">
+              {safeMessages.map((msg, index) => {
+                if (!msg || !msg.content) return null;
+                return (
+                  <div key={index} className="context-message-item">
+                    <div className="context-message-label">
+                      {msg.role === 'user' ? 'Your Context' : 'AI Response'}
+                    </div>
+                    <div className="context-message-text">
+                      {msg.content}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Attachments Section */}
+      {/* Separator */}
+      <div className="section-separator">
+        <div className="separator-line"></div>
+        <span className="separator-text">OR</span>
+        <div className="separator-line"></div>
+      </div>
+
+      {/* RAG Attachments Section - For Documents That Will Be Chunked */}
       <div className="attachments-section">
+        <div className="section-header-with-icon">
+          <h3>📎 RAG Attachments (Optional)</h3>
+          <span className="section-badge rag-badge">Intelligent Retrieval</span>
+        </div>
+        <p className="attachments-hint">
+          Upload documents, add links, or paste large text that will be <strong>automatically chunked and indexed</strong>. Only the most relevant parts will be retrieved during deliberation.
+        </p>
+        <div className="rag-benefit-box">
+          <strong>✨ Why use RAG?</strong> Perfect for large documents, research papers, or reference materials. The system will intelligently find and include only the relevant sections based on your prompt.
+        </div>
         <div className="attachments-header">
           <h3>Attachments ({totalAttachments})</h3>
           <div className="attachment-buttons">
@@ -433,43 +497,14 @@ export default function ContextEngineering({
         )}
       </div>
 
-      {/* Messages Section */}
-      <div className="messages-container">
-        {safeMessages.length === 0 && totalAttachments === 0 ? (
-          <div className="empty-state">
-            <p>Add files, documents, links, or describe what context would be helpful...</p>
-          </div>
-        ) : (
-          safeMessages.map((msg, index) => {
-            if (!msg || !msg.content) return null;
-            return (
-              <div key={index} className={`message ${msg.role || 'user'}`}>
-                <div className="message-label">
-                  {msg.role === 'user' ? 'You' : 'Context Assistant'}
-                </div>
-                <div className="message-content">
-                  <ReactMarkdown>{msg.content || ''}</ReactMarkdown>
-                </div>
-              </div>
-            );
-          })
-        )}
 
-        {isLoading && (
-          <div className="loading-indicator">
-            <div className="spinner"></div>
-            <span>Thinking...</span>
-          </div>
-        )}
-      </div>
-
-      {finalizedContext ? (
+      {finalizedContext && (
         <>
           <div className="finalized-section">
             <h3>✓ Step 2 Complete: Context Packaged</h3>
             <div className="step-completion-info">
               <p className="info-text">
-                Excellent! Your context is ready with <strong>{totalAttachments} attachment{totalAttachments !== 1 ? 's' : ''}</strong>.
+                Excellent! Your context is ready{safeMessages.length > 0 && ' with direct context text'}{totalAttachments > 0 && safeMessages.length > 0 && ' and '}{totalAttachments > 0 && <strong>{totalAttachments} RAG attachment{totalAttachments !== 1 ? 's' : ''}</strong>}.
                 {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant chunks when needed.'}
               </p>
             </div>
@@ -500,29 +535,6 @@ export default function ContextEngineering({
             </div>
           </div>
         </>
-      ) : (
-        <div className="input-section">
-          <form onSubmit={handleSubmit} className="input-form">
-            <textarea
-              className="message-input"
-              placeholder="Describe context, guidelines, constraints, or background information... (Shift+Enter for new line, Enter to send)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              rows={3}
-            />
-            <div className="input-actions">
-              <button
-                type="submit"
-                className="send-button"
-                disabled={!input.trim() || isLoading}
-              >
-                Send
-              </button>
-            </div>
-          </form>
-        </div>
       )}
       
       {/* Always visible package button bar - shown when context is not yet finalized */}
@@ -532,10 +544,14 @@ export default function ContextEngineering({
             <div className="package-bar-text">
               <strong>Ready to proceed?</strong>
               <p>
-                {totalAttachments > 0 
-                  ? `You have ${totalAttachments} attachment${totalAttachments !== 1 ? 's' : ''} ready. `
-                  : 'You can add attachments or '}
-                Package your context to continue to the Review stage and then Step 3.
+                {safeMessages.length > 0 && totalAttachments > 0 
+                  ? `You have context text and ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
+                  : safeMessages.length > 0
+                  ? 'You have added context text. '
+                  : totalAttachments > 0 
+                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
+                  : 'You can add context text and/or RAG attachments, or '}
+                Package to finalize and continue to Review & Step 3.
               </p>
             </div>
             <button
@@ -543,7 +559,7 @@ export default function ContextEngineering({
               onClick={handlePackageContext}
               disabled={isLoading}
             >
-              {isLoading ? 'Packaging...' : '→ Package Context & Continue'}
+              {isLoading ? 'Packaging...' : '→ Package & Continue'}
             </button>
           </div>
         </div>
