@@ -30,8 +30,9 @@ export default function ContextEngineering({
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(finalizedPrompt || '');
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [editingContextIndex, setEditingContextIndex] = useState(null);
-  const [editingContextText, setEditingContextText] = useState('');
+  const [manualContext, setManualContext] = useState('');
+  const [savedManualContext, setSavedManualContext] = useState('');
+  const [isEditingManualContext, setIsEditingManualContext] = useState(false);
   const fileInputRef = useRef(null);
 
   // Sync editedPrompt when finalizedPrompt prop changes
@@ -41,11 +42,29 @@ export default function ContextEngineering({
     }
   }, [finalizedPrompt, editingPrompt]);
 
-  const handleSubmit = async () => {
-    if (input.trim() && !isLoading) {
-      await onSendMessage(input);
-      setInput('');
+  const handleSaveManualContext = () => {
+    if (manualContext.trim()) {
+      setSavedManualContext(manualContext.trim());
+      setIsEditingManualContext(false);
     }
+  };
+
+  const handleEditManualContext = () => {
+    setManualContext(savedManualContext);
+    setIsEditingManualContext(true);
+  };
+
+  const handleClearManualContext = () => {
+    if (confirm('Clear all manual context? This cannot be undone.')) {
+      setManualContext('');
+      setSavedManualContext('');
+      setIsEditingManualContext(false);
+    }
+  };
+
+  const handleCancelEditManualContext = () => {
+    setManualContext(savedManualContext);
+    setIsEditingManualContext(false);
   };
 
   const handleAddDocument = async (e) => {
@@ -105,34 +124,6 @@ export default function ContextEngineering({
     }
   };
 
-  const handleEditContext = (index, content) => {
-    setEditingContextIndex(index);
-    setEditingContextText(content);
-  };
-
-  const handleSaveContextEdit = async () => {
-    if (editingContextText.trim() && editingContextIndex !== null) {
-      // Note: Full backend support for editing context is coming soon
-      // For now, show a helpful message
-      alert('Context editing feature is in development. For now, to modify context:\n\n1. Note the text you want to change\n2. Click the "−" Delete button\n3. Add the updated context using the textarea above\n\nFull edit support coming in next update!');
-      setEditingContextIndex(null);
-      setEditingContextText('');
-    }
-  };
-
-  const handleCancelContextEdit = () => {
-    setEditingContextIndex(null);
-    setEditingContextText('');
-  };
-
-  const handleDeleteContext = async (index) => {
-    const confirmed = confirm('Delete this context item?\n\nNote: Context deletion requires backend API support.\n\nFor now, you can:\n• Continue with this context included\n• Start a new conversation if you need to exclude it\n\nFull delete support coming in next update!');
-    
-    if (confirmed) {
-      // Backend support needed - show helpful guidance
-      console.log(`User wants to delete context item ${index}`);
-    }
-  };
 
   const handleSavePrompt = async () => {
     if (editedPrompt.trim() && onEditPrompt) {
@@ -142,22 +133,13 @@ export default function ContextEngineering({
   };
 
   // Validate props
-  const safeMessages = Array.isArray(messages) ? messages : [];
   const safeDocuments = Array.isArray(documents) ? documents : [];
   const safeFiles = Array.isArray(files) ? files : [];
   const safeLinks = Array.isArray(links) ? links : [];
   const totalAttachments = safeDocuments.length + safeFiles.length + safeLinks.length;
   
-  // Filter user messages with actual content (not empty strings)
-  const userContextMessages = safeMessages.filter(msg => 
-    msg && 
-    msg.role === 'user' && 
-    msg.content && 
-    msg.content.trim().length > 0
-  );
-  
-  // Only show context items if user has actually added context with content
-  const hasUserAddedContext = userContextMessages.length > 0;
+  // Check if manual context has been saved
+  const hasManualContext = savedManualContext.trim().length > 0;
 
   // Helper functions
   const getFileIcon = (file) => {
@@ -218,102 +200,76 @@ export default function ContextEngineering({
               <h3>✍️ Add Context Manually</h3>
               <p className="card-hint">Type or paste additional context, guidelines, constraints, or background information</p>
             </div>
-            <textarea
-              className="manual-context-textarea compact"
-              placeholder="Example:&#10;&#10;• Focus on technical accuracy over simplicity&#10;• Consider budget constraints under $10,000&#10;• Target audience is intermediate level&#10;• Prioritize practical solutions&#10;&#10;Add any clarifications, constraints, or guidelines..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              rows={8}
-            />
-            {input.trim() && (
-              <div className="context-input-actions">
-                <button
-                  type="button"
-                  className="add-context-button"
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Adding...' : '+ Add Context'}
-                </button>
-                <button
-                  type="button"
-                  className="clear-context-button"
-                  onClick={() => setInput('')}
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-            
-            {/* Show added context items - scrollable list with edit/delete */}
-            {hasUserAddedContext && (
-              <div className="context-items-container">
-                <div className="context-items-header">
-                  <span className="context-count">
-                    ✓ {userContextMessages.length} Context Item{userContextMessages.length !== 1 ? 's' : ''} Saved
-                  </span>
+            {/* Simple single context area */}
+            {!hasManualContext || isEditingManualContext ? (
+              <>
+                <textarea
+                  className="manual-context-textarea"
+                  placeholder="Add any clarifications, constraints, guidelines, or background information that will help the council provide better responses...&#10;&#10;Examples:&#10;• Focus on technical accuracy over simplicity&#10;• Consider budget constraints under $10,000&#10;• Target audience is intermediate level&#10;• Prioritize practical solutions&#10;• Include real-world examples"
+                  value={manualContext}
+                  onChange={(e) => setManualContext(e.target.value)}
+                  rows={10}
+                />
+                <div className="context-actions">
+                  {manualContext.trim() && (
+                    <button
+                      type="button"
+                      className="context-action-btn save"
+                      onClick={handleSaveManualContext}
+                    >
+                      ✓ Save Context
+                    </button>
+                  )}
+                  {isEditingManualContext && (
+                    <button
+                      type="button"
+                      className="context-action-btn cancel"
+                      onClick={handleCancelEditManualContext}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  {manualContext.trim() && (
+                    <button
+                      type="button"
+                      className="context-action-btn clear"
+                      onClick={() => setManualContext('')}
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
-                <div className="context-items-list scrollable">
-                  {userContextMessages.map((msg, index) => (
-                    <div key={index} className="context-item-card">
-                      {editingContextIndex === index ? (
-                        // Edit mode
-                        <div className="context-edit-mode">
-                          <textarea
-                            className="context-edit-textarea"
-                            value={editingContextText}
-                            onChange={(e) => setEditingContextText(e.target.value)}
-                            rows={4}
-                            autoFocus
-                          />
-                          <div className="context-edit-actions">
-                            <button
-                              type="button"
-                              className="context-btn save"
-                              onClick={handleSaveContextEdit}
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              className="context-btn cancel"
-                              onClick={handleCancelContextEdit}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        // View mode
-                        <>
-                          <div className="context-item-header">
-                            <div className="context-item-label">Context #{index + 1}</div>
-                            <div className="context-item-actions">
-                              <button
-                                type="button"
-                                className="context-btn-icon edit"
-                                onClick={() => handleEditContext(index, msg.content)}
-                                title="Edit context"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                type="button"
-                                className="context-btn-icon delete"
-                                onClick={() => handleDeleteContext(index)}
-                                title="Delete context"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                          <div className="context-item-content">{msg.content}</div>
-                        </>
-                      )}
+              </>
+            ) : (
+              <>
+                {/* Saved context display */}
+                <div className="saved-context-display">
+                  <div className="saved-context-header">
+                    <span className="saved-label">✓ Manual Context Saved</span>
+                    <div className="saved-actions">
+                      <button
+                        type="button"
+                        className="saved-btn edit"
+                        onClick={handleEditManualContext}
+                        title="Edit context"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="saved-btn clear"
+                        onClick={handleClearManualContext}
+                        title="Clear context"
+                      >
+                        🗑️ Clear
+                      </button>
                     </div>
-                  ))}
+                  </div>
+                  <div className="saved-context-content">
+                    {savedManualContext}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -601,7 +557,7 @@ export default function ContextEngineering({
               <p className="info-text">
                 Excellent! Your context is ready
                 {totalAttachments > 0 && <span> with <strong>{totalAttachments} attachment{totalAttachments !== 1 ? 's' : ''}</strong></span>}
-                {hasUserAddedContext && <span> and direct context text</span>}.
+                {hasManualContext && <span> and manual context</span>}.
                 {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant information when needed.'}
               </p>
             </div>
@@ -665,15 +621,12 @@ export default function ContextEngineering({
                 </div>
 
                 {/* Manual Context */}
-                {hasUserAddedContext ? (
+                {hasManualContext ? (
                   <div className="review-subsection">
-                    <h4>✍️ Manual Context ({userContextMessages.length})</h4>
-                    {userContextMessages.map((msg, index) => (
-                      <div key={index} className="review-box">
-                        <div className="review-box-label">Context #{index + 1}</div>
-                        {msg.content}
-                      </div>
-                    ))}
+                    <h4>✍️ Manual Context</h4>
+                    <div className="review-box">
+                      {savedManualContext}
+                    </div>
                   </div>
                 ) : null}
 
@@ -705,7 +658,7 @@ export default function ContextEngineering({
                 ) : null}
 
                 {/* Empty Step 2 */}
-                {!hasUserAddedContext && totalAttachments === 0 && (
+                {!hasManualContext && totalAttachments === 0 && (
                   <div className="review-box empty-notice">
                     <em>No additional context or attachments added in Step 2</em>
                   </div>
@@ -715,7 +668,7 @@ export default function ContextEngineering({
               {/* Summary */}
               <div className="review-summary">
                 <strong>Summary:</strong> The council will deliberate using your prompt
-                {hasUserAddedContext && ' + manual context'}
+                {hasManualContext && ' + manual context'}
                 {totalAttachments > 0 && ` + ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}`}.
                 {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant information during deliberation.'}
               </div>
@@ -749,12 +702,12 @@ export default function ContextEngineering({
             <div className="package-bar-text">
               <strong>Ready to proceed?</strong>
               <p>
-                {totalAttachments > 0 && hasUserAddedContext 
-                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and ${userContextMessages.length} context item${userContextMessages.length !== 1 ? 's' : ''}. `
+                {totalAttachments > 0 && hasManualContext 
+                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and manual context. `
                   : totalAttachments > 0
                   ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
-                  : hasUserAddedContext
-                  ? `You have ${userContextMessages.length} context item${userContextMessages.length !== 1 ? 's' : ''} saved. `
+                  : hasManualContext
+                  ? 'You have manual context saved. '
                   : 'You can add attachments or context, or '}
                 Click Package to review and finalize.
               </p>

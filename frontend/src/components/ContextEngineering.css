@@ -93,21 +93,15 @@
 
 .manual-context-textarea {
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
-  line-height: 1.6;
+  line-height: 1.7;
   transition: border-color 0.2s;
-  min-height: 180px;
-  max-height: 250px;
-}
-
-.manual-context-textarea.compact {
-  min-height: 150px;
-  max-height: 200px;
+  min-height: 250px;
 }
 
 .manual-context-textarea:focus {
@@ -121,267 +115,149 @@
   line-height: 1.8;
 }
 
-.context-input-actions {
+.context-actions {
   display: flex;
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
 }
 
-.add-context-button {
-  padding: 10px 20px;
-  background: #48bb78;
-  color: white;
+.context-action-btn {
+  padding: 12px 24px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
 }
 
-.add-context-button:hover:not(:disabled) {
+.context-action-btn.save {
+  background: #48bb78;
+  color: white;
+}
+
+.context-action-btn.save:hover {
   background: #38a169;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
 }
 
-.add-context-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.clear-context-button {
-  padding: 10px 20px;
+.context-action-btn.cancel {
   background: #e2e8f0;
   color: #2d3748;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
 }
 
-.clear-context-button:hover {
+.context-action-btn.cancel:hover {
   background: #cbd5e0;
 }
 
-/* Context Items Container - Enhanced Scrollable with header */
-.context-items-container {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  border: 3px solid #4299e1;
-  border-radius: 10px;
-  background: white;
-  box-shadow: 0 2px 12px rgba(66, 153, 225, 0.15);
+.context-action-btn.clear {
+  background: #fed7d7;
+  color: #c53030;
 }
 
-.context-items-header {
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-  border-bottom: none;
-  border-radius: 7px 7px 0 0;
+.context-action-btn.clear:hover {
+  background: #fc8181;
+  color: white;
+}
+
+/* Saved Context Display */
+.saved-context-display {
+  margin-top: 20px;
+  border: 2px solid #48bb78;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(72, 187, 120, 0.15);
+  overflow: hidden;
+}
+
+.saved-context-header {
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.context-count {
-  font-size: 13px;
+.saved-label {
+  font-size: 14px;
   font-weight: 700;
   color: white;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.context-items-list {
+.saved-actions {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: #f7fafc;
+  gap: 10px;
 }
 
-.context-items-list.scrollable {
-  max-height: 400px;
-  min-height: 150px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Enhanced Custom scrollbar */
-.context-items-list.scrollable::-webkit-scrollbar {
-  width: 10px;
-}
-
-.context-items-list.scrollable::-webkit-scrollbar-track {
-  background: #e2e8f0;
-  border-radius: 5px;
-  margin: 4px;
-}
-
-.context-items-list.scrollable::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-  border-radius: 5px;
-  border: 2px solid #e2e8f0;
-}
-
-.context-items-list.scrollable::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-  border-color: #cbd5e0;
-}
-
-.context-item-card {
-  background: white;
-  border: 2px solid #cbd5e0;
-  border-radius: 8px;
-  padding: 14px;
-  position: relative;
+.saved-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.context-item-card:hover {
-  border-color: #4299e1;
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
-  transform: translateY(-1px);
-}
-
-.context-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.context-item-label {
-  font-size: 12px;
-  color: #4299e1;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.context-item-label::before {
-  content: "📝";
-  font-size: 14px;
-}
-
-.context-item-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.context-btn-icon {
+.saved-btn.edit {
   background: white;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  transition: all 0.2s;
-  line-height: 1;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #4299e1;
 }
 
-.context-btn-icon:hover {
-  transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.context-btn-icon.edit {
-  border-color: #bee3f8;
-}
-
-.context-btn-icon.edit:hover {
+.saved-btn.edit:hover {
   background: #ebf8ff;
-  border-color: #4299e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(66, 153, 225, 0.3);
 }
 
-.context-btn-icon.delete {
-  border-color: #ffc9c9;
+.saved-btn.clear {
+  background: rgba(255, 255, 255, 0.9);
+  color: #c53030;
 }
 
-.context-btn-icon.delete:hover {
+.saved-btn.clear:hover {
   background: #fff5f5;
-  border-color: #fc8181;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(197, 48, 48, 0.3);
 }
 
-.context-item-content {
+.saved-context-content {
+  padding: 20px;
+  background: #f7fafc;
   color: #2d3748;
   font-size: 14px;
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
-  padding: 8px;
-  background: #f7fafc;
-  border-radius: 6px;
-  border-left: 3px solid #4299e1;
-  min-height: 40px;
+  border-left: 4px solid #48bb78;
+  min-height: 100px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-/* Edit Mode */
-.context-edit-mode {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.saved-context-content::-webkit-scrollbar {
+  width: 8px;
 }
 
-.context-edit-textarea {
-  width: 100%;
-  padding: 10px;
-  border: 2px solid #4299e1;
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 80px;
-}
-
-.context-edit-textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
-}
-
-.context-edit-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.context-btn {
-  padding: 6px 16px;
-  border: none;
-  border-radius: 5px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.context-btn.save {
-  background: #48bb78;
-  color: white;
-}
-
-.context-btn.save:hover {
-  background: #38a169;
-}
-
-.context-btn.cancel {
+.saved-context-content::-webkit-scrollbar-track {
   background: #e2e8f0;
-  color: #2d3748;
+  border-radius: 4px;
 }
 
-.context-btn.cancel:hover {
-  background: #cbd5e0;
+.saved-context-content::-webkit-scrollbar-thumb {
+  background: #48bb78;
+  border-radius: 4px;
+}
+
+.saved-context-content::-webkit-scrollbar-thumb:hover {
+  background: #38a169;
 }
 
 /* =========================
