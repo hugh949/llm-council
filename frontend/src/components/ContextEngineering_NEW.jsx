@@ -159,22 +159,255 @@ export default function ContextEngineering({
         </p>
       </div>
 
-      {/* Compact two-column layout */}
-      <div className="context-grid">
-        
-        {/* LEFT COLUMN: Manual Text Input */}
-        <div className="manual-context-section">
-          <div className="section-card">
-            <div className="card-header">
-              <h3>✍️ Add Context Manually</h3>
-              <p className="card-hint">Type or paste additional context, guidelines, constraints, or background information</p>
+      {/* PRIMARY FEATURE: Large RAG Upload Zone */}
+      <div className="rag-upload-hero">
+        <div className="upload-hero-header">
+          <h2>📁 Upload Documents for Intelligent Analysis</h2>
+          <p className="upload-hero-subtitle">
+            The council will automatically analyze your documents and retrieve relevant information to provide more informed, context-aware responses.
+          </p>
+        </div>
+
+        {/* Large Drag-and-Drop Upload Zone */}
+        <div 
+          className="large-upload-zone"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+              handleFileUpload({ target: { files } });
+            }
+          }}
+        >
+          <div className="upload-zone-content">
+            <div className="upload-icon">📤</div>
+            <h3>{uploadingFile ? 'Processing...' : 'Drop files here or click to upload'}</h3>
+            <p className="upload-zone-hint">Drag & drop or click to select files</p>
+            
+            <div className="supported-formats">
+              <div className="format-badge">
+                <span className="format-icon">📽️</span>
+                <span className="format-name">PowerPoint</span>
+                <span className="format-ext">.ppt, .pptx</span>
+              </div>
+              <div className="format-badge">
+                <span className="format-icon">📝</span>
+                <span className="format-name">Word</span>
+                <span className="format-ext">.doc, .docx</span>
+              </div>
+              <div className="format-badge">
+                <span className="format-icon">📄</span>
+                <span className="format-name">PDF</span>
+                <span className="format-ext">.pdf</span>
+              </div>
+              <div className="format-badge">
+                <span className="format-icon">📊</span>
+                <span className="format-name">Excel</span>
+                <span className="format-ext">.xls, .xlsx</span>
+              </div>
+              <div className="format-badge">
+                <span className="format-icon">📃</span>
+                <span className="format-name">Text</span>
+                <span className="format-ext">.txt, .md, .csv</span>
+              </div>
             </div>
+
+            {uploadingFile && (
+              <div className="upload-progress">
+                <div className="spinner"></div>
+                <span>Uploading and processing...</span>
+              </div>
+            )}
+          </div>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            style={{ display: 'none' }}
+            onChange={handleFileUpload}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv"
+          />
+        </div>
+
+        {/* Additional Options */}
+        <div className="additional-attachment-options">
+          <button
+            type="button"
+            className="option-button link-button"
+            onClick={() => setShowLinkForm(!showLinkForm)}
+          >
+            <span className="option-icon">🔗</span>
+            <span>Add Web Link</span>
+            <span className="option-desc">Extract content from URLs</span>
+          </button>
+          <button
+            type="button"
+            className="option-button document-button"
+            onClick={() => setShowDocumentForm(!showDocumentForm)}
+          >
+            <span className="option-icon">✍️</span>
+            <span>Paste Text Document</span>
+            <span className="option-desc">Add text directly</span>
+          </button>
+        </div>
+
+        {/* Link Form */}
+        {showLinkForm && (
+          <form className="inline-form link-form" onSubmit={handleAddLink}>
+            <input
+              type="url"
+              className="inline-input"
+              placeholder="https://example.com/article or research paper"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              required
+              autoFocus
+            />
+            <div className="inline-actions">
+              <button type="submit" className="inline-submit">Add Link</button>
+              <button type="button" className="inline-cancel" onClick={() => setShowLinkForm(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
+
+        {/* Document Form */}
+        {showDocumentForm && (
+          <form className="inline-form document-form-inline" onSubmit={handleAddDocument}>
+            <input
+              type="text"
+              className="inline-input"
+              placeholder="Document name..."
+              value={documentName}
+              onChange={(e) => setDocumentName(e.target.value)}
+              required
+            />
             <textarea
-              className="manual-context-textarea"
-              placeholder="Example:&#10;&#10;• Focus on technical accuracy over simplicity&#10;• Consider budget constraints under $10,000&#10;• Target audience is intermediate level&#10;• Prioritize practical solutions&#10;• Include real-world examples&#10;&#10;Add any clarifications, constraints, or guidelines that will help the council provide better responses..."
+              className="inline-textarea"
+              placeholder="Paste your text content here..."
+              value={documentContent}
+              onChange={(e) => setDocumentContent(e.target.value)}
+              rows={6}
+              required
+            />
+            <div className="inline-actions">
+              <button type="submit" className="inline-submit">Add Document</button>
+              <button type="button" className="inline-cancel" onClick={() => setShowDocumentForm(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      {/* Show Attached Documents */}
+      {totalAttachments > 0 && (
+        <div className="attachments-summary">
+          <h3>📎 Attached Documents ({totalAttachments})</h3>
+          <p className="attachments-summary-hint">These documents will be analyzed and used to enhance council responses</p>
+          
+          {/* Files List */}
+          {safeFiles.length > 0 && (
+            <div className="files-list">
+              <h4>Uploaded Files ({safeFiles.length})</h4>
+              <div className="files-grid">
+                {safeFiles.map((file, index) => {
+                  if (!file) return null;
+                  const fileName = file?.name || 'Untitled';
+                  const fileType = file?.type || 'unknown';
+                  const preview = getFilePreview(file);
+                  return (
+                    <div key={index} className="file-item with-preview">
+                      <div className="file-icon-large">{getFileIcon(file)}</div>
+                      <div className="file-info">
+                        <div className="file-name">{fileName}</div>
+                        <div className="file-type-badge">{fileType.toUpperCase()}</div>
+                        {file?.page_count && <div className="file-meta">📑 {file.page_count} pages</div>}
+                        {file?.slide_count && <div className="file-meta">🎞️ {file.slide_count} slides</div>}
+                        {file?.content && (
+                          <div className="file-preview-text" title={preview}>
+                            {preview}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Links List */}
+          {safeLinks.length > 0 && (
+            <div className="links-list">
+              <h4>External Links ({safeLinks.length})</h4>
+              <ul>
+                {safeLinks.map((link, index) => {
+                  if (!link) return null;
+                  const linkUrl = link?.original_url || link?.name || '#';
+                  const linkText = link?.original_url || link?.name || 'Link';
+                  return (
+                    <li key={index}>
+                      <a href={linkUrl} target="_blank" rel="noopener noreferrer">
+                        {linkText}
+                      </a>
+                      {link?.error && <span className="error-badge">Error</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Documents List */}
+          {safeDocuments.length > 0 && (
+            <div className="documents-list">
+              <h4>Text Documents ({safeDocuments.length})</h4>
+              <div className="documents-grid">
+                {safeDocuments.map((doc, index) => {
+                  if (!doc) return null;
+                  const docName = doc?.name || 'Untitled';
+                  const docContent = doc?.content || '';
+                  const preview = docContent.substring(0, 200);
+                  return (
+                    <div key={index} className="document-item with-preview">
+                      <div className="document-icon">📄</div>
+                      <div className="document-content-wrapper">
+                        <div className="document-name">{docName}</div>
+                        <div className="document-preview">
+                          {preview}
+                          {docContent.length > 200 && '...'}
+                        </div>
+                        <div className="document-meta">
+                          {docContent.length} characters • Ready for RAG
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collapsible: Additional Text Context (Optional - Secondary Feature) */}
+      {!finalizedContext && (
+        <details className="collapsible-section">
+          <summary className="collapsible-header">
+            <span className="collapsible-icon">✍️</span>
+            <span className="collapsible-title">Add Additional Context (Optional)</span>
+            <span className="collapsible-hint">Text that will be directly included</span>
+          </summary>
+          <div className="collapsible-content">
+            <p className="context-hint">
+              Add clarifications, constraints, or guidelines that will be <strong>directly included</strong> with your prompt (not processed through RAG).
+            </p>
+            <textarea
+              className="context-text-input"
+              placeholder="Example: Focus on technical accuracy, consider budget constraints, assume audience is beginner level..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              rows={12}
+              rows={4}
             />
             {input.trim() && (
               <div className="context-input-actions">
@@ -184,7 +417,7 @@ export default function ContextEngineering({
                   onClick={handleSubmit}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Adding...' : '✓ Add This Context'}
+                  {isLoading ? 'Adding...' : '+ Add This Context'}
                 </button>
                 <button
                   type="button"
@@ -196,234 +429,29 @@ export default function ContextEngineering({
               </div>
             )}
             
-            {/* Show added context */}
             {safeMessages.length > 0 && (
               <div className="added-context-preview">
-                <h4>✓ Context Added</h4>
+                <h4>📌 Context Added:</h4>
                 {safeMessages.map((msg, index) => (
                   <div key={index} className="context-message-item">
+                    <div className="context-message-label">
+                      {msg.role === 'user' ? 'Your Context' : 'AI Response'}
+                    </div>
                     <div className="context-message-text">{msg.content}</div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
-
-        {/* RIGHT COLUMN: File Upload */}
-        <div className="upload-section">
-          <div className="section-card">
-            <div className="card-header">
-              <h3>📎 Upload Documents (RAG)</h3>
-              <p className="card-hint">Documents will be intelligently analyzed and retrieved during deliberation</p>
-            </div>
-            
-            {/* Compact Upload Zone */}
-            <div 
-              className="compact-upload-zone"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                  handleFileUpload({ target: { files } });
-                }
-              }}
-            >
-              <div className="upload-zone-icon">📤</div>
-              <div className="upload-zone-text">
-                <strong>{uploadingFile ? 'Processing...' : 'Drop files or click to browse'}</strong>
-                <span className="upload-formats">
-                  PDF • Word • PowerPoint • Excel • Text
-                </span>
-              </div>
-              
-              {uploadingFile && (
-                <div className="upload-progress-inline">
-                  <div className="spinner-small"></div>
-                </div>
-              )}
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                onChange={handleFileUpload}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv"
-              />
-            </div>
-
-            {/* Quick Actions */}
-            <div className="quick-actions">
-              <button
-                type="button"
-                className="quick-action-btn"
-                onClick={() => setShowLinkForm(!showLinkForm)}
-              >
-                🔗 Add Link
-              </button>
-              <button
-                type="button"
-                className="quick-action-btn"
-                onClick={() => setShowDocumentForm(!showDocumentForm)}
-              >
-                📄 Paste Text
-              </button>
-            </div>
-
-            {/* Link Form */}
-            {showLinkForm && (
-              <form className="quick-form" onSubmit={handleAddLink}>
-                <input
-                  type="url"
-                  className="quick-input"
-                  placeholder="https://example.com/article"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  required
-                  autoFocus
-                />
-                <div className="quick-actions">
-                  <button type="submit" className="quick-action-btn primary">Add</button>
-                  <button type="button" className="quick-action-btn" onClick={() => setShowLinkForm(false)}>Cancel</button>
-                </div>
-              </form>
-            )}
-
-            {/* Document Form */}
-            {showDocumentForm && (
-              <form className="quick-form" onSubmit={handleAddDocument}>
-                <input
-                  type="text"
-                  className="quick-input"
-                  placeholder="Document name..."
-                  value={documentName}
-                  onChange={(e) => setDocumentName(e.target.value)}
-                  required
-                />
-                <textarea
-                  className="quick-textarea"
-                  placeholder="Paste content..."
-                  value={documentContent}
-                  onChange={(e) => setDocumentContent(e.target.value)}
-                  rows={4}
-                  required
-                />
-                <div className="quick-actions">
-                  <button type="submit" className="quick-action-btn primary">Add</button>
-                  <button type="button" className="quick-action-btn" onClick={() => setShowDocumentForm(false)}>Cancel</button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Attached Documents - Scrollable Area with Thumbnails */}
-      {totalAttachments > 0 && (
-        <div className="attachments-display">
-          <div className="attachments-display-header">
-            <h3>📎 Attached Documents ({totalAttachments})</h3>
-            <div className="success-badge">✓ Ready for RAG Analysis</div>
-          </div>
-          
-          <div className="attachments-scrollable">
-            {/* Files with Thumbnails */}
-            {safeFiles.length > 0 && (
-              <div className="attachment-category">
-                <h4 className="category-title">Uploaded Files ({safeFiles.length})</h4>
-                <div className="thumbnails-grid">
-                  {safeFiles.map((file, index) => {
-                    if (!file) return null;
-                    const fileName = file?.name || 'Untitled';
-                    const fileType = file?.type || 'unknown';
-                    return (
-                      <div key={index} className="file-thumbnail">
-                        <div className="thumbnail-icon">{getFileIcon(file)}</div>
-                        <div className="thumbnail-content">
-                          <div className="thumbnail-name" title={fileName}>{fileName}</div>
-                          <div className="thumbnail-type">{fileType.toUpperCase()}</div>
-                          {file?.page_count && <div className="thumbnail-meta">📄 {file.page_count} pages</div>}
-                          {file?.slide_count && <div className="thumbnail-meta">📊 {file.slide_count} slides</div>}
-                        </div>
-                        <div className="thumbnail-status">✓</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Links */}
-            {safeLinks.length > 0 && (
-              <div className="attachment-category">
-                <h4 className="category-title">Web Links ({safeLinks.length})</h4>
-                <div className="thumbnails-grid">
-                  {safeLinks.map((link, index) => {
-                    if (!link) return null;
-                    const linkUrl = link?.original_url || link?.name || '#';
-                    const linkText = link?.original_url || link?.name || 'Link';
-                    return (
-                      <div key={index} className="file-thumbnail">
-                        <div className="thumbnail-icon">🔗</div>
-                        <div className="thumbnail-content">
-                          <a 
-                            href={linkUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="thumbnail-name link-name"
-                            title={linkText}
-                          >
-                            {linkText}
-                          </a>
-                          <div className="thumbnail-type">WEB LINK</div>
-                        </div>
-                        <div className="thumbnail-status">
-                          {link?.error ? '⚠️' : '✓'}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Pasted Documents */}
-            {safeDocuments.length > 0 && (
-              <div className="attachment-category">
-                <h4 className="category-title">Text Documents ({safeDocuments.length})</h4>
-                <div className="thumbnails-grid">
-                  {safeDocuments.map((doc, index) => {
-                    if (!doc) return null;
-                    const docName = doc?.name || 'Untitled';
-                    const docContent = doc?.content || '';
-                    const charCount = docContent.length;
-                    return (
-                      <div key={index} className="file-thumbnail">
-                        <div className="thumbnail-icon">📄</div>
-                        <div className="thumbnail-content">
-                          <div className="thumbnail-name" title={docName}>{docName}</div>
-                          <div className="thumbnail-type">TEXT</div>
-                          <div className="thumbnail-meta">{charCount} characters</div>
-                        </div>
-                        <div className="thumbnail-status">✓</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        </details>
       )}
 
-      {/* View/Edit Finalized Prompt - Collapsible for reference */}
+      {/* Collapsible: View/Edit Finalized Prompt */}
       {finalizedPrompt && !finalizedContext && (
-        <details className="collapsible-section" style={{ marginTop: '20px' }}>
+        <details className="collapsible-section">
           <summary className="collapsible-header">
             <span className="collapsible-icon">📝</span>
-            <span className="collapsible-title">View/Edit Your Finalized Prompt from Step 1</span>
+            <span className="collapsible-title">View/Edit Finalized Prompt from Step 1</span>
           </summary>
           <div className="collapsible-content">
             {editingPrompt ? (
