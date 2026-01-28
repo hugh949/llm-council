@@ -148,8 +148,16 @@ export default function ContextEngineering({
   const safeLinks = Array.isArray(links) ? links : [];
   const totalAttachments = safeDocuments.length + safeFiles.length + safeLinks.length;
   
-  // Only show "Context Added" if user has actually added context (not just the initial prompt)
-  const hasUserAddedContext = safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user');
+  // Filter user messages with actual content (not empty strings)
+  const userContextMessages = safeMessages.filter(msg => 
+    msg && 
+    msg.role === 'user' && 
+    msg.content && 
+    msg.content.trim().length > 0
+  );
+  
+  // Only show context items if user has actually added context with content
+  const hasUserAddedContext = userContextMessages.length > 0;
 
   // Helper functions
   const getFileIcon = (file) => {
@@ -238,15 +246,15 @@ export default function ContextEngineering({
             )}
             
             {/* Show added context items - scrollable list with edit/delete */}
-            {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') && (
+            {hasUserAddedContext && (
               <div className="context-items-container">
                 <div className="context-items-header">
                   <span className="context-count">
-                    {safeMessages.filter(msg => msg.role === 'user').length} Context Item{safeMessages.filter(msg => msg.role === 'user').length !== 1 ? 's' : ''} Added
+                    ✓ {userContextMessages.length} Context Item{userContextMessages.length !== 1 ? 's' : ''} Saved
                   </span>
                 </div>
                 <div className="context-items-list scrollable">
-                  {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
+                  {userContextMessages.map((msg, index) => (
                     <div key={index} className="context-item-card">
                       {editingContextIndex === index ? (
                         // Edit mode
@@ -593,7 +601,7 @@ export default function ContextEngineering({
               <p className="info-text">
                 Excellent! Your context is ready
                 {totalAttachments > 0 && <span> with <strong>{totalAttachments} attachment{totalAttachments !== 1 ? 's' : ''}</strong></span>}
-                {safeMessages.length > 0 && <span> and direct context text</span>}.
+                {hasUserAddedContext && <span> and direct context text</span>}.
                 {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant information when needed.'}
               </p>
             </div>
@@ -657,10 +665,10 @@ export default function ContextEngineering({
                 </div>
 
                 {/* Manual Context */}
-                {safeMessages.length > 0 && safeMessages.some(msg => msg.role === 'user') ? (
+                {hasUserAddedContext ? (
                   <div className="review-subsection">
-                    <h4>✍️ Manual Context ({safeMessages.filter(msg => msg.role === 'user').length})</h4>
-                    {safeMessages.filter(msg => msg.role === 'user').map((msg, index) => (
+                    <h4>✍️ Manual Context ({userContextMessages.length})</h4>
+                    {userContextMessages.map((msg, index) => (
                       <div key={index} className="review-box">
                         <div className="review-box-label">Context #{index + 1}</div>
                         {msg.content}
@@ -697,7 +705,7 @@ export default function ContextEngineering({
                 ) : null}
 
                 {/* Empty Step 2 */}
-                {safeMessages.length === 0 && totalAttachments === 0 && (
+                {!hasUserAddedContext && totalAttachments === 0 && (
                   <div className="review-box empty-notice">
                     <em>No additional context or attachments added in Step 2</em>
                   </div>
@@ -707,7 +715,7 @@ export default function ContextEngineering({
               {/* Summary */}
               <div className="review-summary">
                 <strong>Summary:</strong> The council will deliberate using your prompt
-                {safeMessages.length > 0 && ' + manual context'}
+                {hasUserAddedContext && ' + manual context'}
                 {totalAttachments > 0 && ` + ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}`}.
                 {totalAttachments > 0 && ' The RAG system will intelligently retrieve relevant information during deliberation.'}
               </div>
@@ -741,12 +749,12 @@ export default function ContextEngineering({
             <div className="package-bar-text">
               <strong>Ready to proceed?</strong>
               <p>
-                {totalAttachments > 0 && safeMessages.length > 0 
-                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and additional context. `
+                {totalAttachments > 0 && hasUserAddedContext 
+                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and ${userContextMessages.length} context item${userContextMessages.length !== 1 ? 's' : ''}. `
                   : totalAttachments > 0
                   ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
-                  : safeMessages.length > 0
-                  ? 'You have added context text. '
+                  : hasUserAddedContext
+                  ? `You have ${userContextMessages.length} context item${userContextMessages.length !== 1 ? 's' : ''} saved. `
                   : 'You can add attachments or context, or '}
                 Click Package to review and finalize.
               </p>
