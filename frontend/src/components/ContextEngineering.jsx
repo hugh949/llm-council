@@ -659,8 +659,8 @@ export default function ContextEngineering({
         </details>
       )}
 
-      {/* Completion State */}
-      {finalizedContext && (
+      {/* Completion State - only in first round; refinement round uses package bar for re-package */}
+      {finalizedContext && !refinementMode && (
         <>
           <div className="finalized-section">
             <h3>✓ Step 2 Complete: Context Packaged</h3>
@@ -806,21 +806,22 @@ export default function ContextEngineering({
         </div>
       )}
 
-      {/* Package Button */}
-      {!finalizedContext && (
+      {/* Package Button - show when context not finalized, OR in refinement mode (to allow re-package) */}
+      {(!finalizedContext || refinementMode) && (
         <div className="package-context-bar sticky-bottom">
           <div className="package-bar-content">
             <div className="package-bar-text">
-              <strong>Ready to proceed?</strong>
+              <strong>{refinementMode ? 'Refinement round:' : 'Ready to proceed?'}</strong>
               <p>
-                {totalAttachments > 0 && hasManualContext 
-                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and manual context. `
-                  : totalAttachments > 0
-                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
-                  : hasManualContext
-                  ? 'You have manual context saved. '
-                  : 'You can add attachments or context, or '}
-                Click Package to review and finalize.
+                {refinementMode
+                  ? 'Edit prior context above, add more documents if needed, then click Package to update and proceed to Step 3.'
+                  : `${totalAttachments > 0 && hasManualContext
+                      ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and manual context. `
+                      : totalAttachments > 0
+                      ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
+                      : hasManualContext
+                      ? 'You have manual context saved. '
+                      : 'You can add attachments or context, or '}Click Package to review and finalize.`}
               </p>
             </div>
             <button
@@ -828,7 +829,7 @@ export default function ContextEngineering({
               onClick={handlePackageContext}
               disabled={isLoading}
             >
-              {isLoading ? 'Packaging...' : '→ Review & Package'}
+              {isLoading ? 'Packaging...' : refinementMode ? '→ Update & Package' : '→ Review & Package'}
             </button>
           </div>
         </div>

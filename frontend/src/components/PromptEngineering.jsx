@@ -163,7 +163,11 @@ export default function PromptEngineering({
       <div className="messages-container">
         {messages.length === 0 ? (
           <div className="empty-state">
-            <p>Start by describing what you want to achieve...</p>
+            <p>
+              {refinementMode
+                ? 'No prior discussion in this conversation.'
+                : 'Start by describing what you want to achieve...'}
+            </p>
           </div>
         ) : (
           messages.map((msg, index) => (
@@ -219,7 +223,8 @@ export default function PromptEngineering({
         </div>
       )}
 
-      {!(finalizedPrompt && !refinementMode) && (showFinalizeForm ? (
+      {/* Hide input/finalize section when in refinement mode (we show refinement editable instead) or when finalized read-only */}
+      {!finalizedPrompt && (showFinalizeForm ? (
         <div className="finalize-section">
           <div className="finalize-form">
             <h4>Review and Finalize Prompt</h4>
