@@ -126,15 +126,18 @@ export default function ChatInterface({
         onStartRefinement && (
         <div className="refinement-actions">
           <p className="refinement-hint">
-            Refine your prompt and context, then run another council round. Previous deliberation will be used as context.
+            Run another council round. You'll edit your prompt and context in Steps 1 and 2, then run the council.
           </p>
           <button
             type="button"
             className="refine-button"
-            onClick={onStartRefinement}
+            onClick={() => {
+              console.log('[REFINEMENT] ChatInterface: User clicked Start new round of deliberation');
+              onStartRefinement();
+            }}
             disabled={isLoading}
           >
-            Refine prompt & context
+            Start new round of deliberation
           </button>
         </div>
       )}

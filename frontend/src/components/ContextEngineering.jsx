@@ -17,8 +17,10 @@ export default function ContextEngineering({
   onAddLink,
   onPackageContext,
   onEditPrompt,
+  onEditContext,
   onReloadConversation,
   isLoading,
+  refinementMode = false,
 }) {
   const [input, setInput] = useState('');
   const [documentName, setDocumentName] = useState('');
@@ -33,6 +35,8 @@ export default function ContextEngineering({
   const [manualContext, setManualContext] = useState('');
   const [savedManualContext, setSavedManualContext] = useState('');
   const [isEditingManualContext, setIsEditingManualContext] = useState(false);
+  const [editedContext, setEditedContext] = useState('');
+  const [isEditingContext, setIsEditingContext] = useState(false);
   const fileInputRef = useRef(null);
 
   // Sync editedPrompt when finalizedPrompt prop changes
@@ -41,6 +45,28 @@ export default function ContextEngineering({
       setEditedPrompt(finalizedPrompt);
     }
   }, [finalizedPrompt, editingPrompt]);
+
+  // Pre-load manual context from prior round's user messages when entering Step 2 refinement
+  useEffect(() => {
+    if (refinementMode && messages && messages.length > 0) {
+      const userContents = (messages || [])
+        .filter((m) => m?.role === 'user')
+        .map((m) => (m?.content || '').trim())
+        .filter(Boolean);
+      console.log('[REFINEMENT] ContextEngineering: Pre-loading manual context from', userContents.length, 'user messages');
+      if (userContents.length > 0) {
+        const combined = userContents.join('\n\n');
+        setSavedManualContext(combined);
+      }
+    }
+  }, [refinementMode, messages]);
+
+  // Sync editedContext when finalizedContext changes (for Refine Context)
+  useEffect(() => {
+    if (finalizedContext && !isEditingContext) {
+      setEditedContext(finalizedContext);
+    }
+  }, [finalizedContext, isEditingContext]);
 
   const handleSaveManualContext = () => {
     if (manualContext.trim()) {
@@ -132,6 +158,18 @@ export default function ContextEngineering({
     }
   };
 
+  const handleEditContextForRefinement = () => {
+    setEditedContext(finalizedContext || '');
+    setIsEditingContext(true);
+  };
+
+  const handleSaveContext = async () => {
+    if (editedContext.trim() && onEditContext) {
+      await onEditContext(editedContext.trim());
+      setIsEditingContext(false);
+    }
+  };
+
   // Validate props
   const safeDocuments = Array.isArray(documents) ? documents : [];
   const safeFiles = Array.isArray(files) ? files : [];
@@ -160,6 +198,8 @@ export default function ContextEngineering({
     return preview + (content.length > 150 ? '...' : '');
   };
 
+  console.log('[REFINEMENT] ContextEngineering render:', { refinementMode, finalizedContext: !!finalizedContext, finalizedContextLength: finalizedContext?.length || 0, isEditingContext });
+
   if (!conversationId) {
     return (
       <div className="empty-state" style={{ padding: '40px' }}>
@@ -184,11 +224,82 @@ export default function ContextEngineering({
       />
       
       <div className="stage-header">
-        <h2>Step 2: Context Engineering - Add Intelligence with RAG</h2>
+        <h2>Step 2: Context Engineering{refinementMode ? ' (Refinement Round)' : ''} - Add Intelligence with RAG</h2>
         <p className="stage-description">
-          <strong>Upload documents, presentations, and research materials</strong> that will be intelligently analyzed and used to enhance your council's responses. The system will automatically extract relevant information when needed.
+          {refinementMode
+            ? "This is a refinement round. Edit your prior context below, add more documents, or proceed to package."
+            : "Upload documents, presentations, and research materials that will be intelligently analyzed and used to enhance your council's responses. The system will automatically extract relevant information when needed."}
         </p>
       </div>
+
+      {/* Prior context — at TOP when refinement mode, always visible and editable */}
+      {refinementMode && finalizedContext && (
+        <div className="prior-context-section" style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+          <h3 style={{ marginTop: 0, marginBottom: '12px' }}>Prior context — edit for this round</h3>
+          {isEditingContext ? (
+            <div className="edit-prompt-form">
+              <textarea
+                className="prompt-edit-textarea"
+                value={editedContext}
+                onChange={(e) => setEditedContext(e.target.value)}
+                rows={10}
+                placeholder="Edit packaged context..."
+                style={{ width: '100%' }}
+              />
+            </div>
+          ) : (
+            <div>
+              <div className="finalized-prompt-content" style={{ whiteSpace: 'pre-wrap', marginBottom: '12px' }}>
+                {finalizedContext}
+              </div>
+              {onEditContext && (
+                <button
+                  type="button"
+                  className="edit-prompt-button"
+                  onClick={handleEditContextForRefinement}
+                >
+                  Edit context
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* FIXED BOTTOM: Prior context edit actions - always visible when editing */}
+      {refinementMode && finalizedContext && isEditingContext && (
+        <div className="prior-context-edit-bar">
+          <div className="prior-context-edit-bar-content">
+            <span className="prior-context-edit-bar-label">Editing prior context</span>
+            <div className="edit-prompt-actions">
+              <button
+                type="button"
+                className="cancel-edit-button"
+                onClick={() => {
+                  setIsEditingContext(false);
+                  setEditedContext(finalizedContext);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="save-prompt-button"
+                onClick={handleSaveContext}
+                disabled={!editedContext.trim() || isLoading}
+              >
+                Save Context
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {refinementMode && (
+        <div className="refinement-banner" style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#f0f8ff', borderRadius: '8px', border: '1px solid #4a90e2' }}>
+          <strong>Refinement round:</strong> Prior context is loaded. Add additional documents, links, or manual context below.
+        </div>
+      )}
 
       {/* Compact two-column layout */}
       <div className="context-grid">

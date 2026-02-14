@@ -92,4 +92,17 @@ Return ONLY the finalized prompt text, without any additional commentary or expl
     return response.get('content', '').strip()
 
 
+def get_refinement_opening(prior_synthesis: str = "") -> str:
+    """
+    Return the assistant's opening message for a refinement round.
+    Asks the user what additional topics they want to discuss or refine.
+    """
+    base = (
+        "You've completed a council deliberation. The previous synthesis has been considered. "
+        "What additional topics would you like to discuss or refine in your prompt? "
+        "Share what you'd like to add, clarify, or change."
+    )
+    if prior_synthesis:
+        return f"{base}\n\n*Prior council synthesis (for reference):*\n{prior_synthesis[:500]}{'...' if len(prior_synthesis) > 500 else ''}"
+    return base
 

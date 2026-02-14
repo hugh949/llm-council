@@ -252,26 +252,12 @@ export default function StepView({ step, conversation, onBack, onStartRefinement
           messages: councilDelib.messages || []
         };
         
-        const hasStage3Results = councilDelib.messages.some((msg) => msg.role === 'assistant' && msg.stage3);
-        
         return (
           <div className="step-view-council">
             <NewRoundBanner />
             <div className="step-header-full">
               <span className="step-badge">Step 3</span>
               <h2>Council Deliberation</h2>
-              {hasStage3Results && onStartRefinement && (
-                <button
-                  type="button"
-                  className="refine-button"
-                  onClick={() => {
-                    onStartRefinement();
-                    onBack();
-                  }}
-                >
-                  Refine prompt & context
-                </button>
-              )}
             </div>
             <div className="council-messages-container">
               {formattedConversation.messages.map((msg, index) => {

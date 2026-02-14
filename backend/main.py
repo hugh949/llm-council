@@ -25,8 +25,8 @@ except ImportError:
     init_db = None
 
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
-from .prompt_engineering import get_prompt_engineering_response, suggest_finalized_prompt
-from .context_engineering import get_context_engineering_response, package_context
+from .prompt_engineering import get_prompt_engineering_response, suggest_finalized_prompt, get_refinement_opening as get_prompt_refinement_opening
+from .context_engineering import get_context_engineering_response, package_context, get_refinement_opening as get_context_refinement_opening
 from .document_parser import parse_file, fetch_url_content
 
 app = FastAPI(title="LLM Council API")
@@ -246,6 +246,12 @@ class AddLinkRequest(BaseModel):
     url: str
 
 
+class RefinementOpeningRequest(BaseModel):
+    """Optional context for refinement opening messages."""
+    prior_synthesis: str = ""
+    prior_context_summary: str = ""
+
+
 class ConversationMetadata(BaseModel):
     """Conversation metadata for list view."""
     id: str
@@ -412,7 +418,37 @@ async def finalize_prompt_endpoint(conversation_id: str, request: FinalizePrompt
     return {"conversation": updated_conversation}
 
 
+@app.post("/api/conversations/{conversation_id}/prompt-engineering/refinement-opening")
+async def prompt_refinement_opening(conversation_id: str, request: RefinementOpeningRequest = RefinementOpeningRequest()):
+    """
+    Generate and store an assistant refinement-opening message for Step 1.
+    Asks the user what additional topics they want to discuss or refine.
+    """
+    conversation = storage.get_conversation(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    opening = get_prompt_refinement_opening(request.prior_synthesis)
+    storage.add_prompt_engineering_message(conversation_id, "assistant", opening)
+    updated_conversation = storage.get_conversation(conversation_id)
+    return {"conversation": updated_conversation}
+
+
 # ========== CONTEXT ENGINEERING ENDPOINTS ==========
+
+@app.post("/api/conversations/{conversation_id}/context-engineering/refinement-opening")
+async def context_refinement_opening(conversation_id: str, request: RefinementOpeningRequest = RefinementOpeningRequest()):
+    """
+    Generate and store an assistant refinement-opening message for Step 2.
+    Acknowledges prior context and asks for additional information.
+    """
+    conversation = storage.get_conversation(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    opening = get_context_refinement_opening(request.prior_context_summary)
+    storage.add_context_engineering_message(conversation_id, "assistant", opening)
+    updated_conversation = storage.get_conversation(conversation_id)
+    return {"conversation": updated_conversation}
+
 
 @app.post("/api/conversations/{conversation_id}/context-engineering/message")
 async def send_context_engineering_message(conversation_id: str, request: SendMessageRequest):

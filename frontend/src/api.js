@@ -225,6 +225,23 @@ export const api = {
     return response.json();
   },
 
+  async getPromptRefinementOpening(conversationId, priorSynthesis = '') {
+    const response = await fetch(
+      `${API_BASE}/api/conversations/${conversationId}/prompt-engineering/refinement-opening`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prior_synthesis: priorSynthesis }),
+      }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to get refinement opening');
+    }
+    return response.json();
+  },
+
   // ========== CONTEXT ENGINEERING ENDPOINTS ==========
 
   async sendContextEngineeringMessage(conversationId, content) {
@@ -291,6 +308,23 @@ export const api = {
     );
     if (!response.ok) {
       throw new Error('Failed to add link');
+    }
+    return response.json();
+  },
+
+  async getContextRefinementOpening(conversationId, priorContextSummary = '') {
+    const response = await fetch(
+      `${API_BASE}/api/conversations/${conversationId}/context-engineering/refinement-opening`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prior_context_summary: priorContextSummary }),
+      }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to get context refinement opening');
     }
     return response.json();
   },

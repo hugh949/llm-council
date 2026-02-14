@@ -75,6 +75,20 @@ Be conversational and helpful. Ask about relevant documents, guidelines, constra
     return response.get('content', '')
 
 
+def get_refinement_opening(prior_context_summary: str = "") -> str:
+    """
+    Return the assistant's opening message for a refinement round.
+    Acknowledges prior context and asks for additional information.
+    """
+    base = (
+        "This is a refinement round. Your prior context and attachments are already loaded. "
+        "What additional documents, links, or information would you like to add?"
+    )
+    if prior_context_summary:
+        return f"{base}\n\n*Prior context summary:* {prior_context_summary[:300]}{'...' if len(prior_context_summary) > 300 else ''}"
+    return base
+
+
 async def package_context(
     conversation_history: List[Dict[str, str]],
     documents: List[Dict[str, Any]],

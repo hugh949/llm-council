@@ -1925,11 +1925,15 @@
 }
 
 .review-modal-actions {
+  flex-shrink: 0;
   display: flex;
   gap: 12px;
   padding: 20px 24px;
   border-top: 2px solid #e2e8f0;
   background: #f7fafc;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .review-modal-btn {
@@ -1980,6 +1984,33 @@
   .review-modal-btn {
     width: 100%;
   }
+}
+
+/* Prior context edit bar - always visible when editing prior context in refinement */
+.prior-context-edit-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  background: linear-gradient(135deg, #fff9e6 0%, #fff3c4 100%);
+  padding: 16px 24px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  border-top: 3px solid #ffd54f;
+}
+
+.prior-context-edit-bar-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.prior-context-edit-bar-label {
+  font-weight: 600;
+  color: #333;
 }
 
 /* Package context bar - always visible when context not finalized */

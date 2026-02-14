@@ -168,19 +168,23 @@ function App() {
   };
 
   const handleStartRefinement = () => {
+    console.log('[REFINEMENT] handleStartRefinement: User clicked Start new round - setting refinementMode=true, refinementStep=1, viewingStep=null');
     setRefinementMode(true);
     setRefinementStep(1);
     setViewingStep(null);
   };
 
   const handleRefinementComplete = () => {
+    console.log('[REFINEMENT] handleRefinementComplete: Council run finished, resetting refinementMode=false');
     setRefinementMode(false);
     setRefinementStep(1);
   };
 
   const handleRefinementProceedToStep2 = async () => {
+    console.log('[REFINEMENT] handleRefinementProceedToStep2: Moving to Step 2 (context engineering)');
     setRefinementStep(2);
     if (currentConversation?.context_engineering?.messages?.length === 0) {
+      console.log('[REFINEMENT] handleRefinementProceedToStep2: No context messages, calling handleProceedToStep2');
       await handleProceedToStep2();
     }
     await loadConversation(currentConversationId);
@@ -212,18 +216,18 @@ function App() {
 
   // Simple function to determine current stage based on conversation state
   const getCurrentStage = () => {
-    console.log('🔍 getCurrentStage: Called');
+    console.log('[REFINEMENT] getCurrentStage: Called', { refinementMode, refinementStep, hasConversation: !!currentConversation });
     
     if (!currentConversation) {
-      console.log('🔍 getCurrentStage: No conversation, returning prompt_engineering');
+      console.log('[REFINEMENT] getCurrentStage: No conversation, returning prompt_engineering');
       return 'prompt_engineering';
     }
 
     // Refinement mode: force flow through prompt -> context -> review
     if (refinementMode) {
-      if (refinementStep === 1) return 'prompt_engineering';
-      if (refinementStep === 2) return 'context_engineering';
-      if (refinementStep === 3) return 'review';
+      const stage = refinementStep === 1 ? 'prompt_engineering' : refinementStep === 2 ? 'context_engineering' : 'review';
+      console.log('[REFINEMENT] getCurrentStage: refinementMode=true, returning', stage, '(refinementStep=', refinementStep, ')');
+      return stage;
     }
 
     console.log('🔍 getCurrentStage: Conversation exists:', {
@@ -1025,16 +1029,13 @@ function App() {
     
     const finalizedPrompt = promptEng.finalized_prompt || null;
     
-    console.log('🎨 renderContextEngineering: Preparing props for ContextEngineering component:', {
-      conversationId: currentConversationId,
-      finalizedPromptExists: !!finalizedPrompt,
-      finalizedPromptLength: finalizedPrompt?.length || 0,
+    console.log('[REFINEMENT] renderContextEngineering: Preparing props:', {
+      refinementMode,
+      refinementStep,
+      finalizedContextExists: !!safeContextEng.finalized_context,
+      finalizedContextLength: safeContextEng.finalized_context?.length || 0,
       messagesCount: safeContextEng.messages.length,
-      documentsCount: safeContextEng.documents.length,
-      filesCount: safeContextEng.files.length,
-      linksCount: safeContextEng.links.length,
-      hasFinalizedContext: !!safeContextEng.finalized_context,
-      contextLoading
+      documentsCount: safeContextEng.documents.length
     });
     
     console.log('🎨 renderContextEngineering: Rendering ContextEngineering component...');
@@ -1055,8 +1056,10 @@ function App() {
           onAddLink={handleAddLink}
           onPackageContext={refinementMode ? handleRefinementPackageContext : handlePackageContext}
           onEditPrompt={handleEditPrompt}
+          onEditContext={handleEditContext}
           onReloadConversation={() => loadConversation(currentConversationId)}
           isLoading={contextLoading}
+          refinementMode={refinementMode}
         />
       );
       console.log('✅ renderContextEngineering: Component created successfully');
@@ -1127,6 +1130,7 @@ function App() {
 
     switch (stageToRender) {
       case 'prompt_engineering': {
+        console.log('[REFINEMENT] renderStage: Rendering PromptEngineering', { refinementMode, refinementStep, finalizedPromptExists: !!promptEng.finalized_prompt });
         // Extract prior deliberation summary for refinement mode (last Stage 3 synthesis)
         let priorDeliberationSummary = null;
         const councilMsgs = councilDelib.messages || [];
