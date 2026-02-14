@@ -9,7 +9,7 @@ To ensure conversation history persists across deployments in Azure, the databas
 ## 🗄️ Current Database Configuration
 
 ### Database Storage:
-- **Type**: SQLite (default) or PostgreSQL (if configured)
+- **Type**: SQLite (default)
 - **Location**: `data/llm_council.db` (relative to app root)
 
 ### In Azure:
@@ -50,24 +50,14 @@ To ensure your data is safe:
 
 ---
 
-### Option 2: Upgrade to PostgreSQL (Recommended for Production)
+### Option 2: PostgreSQL (Optional - for much larger scale later)
 
-**Pros:**
-- ✅ Automatic backups
-- ✅ Better performance
-- ✅ Scales better
-- ✅ High availability
+SQLite is fine for now. If you ever need to scale significantly:
 
-**Setup:**
 1. Create Azure Database for PostgreSQL
 2. Set `DATABASE_URL` environment variable in Azure App Service
 3. Format: `postgresql://user:pass@host:port/dbname`
-4. Database will automatically be used instead of SQLite
-
-**Code Already Supports This:**
-- ✅ Detects `DATABASE_URL` environment variable
-- ✅ Automatically uses PostgreSQL if configured
-- ✅ No code changes needed!
+4. The app will automatically use PostgreSQL if `DATABASE_URL` is set
 
 ---
 

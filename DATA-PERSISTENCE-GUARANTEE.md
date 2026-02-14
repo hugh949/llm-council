@@ -9,7 +9,7 @@ Your conversation history is **safe and preserved** during application updates. 
 ## 🗄️ Database Storage
 
 ### Current Implementation:
-- **Database Type**: SQLite (local) or PostgreSQL (production)
+- **Database Type**: SQLite
 - **Storage Location**: 
   - Local: `data/llm_council.db`
   - Azure: Persistent storage in the app's data directory
@@ -66,10 +66,9 @@ This is **safe** - it only creates tables if they don't exist. It **never drops*
 - This location persists across deployments
 - File is NOT in `.gitignore`, so it's preserved
 
-**PostgreSQL (If Configured)**:
-- Uses Azure Database for PostgreSQL (managed service)
-- Data is automatically backed up and persistent
-- Not affected by app deployments
+**PostgreSQL (Optional - only if you configure it later)**:
+- Would use Azure Database for PostgreSQL
+- SQLite is the default and works well for now
 
 ### What Happens on Deployment:
 1. ✅ Code is updated
@@ -85,14 +84,9 @@ This is **safe** - it only creates tables if they don't exist. It **never drops*
 While the system preserves data, we recommend:
 
 ### For Production:
-1. **Use Azure Database for PostgreSQL** (recommended):
-   - Set `DATABASE_URL` environment variable
-   - Automatic backups included
-   - High availability
-   
-2. **Regular Backups** (if using SQLite):
-   - Back up `/home/site/wwwroot/data/llm_council.db`
-   - Use Azure Storage for backups
+1. **SQLite** (current setup - works well):
+   - Consider periodic backups of `/home/site/wwwroot/data/llm_council.db`
+   - Optional: Use Azure Storage for backups
 
 ### Manual Backup (SQLite):
 ```bash
@@ -109,7 +103,7 @@ To verify your data is safe:
 
 1. **Check Database Location**:
    - SQLite: `/home/site/wwwroot/data/llm_council.db`
-   - PostgreSQL: Check Azure Database for PostgreSQL
+   - PostgreSQL: Only if you add it later (SQLite is default)
 
 2. **Test After Update**:
    - Update the application

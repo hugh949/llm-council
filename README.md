@@ -32,7 +32,7 @@ This application is designed to run entirely on **Azure**:
 
 - **Backend:** Azure App Service (Python/FastAPI)
 - **Frontend:** Azure Static Web Apps (React/Vite)
-- **Database:** SQLite (built-in, or PostgreSQL for production scale)
+- **Database:** SQLite (built-in)
 
 ### Deployment Guides
 
@@ -60,7 +60,7 @@ This application is designed to run entirely on **Azure**:
 
 ### Backend (FastAPI + Python)
 - RESTful API with SSE streaming support
-- SQLite database (PostgreSQL compatible)
+- SQLite database
 - OpenRouter integration for multiple LLM providers
 
 ## 📚 Documentation

@@ -17,7 +17,7 @@ This guide covers deploying the entire LLM Council application using **Azure onl
 
 1. **Backend:** Azure App Service (Python/FastAPI)
 2. **Frontend:** Azure Static Web Apps (React/Vite)
-3. **Database:** SQLite (built-in, or PostgreSQL for production scale)
+3. **Database:** SQLite (built-in)
 
 **Everything in one platform - easier to manage!**
 

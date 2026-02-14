@@ -31,8 +31,7 @@
    - Set in: Configuration → Application settings
 
 4. **`DATABASE_URL`** (Optional - defaults to SQLite)
-   - Only needed if you want PostgreSQL
-   - Azure provides this automatically if you add Azure Database for PostgreSQL
+   - SQLite is used by default (no extra setup)
    - For small scale (< 10 users), SQLite is fine
 
 #### ✅ Step 3: Configure Startup Command
@@ -125,8 +124,8 @@
 - ✅ Automatic database initialization
 - ✅ Works out of the box
 
-### If You Need to Scale Later (PostgreSQL)
-1. Add Azure Database for PostgreSQL service
+### Optional: If You Ever Need to Scale Much Later (PostgreSQL)
+1. Add Azure Database for PostgreSQL service (SQLite is fine for now)
 2. Azure automatically provides `DATABASE_URL`
 3. Backend will automatically use PostgreSQL
 4. No code changes needed

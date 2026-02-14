@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import ProgressIndicator from './ProgressIndicator';
 import './PromptEngineering.css';
@@ -21,6 +21,18 @@ export default function PromptEngineering({
   const [finalizeInput, setFinalizeInput] = useState('');
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(false);
+  const hasPreFilledRef = useRef(false);
+
+  // In refinement mode: auto-activate edit flow with prior prompt pre-filled
+  useEffect(() => {
+    if (refinementMode && finalizedPrompt && !hasPreFilledRef.current) {
+      setInput(finalizedPrompt);
+      hasPreFilledRef.current = true;
+    }
+    if (!refinementMode) {
+      hasPreFilledRef.current = false;
+    }
+  }, [refinementMode, finalizedPrompt]);
 
   const handleEditPrompt = () => {
     setFinalizeInput(finalizedPrompt || '');
@@ -73,7 +85,7 @@ export default function PromptEngineering({
       <div className="stage-header">
         <h2>Step 1: Prompt Engineering</h2>
         <p className="stage-description">
-          {finalizedPrompt
+          {(finalizedPrompt && !refinementMode)
             ? "Your prompt is ready. Edit if needed, then continue to Step 2."
             : "Describe what you're trying to achieve. I'll help you refine it into a clear, logical prompt."}
         </p>
@@ -126,7 +138,8 @@ export default function PromptEngineering({
         )}
       </div>
 
-      {showFinalizeForm ? null : finalizedPrompt ? (
+      {/* In refinement mode: always show input for back-and-forth with LLM (same as round 1). Otherwise show finalized when done. */}
+      {showFinalizeForm ? null : finalizedPrompt && !refinementMode ? (
         <div className="finalized-section">
           <h3>✓ Step 1 Complete: Finalized Prompt</h3>
           <div className="finalized-content">
@@ -149,8 +162,8 @@ export default function PromptEngineering({
         </div>
       ) : null}
 
-      {/* FIXED BOTTOM: Continue to Step 2 when finalized - same for all rounds */}
-      {finalizedPrompt && !showFinalizeForm && onProceedToStep2 ? (
+      {/* Continue to Step 2 when finalized - only in first round (refinement round uses Suggest Final -> Finalize flow) */}
+      {finalizedPrompt && !refinementMode && !showFinalizeForm && onProceedToStep2 ? (
         <div className="step-transition-bar sticky-bottom">
           <div className="transition-content">
             <div className="transition-text">
@@ -239,7 +252,7 @@ export default function PromptEngineering({
             </div>
           </div>
         </div>
-      ) : !finalizedPrompt ? (
+      ) : !finalizedPrompt || refinementMode ? (
         <div className="input-section">
           <form onSubmit={handleSubmit} className="input-form">
             <textarea
@@ -259,7 +272,7 @@ export default function PromptEngineering({
               >
                 Send
               </button>
-              {messages.length > 0 && (
+              {(messages.length > 0 || (refinementMode && input.trim())) && (
                 <button
                   type="button"
                   className="suggest-final-button"

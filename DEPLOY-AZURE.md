@@ -1,6 +1,6 @@
 # 🚀 Deploy Backend to Microsoft Azure (Xavor Account)
 
-Azure offers much better performance than Render's free tier. Follow these steps to deploy using your Xavor account.
+Follow these steps to deploy using your Xavor account.
 
 ---
 
@@ -258,13 +258,13 @@ Quick steps:
 - **Basic B1:** ~$13/month, better performance (1.75 GB RAM, shared CPU)
 - **Standard S1:** ~$55/month, good performance (1.75 GB RAM, dedicated CPU)
 
-For 10 active users, **Basic B1** should be sufficient and much faster than Render's free tier.
+For 10 active users, **Basic B1** should be sufficient.
 
 ---
 
 ## ✅ Advantages of Azure
 
-- ✅ **Much faster** than Render free tier
+- ✅ **Reliable** performance
 - ✅ **No cold starts** (with Always On)
 - ✅ **Better reliability**
 - ✅ **Enterprise-grade infrastructure**
@@ -273,5 +273,5 @@ For 10 active users, **Basic B1** should be sufficient and much faster than Rend
 
 ---
 
-**You're all set! Azure will be much faster than Render.** 🚀
+**You're all set!** 🚀
 

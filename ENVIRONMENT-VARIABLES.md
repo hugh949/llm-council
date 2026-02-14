@@ -18,11 +18,10 @@
 ## Backend (Azure App Service) - Optional Variables
 
 ### `DATABASE_URL` (Optional)
-- **Purpose:** PostgreSQL database connection string
-- **Default:** Uses SQLite if not set (sufficient for small scale)
-- **When to use:** If you add Azure Database for PostgreSQL, Azure provides this automatically
+- **Purpose:** PostgreSQL database connection string (optional)
+- **Default:** SQLite is used if not set
+- **When to use:** Only if you add Azure Database for PostgreSQL; SQLite is fine for now
 - **Format:** `postgresql://user:pass@host:port/dbname`
-- **Note:** For 10 users, SQLite is perfectly fine - no need to set this
 
 ### `CORS_ORIGINS` (Optional)
 - **Purpose:** Restrict which domains can access your backend
@@ -70,7 +69,7 @@
 OPENROUTER_API_KEY=your-key-here        (REQUIRED)
 PORT=8000                               (Optional - Azure sets automatically)
 WEBSITES_PORT=8000                      (Optional but recommended)
-DATABASE_URL=postgresql://...           (Optional - only if using PostgreSQL)
+DATABASE_URL=postgresql://...           (Optional - SQLite is default; only if you add PostgreSQL)
 CORS_ORIGINS=https://your-app.azurestaticapps.net  (Optional - for security)
 ```
 

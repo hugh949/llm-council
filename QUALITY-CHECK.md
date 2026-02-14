@@ -38,7 +38,7 @@
 **Fix:**
 1. Check backend logs for database errors
 2. Verify database directory is writable
-3. For Azure/Render: May need to use PostgreSQL instead of SQLite
+3. SQLite is used by default (works well for current scale)
 
 ---
 
@@ -116,8 +116,7 @@ curl -X POST https://your-backend.com/api/conversations \
 
 ### Issue: SQLite not working on cloud
 **Solution:**
-- Use PostgreSQL instead
-- Add PostgreSQL service in Azure/Render
+- Check Azure App Service logs for database errors
 - Set `DATABASE_URL` environment variable
 
 ### Issue: CORS errors

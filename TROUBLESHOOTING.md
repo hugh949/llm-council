@@ -86,7 +86,7 @@ The backend now initializes the database on startup. Check Azure logs:
 
 **If you see database errors:**
 - Azure uses SQLite by default (which should work)
-- If you want PostgreSQL, add Azure Database for PostgreSQL and set `DATABASE_URL`
+- SQLite is used by default; no extra database setup needed
 
 ---
 

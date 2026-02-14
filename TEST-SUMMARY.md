@@ -99,7 +99,7 @@ The following endpoints are configured and verified:
 
 2. **API Key Required**: Some features (actual LLM calls) require `OPENROUTER_API_KEY` to be set. The structure is verified, but actual LLM functionality wasn't tested (requires API key).
 
-3. **Database**: Tests use SQLite locally. Azure deployment will work identically unless PostgreSQL is configured.
+3. **Database**: Tests use SQLite locally. Azure deployment uses SQLite as well.
 
 4. **File Upload/Link Processing**: Structure verified, but actual file parsing/URL fetching requires test files/network access.
 
