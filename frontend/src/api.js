@@ -160,6 +160,29 @@ export const api = {
 
   // ========== PROMPT ENGINEERING ENDPOINTS ==========
 
+  async sendPreparationMessage(conversationId, content) {
+    const response = await fetch(
+      `${API_BASE}/api/conversations/${conversationId}/preparation/message`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      }
+    );
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = 'Failed to send message';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.detail || errorMessage;
+      } catch (e) {
+        errorMessage = errorText || errorMessage;
+      }
+      throw new Error(`${errorMessage} (Status: ${response.status})`);
+    }
+    return response.json();
+  },
+
   async sendPromptEngineeringMessage(conversationId, content) {
     try {
       const response = await fetch(

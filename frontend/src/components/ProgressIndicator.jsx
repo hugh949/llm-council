@@ -3,8 +3,7 @@ import './ProgressIndicator.css';
 export default function ProgressIndicator({ currentStep, step1Complete, step2Complete, step3Complete }) {
   const getStepStatus = (step) => {
     if (step === 1) return step1Complete ? 'completed' : currentStep === 1 ? 'active' : 'pending';
-    if (step === 2) return step2Complete ? 'completed' : currentStep === 2 ? 'active' : 'pending';
-    if (step === 3) return step3Complete ? 'completed' : currentStep === 3 ? 'active' : 'pending';
+    if (step === 2) return (step2Complete ?? step3Complete) ? 'completed' : currentStep === 2 || currentStep === 3 ? 'active' : 'pending';
     return 'pending';
   };
 
@@ -23,11 +22,9 @@ export default function ProgressIndicator({ currentStep, step1Complete, step2Com
 
   return (
     <div className="progress-indicator">
-      <StepCircle step={1} status={getStepStatus(1)} label="Prompt Engineering" />
+      <StepCircle step={1} status={getStepStatus(1)} label="Prepare for Council" />
       <div className={`progress-line ${getStepStatus(2) !== 'pending' || getStepStatus(1) === 'completed' ? 'active' : ''}`} />
-      <StepCircle step={2} status={getStepStatus(2)} label="Context Engineering" />
-      <div className={`progress-line ${getStepStatus(3) !== 'pending' || getStepStatus(2) === 'completed' ? 'active' : ''}`} />
-      <StepCircle step={3} status={getStepStatus(3)} label="Council Deliberation" />
+      <StepCircle step={2} status={getStepStatus(2)} label="Council Deliberation" />
     </div>
   );
 }

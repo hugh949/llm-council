@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import PromptEngineering from './components/PromptEngineering';
 import ContextEngineering from './components/ContextEngineering';
+import PreparationStep from './components/PreparationStep';
 import ReviewStage from './components/ReviewStage';
 import ChatInterface from './components/ChatInterface';
 import StepView from './components/StepView';
@@ -223,10 +224,10 @@ function App() {
       return 'prompt_engineering';
     }
 
-    // Refinement mode: force flow through prompt -> context -> review
+    // Refinement mode: use merged preparation step
     if (refinementMode) {
-      const stage = refinementStep === 1 ? 'prompt_engineering' : refinementStep === 2 ? 'context_engineering' : 'review';
-      console.log('[REFINEMENT] getCurrentStage: refinementMode=true, returning', stage, '(refinementStep=', refinementStep, ')');
+      const stage = (refinementStep === 1 || refinementStep === 2) ? 'preparation' : 'review';
+      console.log('[REFINEMENT] getCurrentStage: refinementMode=true, returning', stage);
       return stage;
     }
 
@@ -254,14 +255,10 @@ function App() {
       councilMessagesCount: councilMessages.length
     });
     
-    // Simple logic: check conditions in order
-    if (!promptFinalized) {
-      console.log('🔍 getCurrentStage: Returning prompt_engineering (prompt not finalized)');
-      return 'prompt_engineering';
-    }
-    if (!contextFinalized) {
-      console.log('✅ getCurrentStage: Returning context_engineering (prompt finalized, context not finalized)');
-      return 'context_engineering';
+    // Merged preparation step: when prompt or context not ready
+    if (!promptFinalized || !contextFinalized) {
+      console.log('🔍 getCurrentStage: Returning preparation');
+      return 'preparation';
     }
     if (contextFinalized && councilMessages.length === 0) {
       console.log('🔍 getCurrentStage: Returning review (context finalized, no council messages)');
@@ -269,6 +266,21 @@ function App() {
     }
     console.log('🔍 getCurrentStage: Returning council_deliberation');
     return 'council_deliberation';
+  };
+
+  const handlePreparationMessage = async (content) => {
+    if (!currentConversationId) return;
+    setPromptLoading(true);
+    try {
+      const result = await api.sendPreparationMessage(currentConversationId, content);
+      if (result?.conversation) setCurrentConversation(result.conversation);
+      else await loadConversation(currentConversationId);
+    } catch (error) {
+      console.error('Failed to send preparation message:', error);
+      alert(`Error: ${error.message || 'Failed to send message.'}`);
+    } finally {
+      setPromptLoading(false);
+    }
   };
 
   // Prompt Engineering handlers
@@ -1129,6 +1141,44 @@ function App() {
       });
 
     switch (stageToRender) {
+      case 'preparation': {
+        let priorDeliberationSummary = null;
+        const councilMsgs = councilDelib.messages || [];
+        for (let i = councilMsgs.length - 1; i >= 0; i--) {
+          const msg = councilMsgs[i];
+          if (msg?.role === 'assistant' && msg?.stage3) {
+            const response = typeof msg.stage3 === 'object' ? msg.stage3.response : String(msg.stage3 || '');
+            if (response) {
+              priorDeliberationSummary = response.length > 500 ? response.substring(0, 500) + '...' : response;
+              break;
+            }
+          }
+        }
+        return (
+          <PreparationStep
+            conversationId={currentConversationId}
+            messages={promptEng.messages || []}
+            documents={contextEng.documents || []}
+            files={contextEng.files || []}
+            links={contextEng.links || []}
+            finalizedPrompt={promptEng.finalized_prompt}
+            finalizedContext={contextEng.finalized_context}
+            priorDeliberationSummary={priorDeliberationSummary}
+            onSendMessage={handlePreparationMessage}
+            onSuggestFinal={handleSuggestFinalPrompt}
+            onFinalizePrompt={handleFinalizePrompt}
+            onAddDocument={handleAddDocument}
+            onUploadFile={handleUploadFile}
+            onAddLink={handleAddLink}
+            onPackageContext={handlePackageContext}
+            onProceedToCouncil={handleStartCouncilDeliberation}
+            onReloadConversation={() => loadConversation(currentConversationId)}
+            isLoading={promptLoading}
+            refinementMode={refinementMode}
+          />
+        );
+      }
+
       case 'prompt_engineering': {
         console.log('[REFINEMENT] renderStage: Rendering PromptEngineering', { refinementMode, refinementStep, finalizedPromptExists: !!promptEng.finalized_prompt });
         // Extract prior deliberation summary for refinement mode (last Stage 3 synthesis)

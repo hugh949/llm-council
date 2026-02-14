@@ -27,6 +27,7 @@ except ImportError:
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
 from .prompt_engineering import get_prompt_engineering_response, suggest_finalized_prompt, get_refinement_opening as get_prompt_refinement_opening
 from .context_engineering import get_context_engineering_response, package_context, get_refinement_opening as get_context_refinement_opening
+from .preparation import get_preparation_response
 from .document_parser import parse_file, fetch_url_content
 
 app = FastAPI(title="LLM Council API")
@@ -418,6 +419,50 @@ async def finalize_prompt_endpoint(conversation_id: str, request: FinalizePrompt
     return {"conversation": updated_conversation}
 
 
+@app.post("/api/conversations/{conversation_id}/preparation/message")
+async def send_preparation_message(conversation_id: str, request: SendMessageRequest):
+    """
+    Unified preparation step: chat with attachment awareness.
+    Writes to both prompt_engineering and context_engineering for compatibility.
+    """
+    try:
+        conversation = storage.get_conversation(conversation_id)
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        from .config import OPENROUTER_API_KEY
+        if not OPENROUTER_API_KEY:
+            raise HTTPException(status_code=500, detail="OpenRouter API key not configured.")
+        
+        prompt_eng = conversation.get("prompt_engineering", {})
+        context_eng = conversation.get("context_engineering", {})
+        messages = prompt_eng.get("messages", [])
+        documents = context_eng.get("documents", [])
+        files = context_eng.get("files", [])
+        links = context_eng.get("links", [])
+        
+        storage.add_prompt_engineering_message(conversation_id, "user", request.content)
+        storage.add_context_engineering_message(conversation_id, "user", request.content)
+        
+        response = await get_preparation_response(
+            messages, request.content, documents, files, links
+        )
+        
+        if response is None:
+            raise HTTPException(status_code=500, detail="Failed to get preparation response.")
+        
+        storage.add_prompt_engineering_message(conversation_id, "assistant", response)
+        storage.add_context_engineering_message(conversation_id, "assistant", response)
+        
+        updated = storage.get_conversation(conversation_id)
+        return {"response": response, "conversation": updated}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in send_preparation_message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/conversations/{conversation_id}/prompt-engineering/refinement-opening")
 async def prompt_refinement_opening(conversation_id: str, request: RefinementOpeningRequest = RefinementOpeningRequest()):
     """
@@ -558,9 +603,12 @@ async def package_context_endpoint(conversation_id: str):
     if not finalized_prompt:
         raise HTTPException(status_code=400, detail="Prompt must be finalized before packaging context")
     
-    # Get context engineering data
+    # Get context engineering data; use prompt_engineering messages for manual context
+    # when context_engineering messages are empty (unified preparation flow)
     context_eng = conversation.get("context_engineering", {})
-    messages = context_eng.get("messages", [])
+    ctx_messages = context_eng.get("messages", [])
+    prompt_messages = prompt_eng.get("messages", [])
+    messages = ctx_messages if ctx_messages else prompt_messages
     documents = context_eng.get("documents", [])
     files = context_eng.get("files", [])
     links = context_eng.get("links", [])
