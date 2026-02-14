@@ -2,15 +2,16 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  max-width: 100%;
+  margin: 0;
+  padding: 16px 20px;
   padding-bottom: 140px;
   min-height: calc(100vh - 140px);
 }
 
 .preparation-step .stage-header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .preparation-step .stage-header h2 {
@@ -27,30 +28,45 @@
 }
 
 .preparation-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
+  display: flex;
   flex: 1;
   min-height: 0;
+  gap: 16px;
 }
 
-@media (max-width: 900px) {
-  .preparation-layout {
-    grid-template-columns: 1fr;
+.preparation-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.preparation-sidebar {
+  flex-shrink: 0;
+  width: 280px;
+}
+
+@media (max-width: 768px) {
+  .preparation-sidebar {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    width: auto;
   }
 }
 
 .preparation-main {
   display: flex;
   flex-direction: column;
-  min-height: 400px;
+  min-height: 300px;
 }
 
 .preparation-main .messages-container {
   flex: 1;
   overflow-y: auto;
   margin-bottom: 16px;
-  min-height: 200px;
+  min-height: 180px;
+  padding-right: 8px;
 }
 
 .preparation-main .empty-state {
@@ -252,11 +268,11 @@
 
 .sidebar-header {
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: #f8fafc;
   border: none;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
   display: flex;
@@ -266,6 +282,19 @@
 
 .sidebar-header:hover {
   background: #f1f5f9;
+}
+
+.preparation-sidebar .sidebar-card {
+  max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.preparation-sidebar .sidebar-content {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .sidebar-toggle {
@@ -511,30 +540,100 @@
   background: #38a169;
 }
 
-.prior-deliberation-section {
+/* Refinement context panel - prior synthesis + prior prompt */
+.refinement-context-panel {
   margin-bottom: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #f9fafb;
-  overflow: hidden;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
-.prior-deliberation-toggle {
-  width: 100%;
-  padding: 12px 16px;
-  background: #f0f4f8;
-  border: none;
-  cursor: pointer;
+.refinement-context-header {
+  margin-bottom: 12px;
   font-size: 14px;
+  color: #475569;
+}
+
+.refinement-prior-section {
+  margin-bottom: 16px;
+}
+
+.refinement-toggle {
+  width: 100%;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: #334155;
   text-align: left;
 }
 
-.prior-deliberation-content {
-  padding: 16px;
-  border-top: 1px solid #e0e0e0;
-  max-height: 300px;
+.refinement-toggle:hover {
+  background: #e2e8f0;
+}
+
+.refinement-prior-content {
+  padding: 14px;
+  margin-top: 8px;
+  max-height: 280px;
   overflow-y: auto;
   font-size: 14px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.refinement-prior-prompt {
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.refinement-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.refinement-prompt-preview {
+  font-size: 14px;
+  max-height: 120px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.edit-prompt-btn {
+  padding: 8px 14px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.edit-prompt-btn:hover {
+  background: #357abd;
+}
+
+.finalized-prompt-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 0;
+}
+
+.finalized-label {
+  font-size: 14px;
+  color: #059669;
+  font-weight: 500;
 }

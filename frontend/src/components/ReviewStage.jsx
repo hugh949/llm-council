@@ -32,18 +32,17 @@ export default function ReviewStage({
   return (
     <div className="review-stage">
       <ProgressIndicator 
-        currentStep={3}
+        currentStep={2}
         step1Complete={true}
-        step2Complete={true}
-        step3Complete={false}
+        step2Complete={false}
       />
       <div className="review-header">
-        <h2>Final Review Before Council Deliberation</h2>
+        <h2>Final Review — What Will Be Sent to the Council</h2>
         <p className="review-description">
-          Review the finalized prompt and all context documents. Make any final edits if needed, then proceed to Step 3: Council Deliberation.
+          Review exactly what will be sent for council deliberation. Edit the prompt or packaged context if needed, then proceed when ready.
         </p>
         <div className="review-info-banner">
-          <strong>🎯 Almost there!</strong> Once you proceed, the council will deliberate using your prompt and context. The RAG system will automatically retrieve the most relevant chunks from your attachments.
+          <strong>This is what the council will receive:</strong> Your prompt, manually provided context, and relevant excerpts from your attachments (via RAG). Verify everything looks correct before proceeding.
         </div>
       </div>
 

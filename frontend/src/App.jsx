@@ -1149,7 +1149,7 @@ function App() {
           if (msg?.role === 'assistant' && msg?.stage3) {
             const response = typeof msg.stage3 === 'object' ? msg.stage3.response : String(msg.stage3 || '');
             if (response) {
-              priorDeliberationSummary = response.length > 500 ? response.substring(0, 500) + '...' : response;
+              priorDeliberationSummary = response.length > 3000 ? response.substring(0, 3000) + '...' : response;
               break;
             }
           }
@@ -1171,7 +1171,6 @@ function App() {
             onUploadFile={handleUploadFile}
             onAddLink={handleAddLink}
             onPackageContext={handlePackageContext}
-            onProceedToCouncil={handleStartCouncilDeliberation}
             onReloadConversation={() => loadConversation(currentConversationId)}
             isLoading={promptLoading}
             refinementMode={refinementMode}

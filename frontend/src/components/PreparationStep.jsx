@@ -19,7 +19,6 @@ export default function PreparationStep({
   onUploadFile,
   onAddLink,
   onPackageContext,
-  onProceedToCouncil,
   onReloadConversation,
   isLoading,
   refinementMode = false,
@@ -34,9 +33,9 @@ export default function PreparationStep({
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [showAttachments, setShowAttachments] = useState(true);
-  const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false); // Default collapsed for max chat space
+  const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(true); // Expanded by default in refinement
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const fileInputRef = useRef(null);
   const hasPreFilledRef = useRef(false);
 
@@ -129,7 +128,8 @@ export default function PreparationStep({
       await onFinalizePrompt(finalizeInput.trim());
       setShowFinalizeForm(false);
       setFinalizeInput('');
-      setShowReviewModal(true);
+      if (onReloadConversation) await onReloadConversation();
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
     } catch (error) {
       console.error('Error finalizing:', error);
       alert(`Failed: ${error.message || 'Unknown'}`);
@@ -138,11 +138,16 @@ export default function PreparationStep({
     }
   };
 
-  const handleConfirmPackageAndCouncil = async () => {
-    setShowReviewModal(false);
+  const handleEditPrompt = () => {
+    setInput(finalizedPrompt || '');
+    setIsEditingPrompt(true);
+    setShowFinalizeForm(false);
+    setTimeout(() => document.querySelector('.message-input')?.focus(), 50);
+  };
+
+  const handleProceedToReview = async () => {
     try {
       await onPackageContext();
-      if (onProceedToCouncil) await onProceedToCouncil();
       if (onReloadConversation) await onReloadConversation();
       setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
     } catch (error) {
@@ -168,18 +173,37 @@ export default function PreparationStep({
         </p>
       </div>
 
-      {refinementMode && priorDeliberationSummary && (
-        <div className="prior-deliberation-section">
-          <button
-            type="button"
-            className="prior-deliberation-toggle"
-            onClick={() => setPriorDeliberationExpanded(!priorDeliberationExpanded)}
-          >
-            {priorDeliberationExpanded ? '▼' : '▶'} Previous council synthesis (for reference)
-          </button>
-          {priorDeliberationExpanded && (
-            <div className="prior-deliberation-content">
-              <ReactMarkdown>{priorDeliberationSummary}</ReactMarkdown>
+      {/* Refinement: Prior council synthesis + prior prompt - always visible for context */}
+      {refinementMode && (priorDeliberationSummary || finalizedPrompt) && (
+        <div className="refinement-context-panel">
+          <div className="refinement-context-header">
+            <strong>Refining from previous round</strong> — Build on the context below
+          </div>
+          {priorDeliberationSummary && (
+            <div className="refinement-prior-section">
+              <button
+                type="button"
+                className="refinement-toggle"
+                onClick={() => setPriorDeliberationExpanded(!priorDeliberationExpanded)}
+              >
+                {priorDeliberationExpanded ? '▼' : '▶'} Previous council synthesis
+              </button>
+              {priorDeliberationExpanded && (
+                <div className="refinement-prior-content markdown-content">
+                  <ReactMarkdown>{priorDeliberationSummary}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          )}
+          {finalizedPrompt && (
+            <div className="refinement-prior-prompt">
+              <span className="refinement-label">Your previous prompt:</span>
+              <div className="refinement-prompt-preview markdown-content">
+                <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
+              </div>
+              <button type="button" className="edit-prompt-btn" onClick={handleEditPrompt}>
+                ✏️ Edit this prompt
+              </button>
             </div>
           )}
         </div>
@@ -211,23 +235,32 @@ export default function PreparationStep({
             )}
           </div>
 
+          {/* Chat input - always visible when not in finalize form and not yet complete */}
           {!showFinalizeForm && !isComplete && (
             <div className="input-section">
+              {finalizedPrompt && !isEditingPrompt && (
+                <div className="finalized-prompt-bar">
+                  <span className="finalized-label">✓ Prompt finalized</span>
+                  <button type="button" className="edit-prompt-btn" onClick={handleEditPrompt} disabled={isLoading}>
+                    ✏️ Edit prompt
+                  </button>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="input-form">
                 <textarea
                   className="message-input"
-                  placeholder="Type your message... (Shift+Enter for new line, Enter to send)"
+                  placeholder={finalizedPrompt && isEditingPrompt ? "Edit your prompt and send to continue the conversation..." : "Type your message... (Shift+Enter for new line, Enter to send)"}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => { setInput(e.target.value); if (finalizedPrompt) setIsEditingPrompt(true); }}
                   onKeyDown={handleKeyDown}
                   disabled={isLoading}
-                  rows={3}
+                  rows={4}
                 />
                 <div className="input-actions">
                   <button type="submit" className="send-button" disabled={!input.trim() || isLoading}>
                     Send
                   </button>
-                  {(messages.length > 0 || (refinementMode && input.trim())) && (
+                  {(messages.length > 0 || (refinementMode && input.trim()) || input.trim()) && (
                     <button
                       type="button"
                       className="suggest-final-button"
@@ -349,57 +382,21 @@ export default function PreparationStep({
         </div>
       </div>
 
-      {/* Review modal before council */}
-      {showReviewModal && finalizedPrompt && (
-        <div className="review-modal-overlay" onClick={() => setShowReviewModal(false)}>
-          <div className="review-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="review-modal-header">
-              <h3>Ready to Run Council</h3>
-              <p>Review and confirm. The council will deliberate using your prompt and attachments.</p>
-            </div>
-            <div className="review-modal-content">
-              <div className="review-step-section">
-                <h4>Your Prompt</h4>
-                <div className="review-box markdown-content">
-                  <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
-                </div>
-              </div>
-              {totalAttachments > 0 && (
-                <div className="review-step-section">
-                  <h4>Attachments ({totalAttachments})</h4>
-                  <div className="review-attachments-list">
-                    {safeFiles.map((f, i) => <div key={`f-${i}`}>📄 {f?.name}</div>)}
-                    {safeLinks.map((l, i) => <div key={`l-${i}`}>🔗 {l?.original_url || l?.name}</div>)}
-                    {safeDocuments.map((d, i) => <div key={`d-${i}`}>📃 {d?.name}</div>)}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="review-modal-actions">
-              <button type="button" className="review-modal-btn cancel" onClick={() => setShowReviewModal(false)}>← Back</button>
-              <button type="button" className="review-modal-btn confirm" onClick={handleConfirmPackageAndCouncil} disabled={isLoading}>
-                {isLoading ? 'Packaging...' : '✓ Run Council'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sticky: Finalize & Run Council when prompt finalized but context not yet packaged */}
+      {/* Sticky: Continue to Review when prompt finalized but context not yet packaged */}
       {finalizedPrompt && !finalizedContext && !showFinalizeForm && (
         <div className="step-transition-bar sticky-bottom">
           <div className="transition-content">
             <div className="transition-text">
               <strong>Prompt finalized</strong>
-              <p>Click below to package context and run the council.</p>
+              <p>Package context and continue to Final Review before council deliberation.</p>
             </div>
             <button
               type="button"
               className="proceed-button large"
-              onClick={() => setShowReviewModal(true)}
+              onClick={handleProceedToReview}
               disabled={isLoading}
             >
-              → Finalize & Run Council
+              → Continue to Final Review
             </button>
           </div>
         </div>
