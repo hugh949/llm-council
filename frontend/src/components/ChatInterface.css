@@ -161,3 +161,38 @@
   background: #ccc;
   border-color: #ccc;
 }
+
+.refinement-actions {
+  padding: 20px 24px;
+  border-top: 1px solid #e0e0e0;
+  background: #f9fafb;
+}
+
+.refinement-hint {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.refine-button {
+  padding: 12px 24px;
+  background: #4a90e2;
+  border: 1px solid #4a90e2;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.refine-button:hover:not(:disabled) {
+  background: #357abd;
+  border-color: #357abd;
+}
+
+.refine-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

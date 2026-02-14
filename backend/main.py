@@ -560,6 +560,23 @@ async def finalize_context_endpoint(conversation_id: str, request: FinalizeConte
 # ========== COUNCIL DELIBERATION ENDPOINTS ==========
 
 
+def _build_full_query_with_prior_deliberation(finalized_context: str, council_delib: dict) -> str:
+    """
+    Build the full query for council deliberation, prepending prior synthesis as RAG context
+    when assistant messages with stage3 exist.
+    """
+    base_query = f"{finalized_context}\n\n---\n\nPlease address the prompt above using the context provided."
+    messages = council_delib.get("messages", [])
+    # Find last assistant message with stage3
+    for msg in reversed(messages):
+        if msg.get("role") == "assistant" and msg.get("stage3"):
+            prior_response = msg["stage3"].get("response") if isinstance(msg["stage3"], dict) else str(msg["stage3"])
+            if prior_response:
+                prior_section = f"## PREVIOUS COUNCIL SYNTHESIS (build on this)\n\n{prior_response}\n\n---\n\n"
+                return prior_section + base_query
+    return base_query
+
+
 @app.post("/api/conversations/{conversation_id}/council-deliberation/message")
 async def send_council_deliberation_message(conversation_id: str):
     """
@@ -573,6 +590,7 @@ async def send_council_deliberation_message(conversation_id: str):
     # Get finalized prompt and context
     prompt_eng = conversation.get("prompt_engineering", {})
     context_eng = conversation.get("context_engineering", {})
+    council_delib = conversation.get("council_deliberation", {})
     
     finalized_prompt = prompt_eng.get("finalized_prompt")
     finalized_context = context_eng.get("finalized_context")
@@ -583,11 +601,10 @@ async def send_council_deliberation_message(conversation_id: str):
     if not finalized_context:
         raise HTTPException(status_code=400, detail="Context must be finalized before council deliberation")
     
-    # Combine prompt and context for the council
-    full_query = f"{finalized_context}\n\n---\n\nPlease address the prompt above using the context provided."
+    # Combine prompt and context for the council (with prior deliberation as RAG if applicable)
+    full_query = _build_full_query_with_prior_deliberation(finalized_context, council_delib)
     
     # Check if this is the first council message
-    council_delib = conversation.get("council_deliberation", {})
     is_first_message = len(council_delib.get("messages", [])) == 0
 
     # Add user message
@@ -634,6 +651,7 @@ async def send_council_deliberation_stream(conversation_id: str):
     # Get finalized prompt and context
     prompt_eng = conversation.get("prompt_engineering", {})
     context_eng = conversation.get("context_engineering", {})
+    council_delib = conversation.get("council_deliberation", {})
     
     finalized_prompt = prompt_eng.get("finalized_prompt")
     finalized_context = context_eng.get("finalized_context")
@@ -644,11 +662,10 @@ async def send_council_deliberation_stream(conversation_id: str):
     if not finalized_context:
         raise HTTPException(status_code=400, detail="Context must be finalized before council deliberation")
     
-    # Combine prompt and context for the council
-    full_query = f"{finalized_context}\n\n---\n\nPlease address the prompt above using the context provided."
+    # Combine prompt and context for the council (with prior deliberation as RAG if applicable)
+    full_query = _build_full_query_with_prior_deliberation(finalized_context, council_delib)
     
     # Check if this is the first council message
-    council_delib = conversation.get("council_deliberation", {})
     is_first_message = len(council_delib.get("messages", [])) == 0
 
     async def event_generator():

@@ -16,6 +16,8 @@ function App() {
   const [promptLoading, setPromptLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
+  const [refinementMode, setRefinementMode] = useState(false);
+  const [refinementStep, setRefinementStep] = useState(1); // 1=prompt, 2=context, 3=review
 
   // Define functions FIRST before useEffects that use them
   const loadConversations = async () => {
@@ -149,16 +151,44 @@ function App() {
 
   const handleSelectConversation = (id) => {
     setCurrentConversationId(id);
-    setViewingStep(null); // Reset step view when selecting conversation
+    setViewingStep(null);
+    setRefinementMode(false);
+    setRefinementStep(1);
   };
 
   const handleSelectStep = (convId, step) => {
     setCurrentConversationId(convId);
     setViewingStep(step);
+    setRefinementMode(false);
+    setRefinementStep(1);
     // Load conversation if not already loaded
     if (!currentConversation || currentConversation.id !== convId) {
       loadConversation(convId);
     }
+  };
+
+  const handleStartRefinement = () => {
+    setRefinementMode(true);
+    setRefinementStep(1);
+    setViewingStep(null);
+  };
+
+  const handleRefinementComplete = () => {
+    setRefinementMode(false);
+    setRefinementStep(1);
+  };
+
+  const handleRefinementProceedToStep2 = async () => {
+    setRefinementStep(2);
+    if (currentConversation?.context_engineering?.messages?.length === 0) {
+      await handleProceedToStep2();
+    }
+    await loadConversation(currentConversationId);
+  };
+
+  const handleRefinementPackageContext = async () => {
+    await handlePackageContext();
+    setRefinementStep(3);
   };
 
   const handleDeleteConversation = async (conversationId) => {
@@ -187,6 +217,13 @@ function App() {
     if (!currentConversation) {
       console.log('🔍 getCurrentStage: No conversation, returning prompt_engineering');
       return 'prompt_engineering';
+    }
+
+    // Refinement mode: force flow through prompt -> context -> review
+    if (refinementMode) {
+      if (refinementStep === 1) return 'prompt_engineering';
+      if (refinementStep === 2) return 'context_engineering';
+      if (refinementStep === 3) return 'review';
     }
 
     console.log('🔍 getCurrentStage: Conversation exists:', {
@@ -722,6 +759,7 @@ function App() {
           case 'complete':
             // Stream complete, reload conversations list
             loadConversations();
+            handleRefinementComplete();
             setCurrentConversation((prev) => {
               const messages = [...(prev.council_deliberation?.messages || [])];
               const lastMsg = messages[messages.length - 1];
@@ -906,6 +944,7 @@ function App() {
 
           case 'complete':
             loadConversations();
+            handleRefinementComplete();
             setCurrentConversation((prev) => {
               const messages = [...(prev.council_deliberation?.messages || [])];
               const lastMsg = messages[messages.length - 1];
@@ -1014,7 +1053,7 @@ function App() {
           onAddDocument={handleAddDocument}
           onUploadFile={handleUploadFile}
           onAddLink={handleAddLink}
-          onPackageContext={handlePackageContext}
+          onPackageContext={refinementMode ? handleRefinementPackageContext : handlePackageContext}
           onEditPrompt={handleEditPrompt}
           onReloadConversation={() => loadConversation(currentConversationId)}
           isLoading={contextLoading}
@@ -1087,7 +1126,20 @@ function App() {
       });
 
     switch (stageToRender) {
-      case 'prompt_engineering':
+      case 'prompt_engineering': {
+        // Extract prior deliberation summary for refinement mode (last Stage 3 synthesis)
+        let priorDeliberationSummary = null;
+        const councilMsgs = councilDelib.messages || [];
+        for (let i = councilMsgs.length - 1; i >= 0; i--) {
+          const msg = councilMsgs[i];
+          if (msg?.role === 'assistant' && msg?.stage3) {
+            const response = typeof msg.stage3 === 'object' ? msg.stage3.response : String(msg.stage3 || '');
+            if (response) {
+              priorDeliberationSummary = response.length > 500 ? response.substring(0, 500) + '...' : response;
+              break;
+            }
+          }
+        }
         return (
           <PromptEngineering
             conversationId={currentConversationId}
@@ -1097,10 +1149,13 @@ function App() {
             onSuggestFinal={handleSuggestFinalPrompt}
             onFinalizePrompt={handleFinalizePrompt}
             onReloadConversation={() => loadConversation(currentConversationId)}
-            onProceedToStep2={handleProceedToStep2}
+            onProceedToStep2={refinementMode ? handleRefinementProceedToStep2 : handleProceedToStep2}
             isLoading={promptLoading}
+            refinementMode={refinementMode}
+            priorDeliberationSummary={priorDeliberationSummary}
           />
         );
+      }
 
       case 'context_engineering':
         console.log('🎨 renderStage: Rendering context_engineering stage');
@@ -1206,6 +1261,7 @@ function App() {
             conversation={formattedConversation}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
+            onStartRefinement={handleStartRefinement}
           />
         );
 
@@ -1401,6 +1457,7 @@ function App() {
             step={viewingStep}
             conversation={currentConversation}
             onBack={() => setViewingStep(null)}
+            onStartRefinement={handleStartRefinement}
           />
         ) : (
           stageContent

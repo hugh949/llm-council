@@ -13,11 +13,14 @@ export default function PromptEngineering({
   onReloadConversation,
   onProceedToStep2,
   isLoading,
+  refinementMode = false,
+  priorDeliberationSummary,
 }) {
   const [input, setInput] = useState('');
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const [finalizeInput, setFinalizeInput] = useState('');
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,6 +58,11 @@ export default function PromptEngineering({
 
   // Removed handleFinalize - now handled directly in button onClick
 
+  const handleEditPromptForRefinement = () => {
+    setFinalizeInput(finalizedPrompt || '');
+    setShowFinalizeForm(true);
+  };
+
   return (
     <div className="prompt-engineering">
       <ProgressIndicator 
@@ -66,9 +74,28 @@ export default function PromptEngineering({
       <div className="stage-header">
         <h2>Step 1: Prompt Engineering</h2>
         <p className="stage-description">
-          Describe what you're trying to achieve. I'll help you refine it into a clear, logical prompt.
+          {refinementMode
+            ? "Refine your prompt based on the previous deliberation. Add refinement instructions or edit the prompt below."
+            : "Describe what you're trying to achieve. I'll help you refine it into a clear, logical prompt."}
         </p>
       </div>
+
+      {refinementMode && priorDeliberationSummary && (
+        <div className="prior-deliberation-section">
+          <button
+            type="button"
+            className="prior-deliberation-toggle"
+            onClick={() => setPriorDeliberationExpanded(!priorDeliberationExpanded)}
+          >
+            {priorDeliberationExpanded ? '▼' : '▶'} Previous council synthesis (for reference)
+          </button>
+          {priorDeliberationExpanded && (
+            <div className="prior-deliberation-content">
+              <ReactMarkdown>{priorDeliberationSummary}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="messages-container">
         {messages.length === 0 ? (
@@ -102,6 +129,18 @@ export default function PromptEngineering({
           <div className="finalized-content">
             <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
           </div>
+          {refinementMode && (
+            <div className="refinement-edit-actions">
+              <button
+                type="button"
+                className="edit-prompt-button"
+                onClick={handleEditPromptForRefinement}
+                disabled={isLoading}
+              >
+                Edit prompt
+              </button>
+            </div>
+          )}
           <div className="transitioning-message">
             <p><strong>Transitioning to Step 2: Context Engineering...</strong></p>
             <p className="transition-hint">The Context Engineer screen will appear automatically where you can add context, documents, and background information.</p>

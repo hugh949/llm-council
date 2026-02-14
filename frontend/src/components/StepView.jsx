@@ -5,7 +5,7 @@ import Stage3 from './Stage3';
 import './StepView.css';
 import './ChatInterface.css'; // Import ChatInterface styles for consistent council UI
 
-export default function StepView({ step, conversation, onBack }) {
+export default function StepView({ step, conversation, onBack, onStartRefinement }) {
   if (!conversation) {
     return (
       <div className="step-view">
@@ -225,12 +225,25 @@ export default function StepView({ step, conversation, onBack }) {
           messages: councilDelib.messages || []
         };
         
-        // Use ChatInterface component to render Step 3 (exact same UI)
+        const hasStage3Results = councilDelib.messages.some((msg) => msg.role === 'assistant' && msg.stage3);
+        
         return (
           <div className="step-view-council">
             <div className="step-header-full">
               <span className="step-badge">Step 3</span>
               <h2>Council Deliberation</h2>
+              {hasStage3Results && onStartRefinement && (
+                <button
+                  type="button"
+                  className="refine-button"
+                  onClick={() => {
+                    onStartRefinement();
+                    onBack();
+                  }}
+                >
+                  Refine prompt & context
+                </button>
+              )}
             </div>
             <div className="council-messages-container">
               {formattedConversation.messages.map((msg, index) => {

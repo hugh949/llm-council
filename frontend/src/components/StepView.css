@@ -108,6 +108,25 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.step-header-full .refine-button {
+  margin-left: auto;
+  padding: 10px 20px;
+  background: #4a90e2;
+  border: 1px solid #4a90e2;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.step-header-full .refine-button:hover {
+  background: #357abd;
+  border-color: #357abd;
 }
 
 .step-badge {

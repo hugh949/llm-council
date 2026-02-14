@@ -25,6 +25,65 @@
   margin: 0;
 }
 
+.prior-deliberation-section {
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f9fafb;
+  overflow: hidden;
+}
+
+.prior-deliberation-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  background: #f0f4f8;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  text-align: left;
+}
+
+.prior-deliberation-toggle:hover {
+  background: #e8eef4;
+}
+
+.prior-deliberation-content {
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.refinement-edit-actions {
+  margin-top: 12px;
+}
+
+.edit-prompt-button {
+  padding: 10px 20px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.edit-prompt-button:hover:not(:disabled) {
+  background: #357abd;
+}
+
+.edit-prompt-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;

@@ -9,6 +9,7 @@ export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
+  onStartRefinement,
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
@@ -119,6 +120,24 @@ export default function ChatInterface({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {conversation.messages.length > 0 &&
+        conversation.messages.some((msg) => msg.role === 'assistant' && msg.stage3) &&
+        onStartRefinement && (
+        <div className="refinement-actions">
+          <p className="refinement-hint">
+            Refine your prompt and context, then run another council round. Previous deliberation will be used as context.
+          </p>
+          <button
+            type="button"
+            className="refine-button"
+            onClick={onStartRefinement}
+            disabled={isLoading}
+          >
+            Refine prompt & context
+          </button>
+        </div>
+      )}
 
       {conversation.messages.length === 0 && (
         <form className="input-form" onSubmit={handleSubmit}>
