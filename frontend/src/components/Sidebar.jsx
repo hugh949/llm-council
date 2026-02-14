@@ -156,7 +156,9 @@ export default function Sidebar({
                             <div className="step-name">Step 1: Prompt Engineering</div>
                             {hasStep1 && (
                               <div className="step-preview">
-                                {promptEng.finalized_prompt.substring(0, 60)}...
+                                {hasStep3
+                                  ? 'Click to refine or start new round'
+                                  : `${promptEng.finalized_prompt.substring(0, 60)}...`}
                               </div>
                             )}
                           </div>

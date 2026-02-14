@@ -97,6 +97,38 @@
   overflow-y: auto;
 }
 
+.new-round-banner {
+  background: #e8f4fc;
+  border: 2px solid #4a90e2;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.new-round-hint {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.new-round-button {
+  padding: 12px 24px;
+  background: #4a90e2;
+  border: 1px solid #4a90e2;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.new-round-button:hover {
+  background: #357abd;
+  border-color: #357abd;
+}
+
 .step-content-full {
   display: flex;
   flex-direction: column;

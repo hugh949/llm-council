@@ -286,7 +286,8 @@
   }
 }
 
-.input-section {
+.input-section,
+.finalize-section {
   margin-top: auto;
 }
 

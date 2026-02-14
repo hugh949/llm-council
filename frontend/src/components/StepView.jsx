@@ -18,6 +18,31 @@ export default function StepView({ step, conversation, onBack, onStartRefinement
   const contextEng = conversation.context_engineering || {};
   const councilDelib = conversation.council_deliberation || {};
 
+  const hasStep1 = !!promptEng.finalized_prompt;
+  const hasStep2 = !!contextEng.finalized_context;
+  const hasStep3 = councilDelib.messages && councilDelib.messages.length > 0 &&
+    councilDelib.messages.some((msg) => msg.role === 'assistant' && msg.stage3);
+  const allStepsComplete = hasStep1 && hasStep2 && hasStep3;
+
+  const NewRoundBanner = () =>
+    allStepsComplete && onStartRefinement ? (
+      <div className="new-round-banner">
+        <p className="new-round-hint">
+          Refine your prompt and context using the existing knowledge. The prior council synthesis will be used as context.
+        </p>
+        <button
+          type="button"
+          className="new-round-button"
+          onClick={() => {
+            onStartRefinement();
+            onBack();
+          }}
+        >
+          Start new round of deliberation
+        </button>
+      </div>
+    ) : null;
+
   const renderStepContent = () => {
     switch (step) {
       case 'step1':
@@ -31,6 +56,7 @@ export default function StepView({ step, conversation, onBack, onStartRefinement
         }
         return (
           <div className="step-content-full">
+            <NewRoundBanner />
             <div className="step-header-full">
               <span className="step-badge">Step 1</span>
               <h2>Prompt Engineering</h2>
@@ -70,11 +96,12 @@ export default function StepView({ step, conversation, onBack, onStartRefinement
         }
         return (
           <div className="step-content-full">
+            <NewRoundBanner />
             <div className="step-header-full">
               <span className="step-badge">Step 2</span>
               <h2>Context Engineering</h2>
             </div>
-            
+
             {/* Summary */}
             <div className="content-section">
               <h3>Context Summary</h3>
@@ -229,6 +256,7 @@ export default function StepView({ step, conversation, onBack, onStartRefinement
         
         return (
           <div className="step-view-council">
+            <NewRoundBanner />
             <div className="step-header-full">
               <span className="step-badge">Step 3</span>
               <h2>Council Deliberation</h2>
