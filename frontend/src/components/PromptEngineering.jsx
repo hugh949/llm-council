@@ -19,16 +19,13 @@ export default function PromptEngineering({
   const [input, setInput] = useState('');
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
   const [finalizeInput, setFinalizeInput] = useState('');
-  const [refinementPromptInput, setRefinementPromptInput] = useState('');
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(false);
 
-  useEffect(() => {
-    if (refinementMode && finalizedPrompt) {
-      console.log('[REFINEMENT] PromptEngineering: Syncing refinementPromptInput from finalizedPrompt, length=', finalizedPrompt?.length);
-      setRefinementPromptInput(finalizedPrompt);
-    }
-  }, [refinementMode, finalizedPrompt]);
+  const handleEditPrompt = () => {
+    setFinalizeInput(finalizedPrompt || '');
+    setShowFinalizeForm(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,25 +61,6 @@ export default function PromptEngineering({
     }
   };
 
-  const handleContinueToStep2FromRefinement = async () => {
-    console.log('[REFINEMENT] PromptEngineering: handleContinueToStep2FromRefinement called', { refinementPromptInputLength: refinementPromptInput?.length, isFinalizing, isLoading });
-    if (!refinementPromptInput.trim() || isFinalizing || isLoading) return;
-    setIsFinalizing(true);
-    try {
-      await onFinalizePrompt(refinementPromptInput.trim());
-      setIsFinalizing(false);
-      if (onProceedToStep2) await onProceedToStep2();
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
-    } catch (err) {
-      console.error('Error saving prompt:', err);
-      setIsFinalizing(false);
-      alert(`Failed to save prompt: ${err.message || 'Unknown error'}`);
-    }
-  };
-
-  const showEditableRefinementPrompt = Boolean(finalizedPrompt && refinementMode);
-  const showReadOnlyFinalized = Boolean(finalizedPrompt && !refinementMode);
-  console.log('[REFINEMENT] PromptEngineering render:', { refinementMode, finalizedPrompt: !!finalizedPrompt, finalizedPromptLength: finalizedPrompt?.length, showEditableRefinementPrompt, showReadOnlyFinalized, refinementPromptInputLength: refinementPromptInput?.length });
 
   return (
     <div className="prompt-engineering">
@@ -93,57 +71,15 @@ export default function PromptEngineering({
         step3Complete={false}
       />
       <div className="stage-header">
-        <h2>Step 1: Prompt Engineering{refinementMode ? ' (Refinement Round)' : ''}</h2>
+        <h2>Step 1: Prompt Engineering</h2>
         <p className="stage-description">
-          {refinementMode
-            ? "This is a refinement round. Edit your prompt below, then continue to Step 2."
+          {finalizedPrompt
+            ? "Your prompt is ready. Edit if needed, then continue to Step 2."
             : "Describe what you're trying to achieve. I'll help you refine it into a clear, logical prompt."}
         </p>
       </div>
 
-      {/* EDITABLE PROMPT AT TOP when refinement mode - prior prompt as starting point */}
-      {showEditableRefinementPrompt && (
-        <div className="finalize-section refinement-editable-section" style={{ marginBottom: '24px' }}>
-          <h3>Your prior prompt — edit for this round</h3>
-          <p className="finalize-hint">Edit below, then click Continue to Step 2.</p>
-          <textarea
-            className="finalize-input"
-            value={refinementPromptInput}
-            onChange={(e) => setRefinementPromptInput(e.target.value)}
-            rows={10}
-            placeholder="Edit your prompt..."
-          />
-        </div>
-      )}
-
-      {/* FIXED BOTTOM: Continue to Step 2 in refinement mode - always visible */}
-      {showEditableRefinementPrompt && onProceedToStep2 && (
-        <div className="step-transition-bar sticky-bottom">
-          <div className="transition-content">
-            <div className="transition-text">
-              <strong>Edit your prompt above</strong>
-              <p>Then click Continue to proceed to Step 2: Context Engineering.</p>
-            </div>
-            <button
-              type="button"
-              className="proceed-button"
-              onClick={handleContinueToStep2FromRefinement}
-              disabled={!refinementPromptInput.trim() || isLoading || isFinalizing}
-            >
-              {isFinalizing ? (
-                <>
-                  <span className="button-spinner"></span>
-                  Saving...
-                </>
-              ) : (
-                '→ Continue to Step 2'
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-          {refinementMode && priorDeliberationSummary && (
+      {refinementMode && priorDeliberationSummary && (
         <div className="prior-deliberation-section">
           <button
             type="button"
@@ -190,11 +126,21 @@ export default function PromptEngineering({
         )}
       </div>
 
-      {finalizedPrompt && !refinementMode ? (
+      {showFinalizeForm ? null : finalizedPrompt ? (
         <div className="finalized-section">
           <h3>✓ Step 1 Complete: Finalized Prompt</h3>
           <div className="finalized-content">
             <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
+          </div>
+          <div className="refinement-edit-actions" style={{ marginTop: '12px' }}>
+            <button
+              type="button"
+              className="edit-prompt-button"
+              onClick={handleEditPrompt}
+              disabled={isLoading}
+            >
+              Edit prompt
+            </button>
           </div>
           <div className="transitioning-message">
             <p><strong>Transitioning to Step 2: Context Engineering...</strong></p>
@@ -203,8 +149,8 @@ export default function PromptEngineering({
         </div>
       ) : null}
 
-      {/* FIXED BOTTOM: Continue to Step 2 when finalized (non-refinement) - always visible */}
-      {finalizedPrompt && !refinementMode && onProceedToStep2 && (
+      {/* FIXED BOTTOM: Continue to Step 2 when finalized - same for all rounds */}
+      {finalizedPrompt && !showFinalizeForm && onProceedToStep2 ? (
         <div className="step-transition-bar sticky-bottom">
           <div className="transition-content">
             <div className="transition-text">
@@ -221,10 +167,10 @@ export default function PromptEngineering({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Hide input/finalize section when in refinement mode (we show refinement editable instead) or when finalized read-only */}
-      {!finalizedPrompt && (showFinalizeForm ? (
+      {/* Finalize form (Suggest Final flow) or Edit prompt flow - same form for both */}
+      {showFinalizeForm ? (
         <div className="finalize-section">
           <div className="finalize-form">
             <h4>Review and Finalize Prompt</h4>
@@ -293,7 +239,7 @@ export default function PromptEngineering({
             </div>
           </div>
         </div>
-      ) : (
+      ) : !finalizedPrompt ? (
         <div className="input-section">
           <form onSubmit={handleSubmit} className="input-form">
             <textarea
@@ -326,7 +272,7 @@ export default function PromptEngineering({
             </div>
           </form>
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }

@@ -46,14 +46,13 @@ export default function ContextEngineering({
     }
   }, [finalizedPrompt, editingPrompt]);
 
-  // Pre-load manual context from prior round's user messages when entering Step 2 refinement
+  // Pre-load manual context from prior round's user messages when entering Step 2 in later rounds
   useEffect(() => {
     if (refinementMode && messages && messages.length > 0) {
       const userContents = (messages || [])
         .filter((m) => m?.role === 'user')
         .map((m) => (m?.content || '').trim())
         .filter(Boolean);
-      console.log('[REFINEMENT] ContextEngineering: Pre-loading manual context from', userContents.length, 'user messages');
       if (userContents.length > 0) {
         const combined = userContents.join('\n\n');
         setSavedManualContext(combined);
@@ -198,8 +197,6 @@ export default function ContextEngineering({
     return preview + (content.length > 150 ? '...' : '');
   };
 
-  console.log('[REFINEMENT] ContextEngineering render:', { refinementMode, finalizedContext: !!finalizedContext, finalizedContextLength: finalizedContext?.length || 0, isEditingContext });
-
   if (!conversationId) {
     return (
       <div className="empty-state" style={{ padding: '40px' }}>
@@ -224,81 +221,70 @@ export default function ContextEngineering({
       />
       
       <div className="stage-header">
-        <h2>Step 2: Context Engineering{refinementMode ? ' (Refinement Round)' : ''} - Add Intelligence with RAG</h2>
+        <h2>Step 2: Context Engineering - Add Intelligence with RAG</h2>
         <p className="stage-description">
-          {refinementMode
-            ? "This is a refinement round. Edit your prior context below, add more documents, or proceed to package."
-            : "Upload documents, presentations, and research materials that will be intelligently analyzed and used to enhance your council's responses. The system will automatically extract relevant information when needed."}
+          Upload documents, presentations, and research materials that will be intelligently analyzed and used to enhance your council's responses. The system will automatically extract relevant information when needed.
         </p>
       </div>
 
-      {/* Prior context — at TOP when refinement mode, always visible and editable */}
-      {refinementMode && finalizedContext && (
-        <div className="prior-context-section" style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '12px' }}>Prior context — edit for this round</h3>
-          {isEditingContext ? (
-            <div className="edit-prompt-form">
-              <textarea
-                className="prompt-edit-textarea"
-                value={editedContext}
-                onChange={(e) => setEditedContext(e.target.value)}
-                rows={10}
-                placeholder="Edit packaged context..."
-                style={{ width: '100%' }}
-              />
-            </div>
-          ) : (
-            <div>
-              <div className="finalized-prompt-content" style={{ whiteSpace: 'pre-wrap', marginBottom: '12px' }}>
-                {finalizedContext}
+      {/* View/Edit Packaged Context from previous round - same pattern as View/Edit Prompt, only when we have prior packaged context */}
+      {finalizedContext && (
+        <details className="collapsible-section" style={{ marginBottom: '20px' }}>
+          <summary className="collapsible-header">
+            <span className="collapsible-icon">📋</span>
+            <span className="collapsible-title">View/Edit Packaged Context</span>
+          </summary>
+          <div className="collapsible-content">
+            {isEditingContext ? (
+              <div className="edit-prompt-form">
+                <textarea
+                  className="prompt-edit-textarea"
+                  value={editedContext}
+                  onChange={(e) => setEditedContext(e.target.value)}
+                  rows={10}
+                  placeholder="Edit packaged context..."
+                  style={{ width: '100%' }}
+                />
+                <div className="edit-prompt-actions">
+                  <button
+                    type="button"
+                    className="save-prompt-button"
+                    onClick={handleSaveContext}
+                    disabled={!editedContext.trim() || isLoading}
+                  >
+                    Save Context
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-edit-button"
+                    onClick={() => {
+                      setIsEditingContext(false);
+                      setEditedContext(finalizedContext);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-              {onEditContext && (
-                <button
-                  type="button"
-                  className="edit-prompt-button"
-                  onClick={handleEditContextForRefinement}
-                >
-                  Edit context
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* FIXED BOTTOM: Prior context edit actions - always visible when editing */}
-      {refinementMode && finalizedContext && isEditingContext && (
-        <div className="prior-context-edit-bar">
-          <div className="prior-context-edit-bar-content">
-            <span className="prior-context-edit-bar-label">Editing prior context</span>
-            <div className="edit-prompt-actions">
-              <button
-                type="button"
-                className="cancel-edit-button"
-                onClick={() => {
-                  setIsEditingContext(false);
-                  setEditedContext(finalizedContext);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="save-prompt-button"
-                onClick={handleSaveContext}
-                disabled={!editedContext.trim() || isLoading}
-              >
-                Save Context
-              </button>
-            </div>
+            ) : (
+              <div>
+                <div className="finalized-prompt-content" style={{ whiteSpace: 'pre-wrap' }}>
+                  {finalizedContext}
+                </div>
+                {onEditContext && (
+                  <button
+                    type="button"
+                    className="edit-prompt-button"
+                    onClick={handleEditContextForRefinement}
+                    style={{ marginTop: '12px' }}
+                  >
+                    Edit context
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      )}
-
-      {refinementMode && (
-        <div className="refinement-banner" style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#f0f8ff', borderRadius: '8px', border: '1px solid #4a90e2' }}>
-          <strong>Refinement round:</strong> Prior context is loaded. Add additional documents, links, or manual context below.
-        </div>
+        </details>
       )}
 
       {/* Compact two-column layout */}
@@ -659,8 +645,8 @@ export default function ContextEngineering({
         </details>
       )}
 
-      {/* Completion State - only in first round; refinement round uses package bar for re-package */}
-      {finalizedContext && !refinementMode && (
+      {/* Completion State - same for all rounds when context is packaged */}
+      {finalizedContext && (
         <>
           <div className="finalized-section">
             <h3>✓ Step 2 Complete: Context Packaged</h3>
@@ -679,19 +665,29 @@ export default function ContextEngineering({
                 <strong>✓ Context packaged!</strong>
                 <p>Review your prompt and context, then proceed to council deliberation in Step 3.</p>
               </div>
-              <button
-                className="proceed-button large"
-                onClick={async () => {
-                  if (onReloadConversation) {
-                    await onReloadConversation();
-                  }
-                  setTimeout(() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }, 100);
-                }}
-              >
-                → Continue to Review & Step 3
-              </button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="edit-prompt-button"
+                  onClick={handlePackageContext}
+                  disabled={isLoading}
+                >
+                  Edit & Re-package
+                </button>
+                <button
+                  className="proceed-button large"
+                  onClick={async () => {
+                    if (onReloadConversation) {
+                      await onReloadConversation();
+                    }
+                    setTimeout(() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 100);
+                  }}
+                >
+                  → Continue to Review & Step 3
+                </button>
+              </div>
             </div>
           </div>
         </>
@@ -806,22 +802,20 @@ export default function ContextEngineering({
         </div>
       )}
 
-      {/* Package Button - show when context not finalized, OR in refinement mode (to allow re-package) */}
-      {(!finalizedContext || refinementMode) && (
+      {/* Package bar - same for all rounds when context not yet packaged */}
+      {!finalizedContext && (
         <div className="package-context-bar sticky-bottom">
           <div className="package-bar-content">
             <div className="package-bar-text">
-              <strong>{refinementMode ? 'Refinement round:' : 'Ready to proceed?'}</strong>
+              <strong>Ready to proceed?</strong>
               <p>
-                {refinementMode
-                  ? 'Edit prior context above, add more documents if needed, then click Package to update and proceed to Step 3.'
-                  : `${totalAttachments > 0 && hasManualContext
-                      ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and manual context. `
-                      : totalAttachments > 0
-                      ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
-                      : hasManualContext
-                      ? 'You have manual context saved. '
-                      : 'You can add attachments or context, or '}Click Package to review and finalize.`}
+                {totalAttachments > 0 && hasManualContext
+                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''} and manual context. `
+                  : totalAttachments > 0
+                  ? `You have ${totalAttachments} RAG attachment${totalAttachments !== 1 ? 's' : ''}. `
+                  : hasManualContext
+                  ? 'You have manual context saved. '
+                  : 'You can add attachments or context, or '}Click Package to review and finalize.
               </p>
             </div>
             <button
@@ -829,8 +823,44 @@ export default function ContextEngineering({
               onClick={handlePackageContext}
               disabled={isLoading}
             >
-              {isLoading ? 'Packaging...' : refinementMode ? '→ Update & Package' : '→ Review & Package'}
+              {isLoading ? 'Packaging...' : '→ Review & Package'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* When packaged: completion bar with Continue + Edit & Re-package (same for all rounds) */}
+      {finalizedContext && (
+        <div className="step-transition-bar sticky-bottom">
+          <div className="transition-content">
+            <div className="transition-text">
+              <strong>✓ Context packaged!</strong>
+              <p>Review your prompt and context, then proceed to council deliberation in Step 3.</p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="edit-prompt-button"
+                onClick={handlePackageContext}
+                disabled={isLoading}
+                style={{ marginRight: '8px' }}
+              >
+                Edit & Re-package
+              </button>
+              <button
+                className="proceed-button large"
+                onClick={async () => {
+                  if (onReloadConversation) {
+                    await onReloadConversation();
+                  }
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 100);
+                }}
+              >
+                → Continue to Review & Step 3
+              </button>
+            </div>
           </div>
         </div>
       )}
