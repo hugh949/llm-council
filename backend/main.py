@@ -333,6 +333,7 @@ async def create_conversation(request: CreateConversationRequest):
     try:
         conversation_id = str(uuid.uuid4())
 
+        round_number = 1  # Default for new conversation
         if request.parent_id:
             parent = storage.get_conversation(request.parent_id)
             if parent is None:
