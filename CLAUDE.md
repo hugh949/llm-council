@@ -143,6 +143,19 @@ Models are hardcoded in `backend/config.py`. Chairman can be same or different f
 - Custom ranking criteria (not just accuracy/insight)
 - Support for reasoning models (o1, etc.) with special handling
 
+## Log Review Practice
+
+**Standard practice when bugs or issues are reported:** Log review is part of the fix process. Ask for or capture logs, review them before proposing code changes, and use findings to target the fix. See [REQUIREMENTS.md §7](REQUIREMENTS.md#7-log-review-on-bugs-and-issues).
+
+**Before deploying:** Review logs from the previous version to incorporate issues early. Use `scripts/review-logs.sh`:
+
+- `./scripts/review-logs.sh before-deploy` – Capture baseline before deploy
+- `./scripts/review-logs.sh capture [seconds]` – Capture Azure logs
+- `./scripts/review-logs.sh review <file>` – Analyze log for errors, warnings, council flow
+- `./scripts/review-logs.sh compare <before> <after>` – Compare pre/post deploy
+
+See [docs/LOGS.md](docs/LOGS.md) for full workflow. Add `log_api()` in `main.py` for new endpoints to aid troubleshooting.
+
 ## Testing Notes
 
 Use `test_openrouter.py` to verify API connectivity and test different model identifiers before adding to council. The script tests both streaming and non-streaming modes.

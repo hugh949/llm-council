@@ -60,13 +60,6 @@ def get_database_url() -> str:
         data_dir.mkdir(parents=True, exist_ok=True)
         db_path = data_dir / "llm_council.db"
         db_url = f"sqlite:///{db_path}"
-        
-        # Log database path for debugging (only in Azure)
-        if os.path.exists("/home/site/wwwroot"):
-            import sys
-            print(f"🔍 Database path: {db_path}", file=sys.stderr, flush=True)
-            print(f"🔍 Database exists: {db_path.exists()}", file=sys.stderr, flush=True)
-        
         return db_url
 
 
@@ -118,9 +111,14 @@ def _migrate_add_chain_columns(engine):
 
 def init_db():
     """Initialize database tables."""
+    from .logger import get_logger
     engine = get_engine()
     Base.metadata.create_all(engine)
     _migrate_add_chain_columns(engine)
+    # Log DB location once at first init (reduces log noise)
+    db_url = str(engine.url)
+    if "sqlite" in db_url:
+        get_logger("db").info("Database initialized: %s", db_url.replace("sqlite:///", ""))
     return engine
 
 

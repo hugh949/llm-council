@@ -36,6 +36,13 @@ echo "  URL:       $APP_URL"
 echo "  Commit:    $COMMIT_MSG"
 echo ""
 
+# --- Step 0 (optional): Capture pre-deploy logs ---
+if [ "$CAPTURE_LOGS_BEFORE_DEPLOY" = "1" ]; then
+  echo "📋 Step 0: Capturing pre-deploy logs..."
+  ./scripts/review-logs.sh before-deploy || true
+  echo ""
+fi
+
 # --- Step 1: Commit ---
 echo "📦 Step 1/4: Commit changes..."
 if ! git diff --quiet HEAD 2>/dev/null || ! git diff --staged --quiet HEAD 2>/dev/null; then

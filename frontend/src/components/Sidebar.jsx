@@ -11,6 +11,7 @@ export default function Sidebar({
   onSelectStep,
   onNewConversation,
   onDeleteConversation,
+  isCreatingConversation = false,
 }) {
   const [conversationDetails, setConversationDetails] = useState({});
   const [loadingConversations, setLoadingConversations] = useState(new Set());
@@ -124,8 +125,12 @@ export default function Sidebar({
           <img src="/xavorlogo.jpeg" alt="Xavor" className="xavor-logo" />
           <h1 className="app-title">LLM Council <span className="app-version">v{APP_VERSION}</span></h1>
         </div>
-        <button className="new-conversation-btn" onClick={onNewConversation}>
-          + New Conversation
+        <button
+          className="new-conversation-btn"
+          onClick={onNewConversation}
+          disabled={isCreatingConversation}
+        >
+          {isCreatingConversation ? 'Creating…' : '+ New Conversation'}
         </button>
       </div>
 

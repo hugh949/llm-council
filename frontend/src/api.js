@@ -3,6 +3,13 @@
  */
 
 // Use environment variable for production, or default to same origin (when served from backend)
+const FETCH_TIMEOUT_MS = 90000; // 90s - prevents indefinite hang on cold start or slow backend
+
+function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeoutId));
+}
 // In production (served from same backend), API_BASE will be empty string (same origin)
 // In development, use localhost
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8001' : '');
@@ -12,7 +19,7 @@ export const api = {
    * List all conversations.
    */
   async listConversations() {
-    const response = await fetch(`${API_BASE}/api/conversations`);
+    const response = await fetchWithTimeout(`${API_BASE}/api/conversations`);
     if (!response.ok) {
       throw new Error('Failed to list conversations');
     }
@@ -33,7 +40,7 @@ export const api = {
       const body = {};
       if (options.parent_id) body.parent_id = options.parent_id;
 
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,6 +61,9 @@ export const api = {
       return data;
     } catch (error) {
       console.error('Create conversation exception:', error);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. The backend may be starting up—please try again in a moment.');
+      }
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         throw new Error(`Cannot connect to backend at ${API_BASE}. Please check that the backend is running and VITE_API_BASE_URL is set correctly.`);
       }
@@ -79,7 +89,7 @@ export const api = {
    */
   async getConversation(conversationId) {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${API_BASE}/api/conversations/${conversationId}`
       );
       if (!response.ok) {
@@ -89,6 +99,9 @@ export const api = {
       }
       return response.json();
     } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. The backend may be starting up—please try again in a moment.');
+      }
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         throw new Error(`Cannot connect to backend. Please check that the backend is running at ${API_BASE}`);
       }
@@ -166,7 +179,7 @@ export const api = {
   // ========== PROMPT ENGINEERING ENDPOINTS ==========
 
   async sendPreparationMessage(conversationId, content) {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${API_BASE}/api/conversations/${conversationId}/preparation/message`,
       {
         method: 'POST',

@@ -2,6 +2,8 @@
 
 *For AI coding agents: read this document when making changes to workflow, handoffs, preparation, or council logic.*
 
+**When the user reports a bug, issue, or unexpected behavior:** Log review is part of the investigation. See [Log Review on Bugs/Issues](#7-log-review-on-bugs-and-issues) below.
+
 ## 1. Product Vision
 
 LLM Council helps users refine prompts through dialogue, then receive multi-LLM deliberation with anonymized peer review. The system has two main phases:
@@ -67,10 +69,22 @@ The preparation assistant system prompt (in `backend/preparation.py`) must refer
 - **Use CSS classes**: No inline styles for error states—use existing or new CSS classes.
 - **Keep components focused**: If App.jsx render blocks exceed complexity, extract into separate components.
 
+## 7. Log Review on Bugs and Issues
+
+**Standard practice:** When the user reports a bug, issue, or feature change request, log review is part of the investigation and fix process.
+
+1. **Ask for or capture logs** – If the user has Azure log output, ask them to share it or run `./scripts/review-logs.sh capture 60` to capture current state. Logs provide runtime context that code inspection alone cannot.
+2. **Review logs first** – Run `./scripts/review-logs.sh review <file>` on any log file to surface errors, warnings, council flow, and HTTP status. Use this to understand what actually happened before proposing code changes.
+3. **Inform the fix** – Use log findings (errors, stack traces, council stage failures, unexpected 4xx/5xx) to target the fix. Add or adjust `log_api()` calls if the root cause was hard to trace.
+4. **Before releasing the fix** – Run `./scripts/review-logs.sh before-deploy` (or capture logs) so the next deploy has a baseline to compare against.
+
+See [docs/LOGS.md](docs/LOGS.md) for the full workflow and CLI usage.
+
 ## 6. Implementation Checklist for Agents
 
 When making changes, verify:
 
+- [ ] **If fixing a bug:** Logs were reviewed to understand runtime behavior; fix is informed by log findings.
 - [ ] Submit to Council does not open extra forms or confirmations.
 - [ ] "Start new round" carries forward: prompt, context, attachments, `prior_synthesis`, `prior_preparation_summary`.
 - [ ] `preparation.py` system prompt uses both `prior_synthesis` and `prior_preparation_summary`.

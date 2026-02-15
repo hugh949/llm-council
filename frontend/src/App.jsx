@@ -13,6 +13,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [promptLoading, setPromptLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [viewingStep, setViewingStep] = useState(null); // 'step1', 'step2', 'step3', or null
 
   // Define functions FIRST before useEffects that use them
@@ -72,6 +73,8 @@ function App() {
   }, [currentConversationId]);
 
   const handleNewConversation = async () => {
+    if (isCreatingConversation) return;
+    setIsCreatingConversation(true);
     try {
       const newConv = await api.createConversation();
       
@@ -103,15 +106,23 @@ function App() {
     } catch (error) {
       console.error('Failed to create conversation:', error);
       alert(`Error: ${error.message || 'Failed to create conversation. Please check your backend connection and try again.'}`);
+    } finally {
+      setIsCreatingConversation(false);
     }
   };
 
   const handleSelectConversation = (id) => {
+    if (currentConversation?.id !== id) {
+      setCurrentConversation(null); // Clear stale content so we show loading, not previous conversation
+    }
     setCurrentConversationId(id);
     setViewingStep(null);
   };
 
   const handleSelectStep = (convId, step) => {
+    if (currentConversation?.id !== convId) {
+      setCurrentConversation(null); // Clear stale content when switching conversations
+    }
     setCurrentConversationId(convId);
     setViewingStep(step);
     if (!currentConversation || currentConversation.id !== convId) {
@@ -697,6 +708,15 @@ function App() {
   const renderStage = () => {
     try {
       if (!currentConversation) {
+        if (currentConversationId) {
+          return (
+            <div className="empty-state loading-conversation">
+              <h2>Loading conversation…</h2>
+              <p>Please wait while we load your conversation.</p>
+              <div className="spinner" style={{ marginTop: 16 }} />
+            </div>
+          );
+        }
         return (
           <div className="empty-state">
             <h2>Welcome to LLM Council</h2>
@@ -827,6 +847,7 @@ function App() {
         onSelectStep={handleSelectStep}
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
+        isCreatingConversation={isCreatingConversation}
       />
       <div className="main-content">
         {viewingStep ? (

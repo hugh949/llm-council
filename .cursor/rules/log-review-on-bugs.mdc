@@ -1,0 +1,14 @@
+---
+description: Log review is standard practice when bugs or issues are reported
+alwaysApply: true
+---
+
+# Log Review on Bugs and Issues
+
+When the user reports a bug, issue, or unexpected behavior:
+
+1. **Ask for or capture logs** – Request Azure log output if available, or run `./scripts/review-logs.sh capture 60`.
+2. **Review logs before proposing fixes** – Use `./scripts/review-logs.sh review <file>` to surface errors, warnings, council flow. Let log findings inform the fix.
+3. **Add logging if needed** – If the root cause was hard to trace, add or adjust `log_api()` in `backend/main.py`.
+
+See REQUIREMENTS.md §7 and docs/LOGS.md for full workflow.

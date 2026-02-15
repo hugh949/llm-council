@@ -29,6 +29,7 @@ from .prompt_engineering import get_prompt_engineering_response, suggest_finaliz
 from .context_engineering import get_context_engineering_response, package_context, get_refinement_opening as get_context_refinement_opening
 from .preparation import get_preparation_response
 from .document_parser import parse_file, fetch_url_content
+from .logger import log_api
 
 app = FastAPI(title="LLM Council API")
 
@@ -375,6 +376,7 @@ async def create_conversation(request: CreateConversationRequest):
                 status_code=500,
                 detail="Failed to create conversation in database"
             )
+        log_api("create_conversation", conv_id=conversation_id, parent_id=request.parent_id, round=round_number)
         return conversation
     except HTTPException:
         raise
@@ -479,6 +481,7 @@ async def suggest_final_prompt(conversation_id: str):
     messages = prompt_eng.get("messages", [])
     
     suggested_prompt = await suggest_finalized_prompt(messages)
+    log_api("suggest_final", conv_id=conversation_id, prompt_len=len(suggested_prompt or ""))
     
     if suggested_prompt is None:
         raise HTTPException(status_code=500, detail="Failed to generate suggested prompt")
@@ -496,6 +499,7 @@ async def finalize_prompt_endpoint(conversation_id: str, request: FinalizePrompt
         raise HTTPException(status_code=404, detail="Conversation not found")
     
     storage.finalize_prompt(conversation_id, request.finalized_prompt)
+    log_api("finalize_prompt", conv_id=conversation_id, prompt_len=len(request.finalized_prompt))
     
     updated_conversation = storage.get_conversation(conversation_id)
     return {"conversation": updated_conversation}
@@ -541,6 +545,7 @@ async def send_preparation_message(conversation_id: str, request: SendMessageReq
         if response is None:
             raise HTTPException(status_code=500, detail="Failed to get preparation response.")
         
+        log_api("preparation_message", conv_id=conversation_id, response_len=len(response), attachments=len(documents) + len(files) + len(links))
         storage.add_prompt_engineering_message(conversation_id, "assistant", response)
         storage.add_context_engineering_message(conversation_id, "assistant", response)
         
@@ -863,6 +868,7 @@ async def send_council_deliberation_stream(conversation_id: str):
         finalized_context, council_delib, prior_synthesis=prior_synth
     )
     is_first_message = len(council_delib.get("messages", [])) == 0
+    log_api("council_stream_start", conv_id=conversation_id, is_first=is_first_message, query_len=len(full_query))
 
     async def event_generator():
         try:
