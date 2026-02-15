@@ -24,9 +24,6 @@ export default function PreparationStep({
   isLoading,
 }) {
   const [input, setInput] = useState('');
-  const [showFinalizeForm, setShowFinalizeForm] = useState(false);
-  const [finalizeInput, setFinalizeInput] = useState('');
-  const [isFinalizing, setIsFinalizing] = useState(false);
   const [showDocumentForm, setShowDocumentForm] = useState(false);
   const [documentName, setDocumentName] = useState('');
   const [documentContent, setDocumentContent] = useState('');
@@ -78,11 +75,14 @@ export default function PreparationStep({
   const handleSuggestFinal = async () => {
     try {
       const result = await onSuggestFinal();
-      setFinalizeInput(result.suggested_prompt || '');
-      setShowFinalizeForm(true);
+      const suggested = result.suggested_prompt || '';
+      setInput(suggested);
       setTimeout(() => {
-        document.querySelector('.finalize-form')?.scrollIntoView({ behavior: 'smooth' });
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        const el = document.querySelector('.message-input');
+        if (el) {
+          el.focus();
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }, 100);
     } catch (error) {
       console.error('Failed to suggest final prompt:', error);
@@ -128,29 +128,9 @@ export default function PreparationStep({
     }
   };
 
-  const handleConfirmFinalize = async () => {
-    if (!finalizeInput.trim()) return;
-    if (isFinalizing || isLoading) return;
-    setIsFinalizing(true);
-    try {
-      await onFinalizePrompt(finalizeInput.trim());
-      setShowFinalizeForm(false);
-      setFinalizeInput('');
-      if (onReloadConversation) await onReloadConversation();
-      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
-    } catch (error) {
-      console.error('Error finalizing:', error);
-      alert(`Failed: ${error.message || 'Unknown'}`);
-    } finally {
-      setIsFinalizing(false);
-    }
-  };
-
   const handleEditPrompt = () => {
     setInput(finalizedPrompt || '');
     setIsEditingPrompt(true);
-    setShowFinalizeForm(false);
-    setFinalizeInput('');
     setTimeout(() => {
       const el = document.querySelector('.message-input');
       if (el) {
@@ -252,9 +232,7 @@ export default function PreparationStep({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat input - visible when not in finalize form */}
-          {!showFinalizeForm && (
-            <div className="input-section">
+          <div className="input-section">
               {finalizedPrompt && !isEditingPrompt && (
                 <div className="finalized-prompt-bar">
                   <span className="finalized-label">✓ Prompt finalized</span>
@@ -287,29 +265,6 @@ export default function PreparationStep({
                       Submit to Council
                     </button>
                   )}
-                  {finalizedPrompt && isEditingPrompt && input.trim() && (
-                    <button
-                      type="button"
-                      className="finalize-button large"
-                      onClick={async () => {
-                        if (!input.trim() || isLoading) return;
-                        setIsFinalizing(true);
-                        try {
-                          await onFinalizePrompt(input.trim());
-                          setIsEditingPrompt(false);
-                          if (onReloadConversation) await onReloadConversation();
-                        } catch (e) {
-                          console.error('Finalize error:', e);
-                          alert(`Failed: ${e.message || 'Unknown'}`);
-                        } finally {
-                          setIsFinalizing(false);
-                        }
-                      }}
-                      disabled={!input.trim() || isLoading || isFinalizing}
-                    >
-                      {isFinalizing ? 'Finalizing...' : '✓ Finalize edited prompt'}
-                    </button>
-                  )}
                   {(messages.length > 0 || (isContinuation && input.trim()) || input.trim()) && (
                     <button
                       type="button"
@@ -323,36 +278,6 @@ export default function PreparationStep({
                 </div>
               </form>
             </div>
-          )}
-
-          {showFinalizeForm && (
-            <div className="finalize-section">
-              <div className="finalize-form">
-                <h4>Review and Finalize Prompt</h4>
-                <p className="finalize-hint">Edit if needed, then click Finalize. You can add or change attachments in the panel before running the council.</p>
-                <textarea
-                  className="finalize-input"
-                  value={finalizeInput}
-                  onChange={(e) => setFinalizeInput(e.target.value)}
-                  rows={8}
-                  placeholder="Your finalized prompt..."
-                />
-              </div>
-              <div className="finalize-actions-inline">
-                <button type="button" className="cancel-button" onClick={() => { setShowFinalizeForm(false); setFinalizeInput(''); }}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="finalize-button large"
-                  onClick={handleConfirmFinalize}
-                  disabled={!finalizeInput.trim() || isLoading || isFinalizing}
-                >
-                  {isFinalizing || isLoading ? 'Finalizing...' : '✓ Finalize & Continue'}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Sidebar: Attachments */}

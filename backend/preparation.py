@@ -15,7 +15,8 @@ async def get_preparation_response(
     documents: List[Dict[str, Any]] = None,
     files: List[Dict[str, Any]] = None,
     links: List[Dict[str, Any]] = None,
-    prior_synthesis: Optional[str] = None
+    prior_synthesis: Optional[str] = None,
+    prior_preparation_summary: Optional[str] = None,
 ) -> Optional[str]:
     """
     Get a response from the unified preparation assistant.
@@ -70,6 +71,15 @@ The user is refining a prompt that was already deliberated on. Here is what the 
 {prior_synthesis[:4000]}{'...' if len(prior_synthesis) > 4000 else ''}
 
 Your job: Help the user identify what was missing, what needs deeper analysis, what assumptions should be challenged, and how to sharpen the prompt for a better second round. Do NOT repeat the prior synthesis. Push the user to go further with probing questions and critical thinking.
+"""
+    if prior_preparation_summary and prior_preparation_summary.strip():
+        prior_context += f"""
+
+## Prior Preparation Conversation
+
+The user already discussed the following in the previous round. Do NOT re-ask questions that were resolved. Build on what was clarified and push on what is still unexplored:
+
+{prior_preparation_summary[:3000]}{'...' if len(prior_preparation_summary) > 3000 else ''}
 """
 
     system_message = base_system + prior_context

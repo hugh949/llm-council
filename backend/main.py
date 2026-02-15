@@ -305,6 +305,27 @@ def _extract_prior_synthesis(parent: Dict[str, Any]) -> str | None:
     return None
 
 
+def _extract_prior_preparation_summary(parent: Dict[str, Any]) -> str | None:
+    """Build a summary of the prior preparation conversation for context in the next round."""
+    prompt_eng = parent.get("prompt_engineering") or {}
+    messages = prompt_eng.get("messages") or []
+    if not messages:
+        return None
+    parts = []
+    for msg in messages:
+        role = msg.get("role", "")
+        content = (msg.get("content") or "").strip()
+        if not content:
+            continue
+        prefix = "User: " if role == "user" else "Assistant: "
+        parts.append(prefix + content)
+    if not parts:
+        return None
+    summary = "\n\n".join(parts)
+    max_len = 3000
+    return summary[:max_len] + ("..." if len(summary) > max_len else "")
+
+
 @app.post("/api/conversations", response_model=Conversation)
 async def create_conversation(request: CreateConversationRequest):
     """Create a new conversation. If parent_id is provided, copy prompt, context, attachments from parent."""
@@ -318,6 +339,7 @@ async def create_conversation(request: CreateConversationRequest):
             chain_id = parent.get("chain_id") or parent["id"]
             round_number = (parent.get("round_number") or 1) + 1
             prior_synthesis = _extract_prior_synthesis(parent)
+            prior_preparation_summary = _extract_prior_preparation_summary(parent)
 
             prompt_eng = parent.get("prompt_engineering") or {}
             context_eng = parent.get("context_engineering") or {}
@@ -330,6 +352,7 @@ async def create_conversation(request: CreateConversationRequest):
                 parent_id=request.parent_id,
                 round_number=round_number,
                 prior_synthesis=prior_synthesis,
+                prior_preparation_summary=prior_preparation_summary,
                 title=title,
                 prompt_engineering={
                     "messages": [],
@@ -504,8 +527,15 @@ async def send_preparation_message(conversation_id: str, request: SendMessageReq
         storage.add_context_engineering_message(conversation_id, "user", request.content)
 
         prior_synth = conversation.get("prior_synthesis")
+        prior_prep = conversation.get("prior_preparation_summary")
         response = await get_preparation_response(
-            messages, request.content, documents, files, links, prior_synthesis=prior_synth
+            messages,
+            request.content,
+            documents,
+            files,
+            links,
+            prior_synthesis=prior_synth,
+            prior_preparation_summary=prior_prep,
         )
         
         if response is None:

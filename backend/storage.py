@@ -41,6 +41,7 @@ def create_conversation(
     parent_id: Optional[str] = None,
     round_number: int = 1,
     prior_synthesis: Optional[str] = None,
+    prior_preparation_summary: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -52,6 +53,7 @@ def create_conversation(
         parent_id: ID of previous round (default: None)
         round_number: Round number in chain (default: 1)
         prior_synthesis: Prior council synthesis for continuation rounds (default: None)
+        prior_preparation_summary: Summary of prior preparation conversation (default: None)
         **kwargs: Additional fields (e.g. title, prompt_engineering, context_engineering)
 
     Returns:
@@ -70,6 +72,7 @@ def create_conversation(
         "parent_id": parent_id,
         "round_number": round_number,
         "prior_synthesis": prior_synthesis,
+        "prior_preparation_summary": prior_preparation_summary,
         "prompt_engineering": kwargs.get(
             "prompt_engineering",
             {"messages": [], "finalized_prompt": None}

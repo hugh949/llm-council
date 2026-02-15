@@ -1,5 +1,9 @@
 # QA: Deliberation Rounds UX Validation
 
+**Note:** [REQUIREMENTS.md](REQUIREMENTS.md) is the authoritative source for product requirements, workflow, and multi-round guidance. This document is legacy UX validation (references an older Step 1/2/3 structure) and is kept for reference.
+
+---
+
 This document defines the expected UX for **first round** vs **subsequent rounds** (2nd, 3rd, etc.) of council deliberation. The design principle: **Step 1 and Step 2 behave the same in every round**. The only difference in later rounds is that prior content is preserved and pre-loaded so users can continue from where they left off.
 
 ---

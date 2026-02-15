@@ -50,3 +50,18 @@
   margin: 0;
   font-size: 16px;
 }
+
+.empty-state.error-state {
+  color: #c33;
+}
+
+.reload-button {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}

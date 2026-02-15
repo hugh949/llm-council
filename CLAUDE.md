@@ -2,6 +2,8 @@
 
 This file contains technical details, architectural decisions, and important implementation notes for future development sessions.
 
+**For product/UX requirements** (workflow, handoffs, multi-round knowledge retention, quality of questions as critical thinking aid), read [REQUIREMENTS.md](REQUIREMENTS.md). Use it when making changes to preparation, council logic, or UI flows.
+
 ## Project Overview
 
 LLM Council is a 3-stage deliberation system where multiple LLMs collaboratively answer user questions. The key innovation is anonymized peer review in Stage 2, preventing models from playing favorites.
