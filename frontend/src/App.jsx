@@ -69,8 +69,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (currentConversationId) loadConversation(currentConversationId);
-  }, [currentConversationId]);
+    if (!currentConversationId) return;
+    // Skip redundant load when we already have this conversation (e.g. from create response)
+    if (currentConversation?.id === currentConversationId) return;
+    loadConversation(currentConversationId);
+  }, [currentConversationId, currentConversation?.id]);
 
   const handleNewConversation = async () => {
     if (isCreatingConversation) return;
