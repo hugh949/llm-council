@@ -34,10 +34,16 @@ export default function PreparationStep({
   const [linkUrl, setLinkUrl] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false); // Default collapsed for max chat space
-  const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(true); // Expanded by default in refinement
+  const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(false); // Collapsed to reduce scroll
+  const [refinementPanelExpanded, setRefinementPanelExpanded] = useState(false); // Collapsed by default
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const hasPreFilledRef = useRef(false);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, isLoading]);
 
   useEffect(() => {
     if (refinementMode && finalizedPrompt && !hasPreFilledRef.current) {
@@ -142,7 +148,14 @@ export default function PreparationStep({
     setInput(finalizedPrompt || '');
     setIsEditingPrompt(true);
     setShowFinalizeForm(false);
-    setTimeout(() => document.querySelector('.message-input')?.focus(), 50);
+    setFinalizeInput('');
+    setTimeout(() => {
+      const el = document.querySelector('.message-input');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
   };
 
   const handleProceedToReview = async () => {
@@ -157,9 +170,10 @@ export default function PreparationStep({
   };
 
   const isComplete = !!finalizedPrompt && !!finalizedContext;
+  const showTransitionBar = finalizedPrompt && !showFinalizeForm && (!finalizedContext || refinementMode);
 
   return (
-    <div className="preparation-step">
+    <div className={`preparation-step ${showTransitionBar ? 'has-transition-bar' : ''}`}>
       <ProgressIndicator
         currentStep={1}
         step1Complete={isComplete}
@@ -173,37 +187,46 @@ export default function PreparationStep({
         </p>
       </div>
 
-      {/* Refinement: Prior council synthesis + prior prompt - always visible for context */}
+      {/* Refinement: Prior council synthesis + prior prompt - collapsible */}
       {refinementMode && (priorDeliberationSummary || finalizedPrompt) && (
         <div className="refinement-context-panel">
-          <div className="refinement-context-header">
-            <strong>Refining from previous round</strong> — Build on the context below
-          </div>
-          {priorDeliberationSummary && (
-            <div className="refinement-prior-section">
-              <button
-                type="button"
-                className="refinement-toggle"
-                onClick={() => setPriorDeliberationExpanded(!priorDeliberationExpanded)}
-              >
-                {priorDeliberationExpanded ? '▼' : '▶'} Previous council synthesis
-              </button>
-              {priorDeliberationExpanded && (
-                <div className="refinement-prior-content markdown-content">
-                  <ReactMarkdown>{priorDeliberationSummary}</ReactMarkdown>
+          <button
+            type="button"
+            className="refinement-panel-toggle"
+            onClick={() => setRefinementPanelExpanded(!refinementPanelExpanded)}
+          >
+            <span>{refinementPanelExpanded ? '▼' : '▶'} Previous round context</span>
+            <span className="refinement-panel-hint">{refinementPanelExpanded ? 'Collapse' : 'Click to edit prior prompt'}</span>
+          </button>
+          {refinementPanelExpanded && (
+            <div className="refinement-panel-content">
+              {priorDeliberationSummary && (
+                <div className="refinement-prior-section">
+                  <button
+                    type="button"
+                    className="refinement-toggle"
+                    onClick={() => setPriorDeliberationExpanded(!priorDeliberationExpanded)}
+                  >
+                    {priorDeliberationExpanded ? '▼' : '▶'} Previous council synthesis
+                  </button>
+                  {priorDeliberationExpanded && (
+                    <div className="refinement-prior-content markdown-content">
+                      <ReactMarkdown>{priorDeliberationSummary}</ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
-          {finalizedPrompt && (
-            <div className="refinement-prior-prompt">
-              <span className="refinement-label">Your previous prompt:</span>
-              <div className="refinement-prompt-preview markdown-content">
-                <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
-              </div>
-              <button type="button" className="edit-prompt-btn" onClick={handleEditPrompt}>
-                ✏️ Edit this prompt
-              </button>
+              {finalizedPrompt && (
+                <div className="refinement-prior-prompt">
+                  <span className="refinement-label">Your previous prompt (editable below):</span>
+                  <div className="refinement-prompt-preview markdown-content">
+                    <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
+                  </div>
+                  <button type="button" className="edit-prompt-btn" onClick={handleEditPrompt}>
+                    ✏️ Edit this prompt
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -233,10 +256,11 @@ export default function PreparationStep({
                 <span>Thinking...</span>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat input - always visible when not in finalize form and not yet complete */}
-          {!showFinalizeForm && !isComplete && (
+          {/* Chat input - visible when not in finalize form; in refinement mode always show so user can edit prior prompt */}
+          {!showFinalizeForm && (!isComplete || refinementMode) && (
             <div className="input-section">
               {finalizedPrompt && !isEditingPrompt && (
                 <div className="finalized-prompt-bar">
@@ -260,6 +284,29 @@ export default function PreparationStep({
                   <button type="submit" className="send-button" disabled={!input.trim() || isLoading}>
                     Send
                   </button>
+                  {finalizedPrompt && isEditingPrompt && input.trim() && (
+                    <button
+                      type="button"
+                      className="finalize-button large"
+                      onClick={async () => {
+                        if (!input.trim() || isLoading) return;
+                        setIsFinalizing(true);
+                        try {
+                          await onFinalizePrompt(input.trim());
+                          setIsEditingPrompt(false);
+                          if (onReloadConversation) await onReloadConversation();
+                        } catch (e) {
+                          console.error('Finalize error:', e);
+                          alert(`Failed: ${e.message || 'Unknown'}`);
+                        } finally {
+                          setIsFinalizing(false);
+                        }
+                      }}
+                      disabled={!input.trim() || isLoading || isFinalizing}
+                    >
+                      {isFinalizing ? 'Finalizing...' : '✓ Finalize edited prompt'}
+                    </button>
+                  )}
                   {(messages.length > 0 || (refinementMode && input.trim()) || input.trim()) && (
                     <button
                       type="button"
@@ -382,13 +429,13 @@ export default function PreparationStep({
         </div>
       </div>
 
-      {/* Sticky: Continue to Review when prompt finalized but context not yet packaged */}
-      {finalizedPrompt && !finalizedContext && !showFinalizeForm && (
+      {/* Sticky: Continue to Review when prompt finalized; in refinement mode allow re-package */}
+      {showTransitionBar && (
         <div className="step-transition-bar sticky-bottom">
           <div className="transition-content">
             <div className="transition-text">
-              <strong>Prompt finalized</strong>
-              <p>Package context and continue to Final Review before council deliberation.</p>
+              <strong>{refinementMode ? 'Ready to re-package' : 'Prompt finalized'}</strong>
+              <p>{refinementMode ? 'Package context with your updated prompt and continue to Final Review.' : 'Package context and continue to Final Review before council deliberation.'}</p>
             </div>
             <button
               type="button"

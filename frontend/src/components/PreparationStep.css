@@ -1,17 +1,26 @@
 .preparation-step {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
   max-width: 100%;
   margin: 0;
-  padding: 16px 20px;
-  padding-bottom: 140px;
-  min-height: calc(100vh - 140px);
+  padding: 12px 20px;
+  padding-bottom: 24px;
+  overflow: hidden;
+}
+
+/* Extra clearance when sticky bar is visible so input stays above it */
+.preparation-step.has-transition-bar {
+  padding-bottom: 120px;
 }
 
 .preparation-step .stage-header {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-shrink: 0;
+}
+
+.preparation-step .stage-header h2 {
+  font-size: 20px;
 }
 
 .preparation-step .stage-header h2 {
@@ -32,16 +41,21 @@
   flex: 1;
   min-height: 0;
   gap: 16px;
+  overflow: hidden;
 }
 
 .preparation-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .preparation-sidebar {
   flex-shrink: 0;
-  width: 280px;
+  width: 260px;
 }
 
 @media (max-width: 768px) {
@@ -55,18 +69,15 @@
   }
 }
 
-.preparation-main {
-  display: flex;
-  flex-direction: column;
-  min-height: 300px;
-}
 
 .preparation-main .messages-container {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 16px;
-  min-height: 180px;
+  overflow-x: hidden;
+  margin-bottom: 12px;
+  min-height: 120px;
   padding-right: 8px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .preparation-main .empty-state {
@@ -129,6 +140,10 @@
 
 .preparation-main .input-section {
   flex-shrink: 0;
+  padding: 8px 0;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
 }
 
 .preparation-main .input-form {
@@ -540,19 +555,45 @@
   background: #38a169;
 }
 
-/* Refinement context panel - prior synthesis + prior prompt */
+/* Refinement context panel - collapsible */
 .refinement-context-panel {
-  margin-bottom: 20px;
-  padding: 16px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.refinement-context-header {
-  margin-bottom: 12px;
+.refinement-panel-toggle {
+  width: 100%;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border: none;
+  cursor: pointer;
   font-size: 14px;
-  color: #475569;
+  font-weight: 600;
+  color: #334155;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.refinement-panel-toggle:hover {
+  background: #e2e8f0;
+}
+
+.refinement-panel-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.refinement-panel-content {
+  padding: 12px 14px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .refinement-prior-section {
