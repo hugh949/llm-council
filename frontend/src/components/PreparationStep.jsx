@@ -21,7 +21,6 @@ export default function PreparationStep({
   onPackageContext,
   onReloadConversation,
   isLoading,
-  refinementMode = false,
 }) {
   const [input, setInput] = useState('');
   const [showFinalizeForm, setShowFinalizeForm] = useState(false);
@@ -45,13 +44,15 @@ export default function PreparationStep({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isLoading]);
 
+  const isContinuation = !!priorDeliberationSummary;
+
   useEffect(() => {
-    if (refinementMode && finalizedPrompt && !hasPreFilledRef.current) {
+    if (isContinuation && finalizedPrompt && !hasPreFilledRef.current) {
       setInput(finalizedPrompt);
       hasPreFilledRef.current = true;
     }
-    if (!refinementMode) hasPreFilledRef.current = false;
-  }, [refinementMode, finalizedPrompt]);
+    if (!isContinuation) hasPreFilledRef.current = false;
+  }, [isContinuation, finalizedPrompt]);
 
   const safeDocuments = Array.isArray(documents) ? documents : [];
   const safeFiles = Array.isArray(files) ? files : [];
@@ -170,7 +171,7 @@ export default function PreparationStep({
   };
 
   const isComplete = !!finalizedPrompt && !!finalizedContext;
-  const showTransitionBar = finalizedPrompt && !showFinalizeForm && (!finalizedContext || refinementMode);
+  const showTransitionBar = finalizedPrompt && !showFinalizeForm && (!finalizedContext || isContinuation);
 
   return (
     <div className={`preparation-step ${showTransitionBar ? 'has-transition-bar' : ''}`}>
@@ -188,7 +189,7 @@ export default function PreparationStep({
       </div>
 
       {/* Refinement: Prior council synthesis + prior prompt - collapsible */}
-      {refinementMode && (priorDeliberationSummary || finalizedPrompt) && (
+      {isContinuation && (priorDeliberationSummary || finalizedPrompt) && (
         <div className="refinement-context-panel">
           <button
             type="button"
@@ -260,7 +261,7 @@ export default function PreparationStep({
           </div>
 
           {/* Chat input - visible when not in finalize form; in refinement mode always show so user can edit prior prompt */}
-          {!showFinalizeForm && (!isComplete || refinementMode) && (
+          {!showFinalizeForm && (!isComplete || isContinuation) && (
             <div className="input-section">
               {finalizedPrompt && !isEditingPrompt && (
                 <div className="finalized-prompt-bar">
@@ -307,7 +308,7 @@ export default function PreparationStep({
                       {isFinalizing ? 'Finalizing...' : '✓ Finalize edited prompt'}
                     </button>
                   )}
-                  {(messages.length > 0 || (refinementMode && input.trim()) || input.trim()) && (
+                  {(messages.length > 0 || (isContinuation && input.trim()) || input.trim()) && (
                     <button
                       type="button"
                       className="suggest-final-button"
@@ -434,8 +435,8 @@ export default function PreparationStep({
         <div className="step-transition-bar sticky-bottom">
           <div className="transition-content">
             <div className="transition-text">
-              <strong>{refinementMode ? 'Ready to re-package' : 'Prompt finalized'}</strong>
-              <p>{refinementMode ? 'Package context with your updated prompt and continue to Final Review.' : 'Package context and continue to Final Review before council deliberation.'}</p>
+              <strong>{isContinuation ? 'Ready to re-package' : 'Prompt finalized'}</strong>
+              <p>{isContinuation ? 'Package context with your updated prompt and continue to Final Review.' : 'Package context and continue to Final Review before council deliberation.'}</p>
             </div>
             <button
               type="button"

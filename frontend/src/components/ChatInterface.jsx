@@ -9,7 +9,7 @@ export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
-  onStartRefinement,
+  onStartNewRound,
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
@@ -123,18 +123,15 @@ export default function ChatInterface({
 
       {conversation.messages.length > 0 &&
         conversation.messages.some((msg) => msg.role === 'assistant' && msg.stage3) &&
-        onStartRefinement && (
+        onStartNewRound && (
         <div className="refinement-actions">
           <p className="refinement-hint">
-            Run another council round. You'll edit your prompt and context in Steps 1 and 2, then run the council.
+            Start a new conversation round. Your prompt, context, and attachments will carry over.
           </p>
           <button
             type="button"
             className="refine-button"
-            onClick={() => {
-              console.log('[REFINEMENT] ChatInterface: User clicked Start new round of deliberation');
-              onStartRefinement();
-            }}
+            onClick={async () => await onStartNewRound()}
             disabled={isLoading}
           >
             Start new round of deliberation

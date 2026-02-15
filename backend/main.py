@@ -218,7 +218,7 @@ async def startup_event():
 
 class CreateConversationRequest(BaseModel):
     """Request to create a new conversation."""
-    pass
+    parent_id: str | None = None
 
 
 class SendMessageRequest(BaseModel):
@@ -259,6 +259,9 @@ class ConversationMetadata(BaseModel):
     created_at: str
     title: str
     message_count: int
+    chain_id: str | None = None
+    parent_id: str | None = None
+    round_number: int = 1
 
 
 class Conversation(BaseModel):
@@ -270,6 +273,10 @@ class Conversation(BaseModel):
     prompt_engineering: Dict[str, Any] = None
     context_engineering: Dict[str, Any] = None
     council_deliberation: Dict[str, Any] = None
+    chain_id: str | None = None
+    parent_id: str | None = None
+    round_number: int = 1
+    prior_synthesis: str | None = None
 
 
 @app.get("/api/")
@@ -284,18 +291,70 @@ async def list_conversations():
     return storage.list_conversations()
 
 
+def _extract_prior_synthesis(parent: Dict[str, Any]) -> str | None:
+    """Extract last Stage 3 synthesis from parent council_deliberation."""
+    council_delib = parent.get("council_deliberation") or {}
+    messages = council_delib.get("messages") or []
+    for msg in reversed(messages):
+        if msg.get("role") == "assistant" and msg.get("stage3"):
+            stage3 = msg["stage3"]
+            if isinstance(stage3, dict) and stage3.get("response"):
+                return stage3["response"]
+            if isinstance(stage3, str):
+                return stage3
+    return None
+
+
 @app.post("/api/conversations", response_model=Conversation)
 async def create_conversation(request: CreateConversationRequest):
-    """Create a new conversation."""
+    """Create a new conversation. If parent_id is provided, copy prompt, context, attachments from parent."""
     try:
         conversation_id = str(uuid.uuid4())
-        conversation = storage.create_conversation(conversation_id)
+
+        if request.parent_id:
+            parent = storage.get_conversation(request.parent_id)
+            if parent is None:
+                raise HTTPException(status_code=404, detail="Parent conversation not found")
+            chain_id = parent.get("chain_id") or parent["id"]
+            round_number = (parent.get("round_number") or 1) + 1
+            prior_synthesis = _extract_prior_synthesis(parent)
+
+            prompt_eng = parent.get("prompt_engineering") or {}
+            context_eng = parent.get("context_engineering") or {}
+            root_title = parent.get("title", "New Conversation")
+            title = f"{root_title} (Round {round_number})"
+
+            conversation = storage.create_conversation(
+                conversation_id,
+                chain_id=chain_id,
+                parent_id=request.parent_id,
+                round_number=round_number,
+                prior_synthesis=prior_synthesis,
+                title=title,
+                prompt_engineering={
+                    "messages": [],
+                    "finalized_prompt": prompt_eng.get("finalized_prompt"),
+                },
+                context_engineering={
+                    "messages": [],
+                    "documents": list(context_eng.get("documents") or []),
+                    "files": list(context_eng.get("files") or []),
+                    "links": list(context_eng.get("links") or []),
+                    "finalized_context": context_eng.get("finalized_context"),
+                },
+                council_deliberation={"messages": []},
+            )
+        else:
+            conversation = storage.create_conversation(conversation_id)
+
         if conversation is None:
             raise HTTPException(
                 status_code=500,
                 detail="Failed to create conversation in database"
             )
         return conversation
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error creating conversation: {e}")
         import traceback
@@ -644,20 +703,27 @@ async def finalize_context_endpoint(conversation_id: str, request: FinalizeConte
 # ========== COUNCIL DELIBERATION ENDPOINTS ==========
 
 
-def _build_full_query_with_prior_deliberation(finalized_context: str, council_delib: dict) -> str:
+def _build_full_query_with_prior_deliberation(
+    finalized_context: str,
+    council_delib: dict,
+    prior_synthesis: str | None = None,
+) -> str:
     """
     Build the full query for council deliberation, prepending prior synthesis as RAG context
-    when assistant messages with stage3 exist.
+    when assistant messages with stage3 exist or prior_synthesis is provided (linked rounds).
     """
     base_query = f"{finalized_context}\n\n---\n\nPlease address the prompt above using the context provided."
     messages = council_delib.get("messages", [])
-    # Find last assistant message with stage3
+    prior_response = None
     for msg in reversed(messages):
         if msg.get("role") == "assistant" and msg.get("stage3"):
             prior_response = msg["stage3"].get("response") if isinstance(msg["stage3"], dict) else str(msg["stage3"])
-            if prior_response:
-                prior_section = f"## PREVIOUS COUNCIL SYNTHESIS (build on this)\n\n{prior_response}\n\n---\n\n"
-                return prior_section + base_query
+            break
+    if not prior_response and prior_synthesis:
+        prior_response = prior_synthesis
+    if prior_response:
+        prior_section = f"## PREVIOUS COUNCIL SYNTHESIS (build on this)\n\n{prior_response}\n\n---\n\n"
+        return prior_section + base_query
     return base_query
 
 
@@ -685,13 +751,11 @@ async def send_council_deliberation_message(conversation_id: str):
     if not finalized_context:
         raise HTTPException(status_code=400, detail="Context must be finalized before council deliberation")
     
-    # Combine prompt and context for the council (with prior deliberation as RAG if applicable)
-    full_query = _build_full_query_with_prior_deliberation(finalized_context, council_delib)
-    
-    # Check if this is the first council message
+    prior_synth = conversation.get("prior_synthesis")
+    full_query = _build_full_query_with_prior_deliberation(
+        finalized_context, council_delib, prior_synthesis=prior_synth
+    )
     is_first_message = len(council_delib.get("messages", [])) == 0
-
-    # Add user message
     storage.add_council_deliberation_message(conversation_id, "user", content=full_query)
 
     # If this is the first message, generate a title from the prompt
@@ -746,10 +810,10 @@ async def send_council_deliberation_stream(conversation_id: str):
     if not finalized_context:
         raise HTTPException(status_code=400, detail="Context must be finalized before council deliberation")
     
-    # Combine prompt and context for the council (with prior deliberation as RAG if applicable)
-    full_query = _build_full_query_with_prior_deliberation(finalized_context, council_delib)
-    
-    # Check if this is the first council message
+    prior_synth = conversation.get("prior_synthesis")
+    full_query = _build_full_query_with_prior_deliberation(
+        finalized_context, council_delib, prior_synthesis=prior_synth
+    )
     is_first_message = len(council_delib.get("messages", [])) == 0
 
     async def event_generator():

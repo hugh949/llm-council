@@ -21,19 +21,24 @@ export const api = {
 
   /**
    * Create a new conversation.
+   * @param {Object} [options] - Optional parameters
+   * @param {string} [options.parent_id] - ID of parent conversation for linked round
    */
-  async createConversation() {
+  async createConversation(options = {}) {
     try {
       const url = `${API_BASE}/api/conversations`;
       console.log('Creating conversation at:', url);
       console.log('API_BASE is:', API_BASE);
       
+      const body = {};
+      if (options.parent_id) body.parent_id = options.parent_id;
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify(body),
       });
       
       console.log('Response status:', response.status);

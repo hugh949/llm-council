@@ -35,36 +35,53 @@ def delete_conversation(conversation_id: str) -> bool:
     return False
 
 
-def create_conversation(conversation_id: str) -> Dict[str, Any]:
+def create_conversation(
+    conversation_id: str,
+    chain_id: Optional[str] = None,
+    parent_id: Optional[str] = None,
+    round_number: int = 1,
+    prior_synthesis: Optional[str] = None,
+    **kwargs
+) -> Dict[str, Any]:
     """
     Create a new conversation.
 
     Args:
         conversation_id: Unique identifier for the conversation
+        chain_id: ID of root conversation in chain (default: conversation_id)
+        parent_id: ID of previous round (default: None)
+        round_number: Round number in chain (default: 1)
+        prior_synthesis: Prior council synthesis for continuation rounds (default: None)
+        **kwargs: Additional fields (e.g. title, prompt_engineering, context_engineering)
 
     Returns:
         New conversation dict
     """
     ensure_data_dir()
 
+    if chain_id is None:
+        chain_id = conversation_id
+
     conversation = {
         "id": conversation_id,
         "created_at": datetime.utcnow().isoformat(),
-        "title": "New Conversation",
-        "prompt_engineering": {
-            "messages": [],
-            "finalized_prompt": None
-        },
-        "context_engineering": {
-            "messages": [],
-            "documents": [],
-            "files": [],
-            "links": [],
-            "finalized_context": None
-        },
-        "council_deliberation": {
-            "messages": []
-        }
+        "title": kwargs.get("title", "New Conversation"),
+        "chain_id": chain_id,
+        "parent_id": parent_id,
+        "round_number": round_number,
+        "prior_synthesis": prior_synthesis,
+        "prompt_engineering": kwargs.get(
+            "prompt_engineering",
+            {"messages": [], "finalized_prompt": None}
+        ),
+        "context_engineering": kwargs.get(
+            "context_engineering",
+            {"messages": [], "documents": [], "files": [], "links": [], "finalized_context": None}
+        ),
+        "council_deliberation": kwargs.get(
+            "council_deliberation",
+            {"messages": []}
+        ),
     }
 
     # Save to file
@@ -120,7 +137,17 @@ def get_conversation(conversation_id: str) -> Optional[Dict[str, Any]]:
             "messages": old_messages
         }
         # Keep messages for backward compatibility but prefer council_deliberation
-    
+
+    # Chain fields: backward compatibility
+    if "chain_id" not in conversation:
+        conversation["chain_id"] = conversation["id"]
+    if "parent_id" not in conversation:
+        conversation["parent_id"] = None
+    if "round_number" not in conversation:
+        conversation["round_number"] = 1
+    if "prior_synthesis" not in conversation:
+        conversation["prior_synthesis"] = None
+
     return conversation
 
 
@@ -160,12 +187,18 @@ def list_conversations() -> List[Dict[str, Any]]:
                 else:
                     message_count = len(data.get("messages", []))
                 
-                # Return metadata only
+                # Return metadata only; chain fields for grouping (backward compat)
+                chain_id = data.get("chain_id", data["id"])
+                parent_id = data.get("parent_id")
+                round_number = data.get("round_number", 1)
                 conversations.append({
                     "id": data["id"],
                     "created_at": data["created_at"],
                     "title": data.get("title", "New Conversation"),
-                    "message_count": message_count
+                    "message_count": message_count,
+                    "chain_id": chain_id,
+                    "parent_id": parent_id,
+                    "round_number": round_number,
                 })
 
     # Sort by creation time, newest first

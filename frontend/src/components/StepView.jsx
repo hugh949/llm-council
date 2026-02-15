@@ -5,7 +5,7 @@ import Stage3 from './Stage3';
 import './StepView.css';
 import './ChatInterface.css'; // Import ChatInterface styles for consistent council UI
 
-export default function StepView({ step, conversation, onBack, onStartRefinement }) {
+export default function StepView({ step, conversation, onBack, onStartNewRound }) {
   if (!conversation) {
     return (
       <div className="step-view">
@@ -25,16 +25,16 @@ export default function StepView({ step, conversation, onBack, onStartRefinement
   const allStepsComplete = hasStep1 && hasStep2 && hasStep3;
 
   const NewRoundBanner = () =>
-    allStepsComplete && onStartRefinement ? (
+    allStepsComplete && onStartNewRound ? (
       <div className="new-round-banner">
         <p className="new-round-hint">
-          Refine your prompt and context using the existing knowledge. The prior council synthesis will be used as context.
+          Start a new conversation round. Your prompt, context, and attachments will carry over. The prior council synthesis will be used as context.
         </p>
         <button
           type="button"
           className="new-round-button"
-          onClick={() => {
-            onStartRefinement();
+          onClick={async () => {
+            await onStartNewRound();
             onBack();
           }}
         >

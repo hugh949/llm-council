@@ -8,10 +8,18 @@ from .database import Conversation, get_db, get_session, init_db
 
 def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]:
     """Ensure conversation has the correct structure (backward compatibility)."""
+    chain_id = getattr(conversation, "chain_id", None) or conversation.id
+    parent_id = getattr(conversation, "parent_id", None)
+    round_number = getattr(conversation, "round_number", None) or 1
+    prior_synthesis = getattr(conversation, "prior_synthesis", None)
     data = {
         "id": conversation.id,
         "created_at": conversation.created_at.isoformat() if conversation.created_at else datetime.utcnow().isoformat(),
         "title": conversation.title or "New Conversation",
+        "chain_id": chain_id,
+        "parent_id": parent_id,
+        "round_number": round_number,
+        "prior_synthesis": prior_synthesis,
     }
     
     # Get JSON fields with defaults - always ensure they exist
@@ -56,40 +64,46 @@ def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]
     return data
 
 
-def create_conversation(conversation_id: str) -> Dict[str, Any]:
+def create_conversation(
+    conversation_id: str,
+    chain_id: Optional[str] = None,
+    parent_id: Optional[str] = None,
+    round_number: int = 1,
+    prior_synthesis: Optional[str] = None,
+    title: Optional[str] = None,
+    prompt_engineering: Optional[Dict[str, Any]] = None,
+    context_engineering: Optional[Dict[str, Any]] = None,
+    council_deliberation: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """Create a new conversation."""
     init_db()
-    
-    # Create default structure
-    conversation_data = {
-        "id": conversation_id,
-        "created_at": datetime.utcnow(),
-        "title": "New Conversation",
-        "prompt_engineering": {
-            "messages": [],
-            "finalized_prompt": None
-        },
-        "context_engineering": {
-            "messages": [],
-            "documents": [],
-            "files": [],
-            "links": [],
-            "finalized_context": None
-        },
-        "council_deliberation": {
-            "messages": []
-        }
+
+    if chain_id is None:
+        chain_id = conversation_id
+
+    prompt_eng = prompt_engineering or {"messages": [], "finalized_prompt": None}
+    context_eng = context_engineering or {
+        "messages": [],
+        "documents": [],
+        "files": [],
+        "links": [],
+        "finalized_context": None,
     }
-    
+    council_delib = council_deliberation or {"messages": []}
+
     db = get_session()
     try:
         conversation = Conversation(
             id=conversation_id,
-            created_at=conversation_data["created_at"],
-            title=conversation_data["title"],
-            prompt_engineering=conversation_data["prompt_engineering"],
-            context_engineering=conversation_data["context_engineering"],
-            council_deliberation=conversation_data["council_deliberation"]
+            created_at=datetime.utcnow(),
+            title=title or "New Conversation",
+            chain_id=chain_id,
+            parent_id=parent_id,
+            round_number=round_number,
+            prior_synthesis=prior_synthesis,
+            prompt_engineering=prompt_eng,
+            context_engineering=context_eng,
+            council_deliberation=council_delib,
         )
         db.add(conversation)
         db.commit()
@@ -129,6 +143,14 @@ def save_conversation(conversation: Dict[str, Any]):
         if conv:
             # Update existing
             conv.title = conversation.get("title", conv.title)
+            if "chain_id" in conversation:
+                conv.chain_id = conversation["chain_id"]
+            if "parent_id" in conversation:
+                conv.parent_id = conversation["parent_id"]
+            if "round_number" in conversation:
+                conv.round_number = conversation["round_number"]
+            if "prior_synthesis" in conversation:
+                conv.prior_synthesis = conversation["prior_synthesis"]
             conv.prompt_engineering = conversation.get("prompt_engineering", conv.prompt_engineering or {})
             conv.context_engineering = conversation.get("context_engineering", conv.context_engineering or {})
             conv.council_deliberation = conversation.get("council_deliberation", conv.council_deliberation or {})
@@ -138,9 +160,13 @@ def save_conversation(conversation: Dict[str, Any]):
                 id=conversation["id"],
                 created_at=datetime.fromisoformat(conversation.get("created_at", datetime.utcnow().isoformat())),
                 title=conversation.get("title", "New Conversation"),
+                chain_id=conversation.get("chain_id", conversation["id"]),
+                parent_id=conversation.get("parent_id"),
+                round_number=conversation.get("round_number", 1),
+                prior_synthesis=conversation.get("prior_synthesis"),
                 prompt_engineering=conversation.get("prompt_engineering", {}),
                 context_engineering=conversation.get("context_engineering", {}),
-                council_deliberation=conversation.get("council_deliberation", {})
+                council_deliberation=conversation.get("council_deliberation", {}),
             )
             db.add(conv)
         
@@ -163,11 +189,15 @@ def list_conversations() -> List[Dict[str, Any]]:
             council_delib = conv.council_deliberation or {}
             message_count = len(council_delib.get("messages", []))
             
+            chain_id = conv.chain_id if conv.chain_id else conv.id
             result.append({
                 "id": conv.id,
                 "created_at": conv.created_at.isoformat() if conv.created_at else datetime.utcnow().isoformat(),
                 "title": conv.title or "New Conversation",
-                "message_count": message_count
+                "message_count": message_count,
+                "chain_id": chain_id,
+                "parent_id": conv.parent_id,
+                "round_number": conv.round_number or 1,
             })
         
         return result

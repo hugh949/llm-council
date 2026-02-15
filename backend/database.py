@@ -18,6 +18,12 @@ class Conversation(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     title = Column(String, default="New Conversation", nullable=False)
     
+    # Chain fields for multi-round deliberation grouping
+    chain_id = Column(String, nullable=True)  # Root conversation ID; null = use id
+    parent_id = Column(String, nullable=True)  # Previous round ID; null for first round
+    round_number = Column(Integer, default=1, nullable=True)
+    prior_synthesis = Column(Text, nullable=True)  # Prior Stage 3 synthesis for continuation
+    
     # JSON fields for complex nested data
     prompt_engineering = Column(JSON, default=dict)
     context_engineering = Column(JSON, default=dict)
@@ -81,10 +87,31 @@ def get_engine():
     return engine
 
 
+def _migrate_add_chain_columns(engine):
+    """Add chain_id, parent_id, round_number, prior_synthesis if missing (migration)."""
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            r = conn.execute(text("PRAGMA table_info(conversations)"))
+            cols = [row[1] for row in r.fetchall()]
+            for col, sql_type in [
+                ("chain_id", "TEXT"),
+                ("parent_id", "TEXT"),
+                ("round_number", "INTEGER"),
+                ("prior_synthesis", "TEXT"),
+            ]:
+                if col not in cols:
+                    conn.execute(text(f"ALTER TABLE conversations ADD COLUMN {col} {sql_type}"))
+                    conn.commit()
+    except Exception:
+        pass  # Table may not exist yet; create_all handles that
+
+
 def init_db():
     """Initialize database tables."""
     engine = get_engine()
     Base.metadata.create_all(engine)
+    _migrate_add_chain_columns(engine)
     return engine
 
 
