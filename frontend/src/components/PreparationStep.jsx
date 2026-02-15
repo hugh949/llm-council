@@ -19,6 +19,7 @@ export default function PreparationStep({
   onUploadFile,
   onAddLink,
   onPackageContext,
+  onSubmitToCouncil,
   onReloadConversation,
   isLoading,
 }) {
@@ -159,30 +160,21 @@ export default function PreparationStep({
     }, 50);
   };
 
-  const handleProceedToReview = async () => {
-    try {
-      await onPackageContext();
-      if (onReloadConversation) await onReloadConversation();
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
-    } catch (error) {
-      console.error('Error packaging:', error);
-      alert(`Failed: ${error.message || 'Unknown'}`);
-    }
-  };
-
-  const isComplete = !!finalizedPrompt && !!finalizedContext;
-  const showTransitionBar = finalizedPrompt && !showFinalizeForm && (!finalizedContext || isContinuation);
+  const lastUserMessage = messages.filter((m) => m.role === 'user').pop()?.content || '';
+  const promptToUse =
+    finalizedPrompt && (!isEditingPrompt || !input.trim())
+      ? finalizedPrompt
+      : (input.trim() || lastUserMessage);
+  const canSubmit = !!promptToUse.trim() && !isLoading && onSubmitToCouncil;
 
   return (
-    <div className={`preparation-step ${showTransitionBar ? 'has-transition-bar' : ''}`}>
+    <div className="preparation-step">
       <ProgressIndicator
-        currentStep={1}
-        step1Complete={isComplete}
-        step2Complete={false}
-        step3Complete={false}
+        prepared={!!finalizedPrompt && !!finalizedContext}
+        deliberated={false}
       />
       <div className="stage-header">
-        <h2>Step 1: Prepare for Council</h2>
+        <h2>Prepare for Council</h2>
         <p className="stage-description">
           Refine your prompt and add context in one place. Chat with the assistant—it will ask questions, help sharpen your thinking, and suggest when to attach documents for better results.
         </p>
@@ -260,8 +252,8 @@ export default function PreparationStep({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat input - visible when not in finalize form; in refinement mode always show so user can edit prior prompt */}
-          {!showFinalizeForm && (!isComplete || isContinuation) && (
+          {/* Chat input - visible when not in finalize form */}
+          {!showFinalizeForm && (
             <div className="input-section">
               {finalizedPrompt && !isEditingPrompt && (
                 <div className="finalized-prompt-bar">
@@ -285,6 +277,16 @@ export default function PreparationStep({
                   <button type="submit" className="send-button" disabled={!input.trim() || isLoading}>
                     Send
                   </button>
+                  {canSubmit && (
+                    <button
+                      type="button"
+                      className="proceed-button large"
+                      onClick={() => onSubmitToCouncil(promptToUse.trim())}
+                      disabled={!canSubmit}
+                    >
+                      Submit to Council
+                    </button>
+                  )}
                   {finalizedPrompt && isEditingPrompt && input.trim() && (
                     <button
                       type="button"
@@ -430,25 +432,6 @@ export default function PreparationStep({
         </div>
       </div>
 
-      {/* Sticky: Continue to Review when prompt finalized; in refinement mode allow re-package */}
-      {showTransitionBar && (
-        <div className="step-transition-bar sticky-bottom">
-          <div className="transition-content">
-            <div className="transition-text">
-              <strong>{isContinuation ? 'Ready to re-package' : 'Prompt finalized'}</strong>
-              <p>{isContinuation ? 'Package context with your updated prompt and continue to Final Review.' : 'Package context and continue to Final Review before council deliberation.'}</p>
-            </div>
-            <button
-              type="button"
-              className="proceed-button large"
-              onClick={handleProceedToReview}
-              disabled={isLoading}
-            >
-              → Continue to Final Review
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

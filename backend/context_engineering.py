@@ -104,8 +104,8 @@ async def package_context(
     relevant chunks from attachments, rather than including everything.
     
     Order of priority (from highest to lowest):
-    1. Prompt from Step 1
-    2. Manually typed context from Step 2 chat (user messages)
+    1. Prompt (primary question)
+    2. Manually typed context from preparation chat (user messages)
     3. Retrieved relevant chunks from attachments (via RAG) - if use_rag=True
     4. All attachments (documents and files) - if use_rag=False
     5. External links
@@ -115,7 +115,7 @@ async def package_context(
         documents: List of text documents
         files: List of parsed files (PDF, Word, Excel, PowerPoint)
         links: List of URL content
-        finalized_prompt: The finalized prompt from stage 1
+        finalized_prompt: The finalized prompt from preparation
         use_rag: Whether to use RAG for intelligent chunk retrieval (default: True)
         
     Returns:
@@ -136,9 +136,9 @@ async def package_context(
             manual_context_section = f"""
 ---
 
-## MANUALLY PROVIDED CONTEXT (Step 2 Chat)
+## MANUALLY PROVIDED CONTEXT (Preparation Chat)
 
-The following context was manually provided during the context engineering conversation:
+The following context was manually provided during the preparation conversation:
 
 {manual_context_text}
 """
@@ -199,7 +199,7 @@ The following context was manually provided during the context engineering conve
     
     # Combine everything in priority order:
     # 1. Prompt (highest priority)
-    # 2. Manual context from Step 2 chat
+    # 2. Manual context from preparation chat
     # 3. Attachments (documents + files)
     # 4. External links (lowest priority)
     
@@ -239,7 +239,7 @@ The following context was manually provided during the context engineering conve
     has_attachments = bool(documents_section or files_section) or has_rag_chunks
     has_links = bool(links_section)
     
-    instructions_list = ["1. **Prompt from Step 1** (above) - This is the primary question or task to address"]
+    instructions_list = ["1. **Prompt** (above) - This is the primary question or task to address"]
     priority_num = 2
     
     if has_manual_context:
@@ -272,7 +272,7 @@ The following context was manually provided during the context engineering conve
     
     packaged_context = f"""# COUNCIL DELIBERATION REQUEST
 
-## PROMPT TO ADDRESS (Step 1)
+## PROMPT TO ADDRESS
 
 {finalized_prompt}{manual_context_section}{attachments_section}{links_section}
 

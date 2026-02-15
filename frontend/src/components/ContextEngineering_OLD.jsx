@@ -179,10 +179,8 @@ export default function ContextEngineering({
   return (
     <div className="context-engineering">
       <ProgressIndicator 
-        currentStep={2}
-        step1Complete={true}
-        step2Complete={!!finalizedContext}
-        step3Complete={false}
+        prepared={true}
+        deliberated={!!finalizedContext}
       />
       <div className="stage-header">
         <h2>Step 2: Context Engineering - Add Intelligence with RAG</h2>

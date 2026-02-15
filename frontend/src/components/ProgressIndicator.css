@@ -69,8 +69,13 @@
   font-weight: bold;
 }
 
-.step-number {
+.step-number,
+.step-dot {
   font-size: 20px;
+}
+
+.step-dot {
+  line-height: 1;
 }
 
 .step-label {

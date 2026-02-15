@@ -16,7 +16,7 @@ export default function Stage3({ finalResponse }) {
   return (
     <div className={`stage stage3 ${isError ? 'stage3-error' : ''}`}>
       <h3 className="stage-title">
-        {isError ? '⚠️ Stage 3: Synthesis Error' : 'Stage 3: Final Council Answer'}
+        {isError ? '⚠️ Synthesis Error' : 'Final Council Answer'}
       </h3>
       <div className={`final-response ${isError ? 'error-response' : ''}`}>
         <div className="chairman-label">

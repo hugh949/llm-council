@@ -77,10 +77,8 @@ export default function PromptEngineering({
   return (
     <div className="prompt-engineering">
       <ProgressIndicator 
-        currentStep={1}
-        step1Complete={!!finalizedPrompt}
-        step2Complete={false}
-        step3Complete={false}
+        prepared={!!finalizedPrompt}
+        deliberated={false}
       />
       <div className="stage-header">
         <h2>Step 1: Prompt Engineering</h2>

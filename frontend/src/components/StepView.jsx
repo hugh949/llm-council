@@ -49,7 +49,7 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
         if (!promptEng.finalized_prompt) {
           return (
             <div className="step-empty">
-              <p>Step 1 has not been completed yet.</p>
+              <p>Preparation has not been completed yet.</p>
               <p className="hint">Start by describing what you want to achieve.</p>
             </div>
           );
@@ -58,8 +58,8 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
           <div className="step-content-full">
             <NewRoundBanner />
             <div className="step-header-full">
-              <span className="step-badge">Step 1</span>
-              <h2>Prompt Engineering</h2>
+              <span className="step-badge">Prompt</span>
+              <h2>Prepare for Council</h2>
             </div>
             <div className="content-section">
               <h3>Finalized Prompt</h3>
@@ -89,7 +89,7 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
         if (!contextEng.finalized_context) {
           return (
             <div className="step-empty">
-              <p>Step 2 has not been completed yet.</p>
+              <p>Context has not been completed yet.</p>
               <p className="hint">Add documents, files, or links to build context.</p>
             </div>
           );
@@ -98,8 +98,8 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
           <div className="step-content-full">
             <NewRoundBanner />
             <div className="step-header-full">
-              <span className="step-badge">Step 2</span>
-              <h2>Context Engineering</h2>
+              <span className="step-badge">Context</span>
+              <h2>Prepare for Council</h2>
             </div>
 
             {/* Summary */}
@@ -188,7 +188,7 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
             {contextEng.messages && contextEng.messages.filter(msg => msg.role === 'user').length > 0 && (
               <div className="content-section priority-section">
                 <h3>📝 Manually Provided Context (Priority: High)</h3>
-                <p className="section-note">This context was manually typed during the conversation and will be prioritized in Step 3.</p>
+                <p className="section-note">This context was manually typed during the conversation and will be prioritized in Council Deliberation.</p>
                 <div className="messages-list">
                   {contextEng.messages
                     .filter(msg => msg.role === 'user')
@@ -207,7 +207,7 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
             {/* Packaged Context */}
             {contextEng.finalized_context && (
               <div className="content-section">
-                <h3>📦 Packaged Context (Ready for Step 3)</h3>
+                <h3>📦 Packaged Context (Ready for Council)</h3>
                 <p className="section-note">This is the complete context that will be sent to the Council Deliberation, ordered by priority.</p>
                 <div className="content-body packaged-context">
                   <ReactMarkdown>{contextEng.finalized_context}</ReactMarkdown>
@@ -240,7 +240,7 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
         if (!councilDelib.messages || councilDelib.messages.length === 0) {
           return (
             <div className="step-empty">
-              <p>Step 3 has not been completed yet.</p>
+              <p>Council deliberation has not been completed yet.</p>
               <p className="hint">Start the council deliberation to see results.</p>
             </div>
           );
@@ -256,13 +256,12 @@ export default function StepView({ step, conversation, onBack, onStartNewRound }
           <div className="step-view-council">
             <NewRoundBanner />
             <div className="step-header-full">
-              <span className="step-badge">Step 3</span>
+              <span className="step-badge">Deliberation</span>
               <h2>Council Deliberation</h2>
             </div>
             <div className="council-messages-container">
               {formattedConversation.messages.map((msg, index) => {
-                // Skip user messages in Step 3 view - they contain the full context
-                // which is already shown in Step 2, so we don't need to repeat it
+                // Skip user messages - they contain the full context
                 if (msg.role === 'user') {
                   return null;
                 } else if (msg.role === 'assistant') {

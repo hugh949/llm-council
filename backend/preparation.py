@@ -14,7 +14,8 @@ async def get_preparation_response(
     user_message: str,
     documents: List[Dict[str, Any]] = None,
     files: List[Dict[str, Any]] = None,
-    links: List[Dict[str, Any]] = None
+    links: List[Dict[str, Any]] = None,
+    prior_synthesis: Optional[str] = None
 ) -> Optional[str]:
     """
     Get a response from the unified preparation assistant.
@@ -41,7 +42,7 @@ async def get_preparation_response(
     if links is None:
         links = []
 
-    system_message = """You are an expert preparation assistant helping the user get ready for a multi-LLM council deliberation. Your role combines prompt engineering and context engineering.
+    base_system = """You are an expert preparation assistant helping the user get ready for a multi-LLM council deliberation. Your role combines prompt engineering and context engineering.
 
 ## Your Capabilities
 1. **Critical Thinking & Probing Questions**: Ask thoughtful, targeted questions to help the user clarify their goals, scope, and desired output. Don't assume—probe to uncover hidden requirements, edge cases, and constraints.
@@ -57,6 +58,21 @@ async def get_preparation_response(
 - Once the prompt is clear and well-supported (with or without attachments), suggest they finalize and run the council.
 - Keep responses concise but substantive.
 - Consider: What would a council of expert LLMs need to give a great answer?"""
+
+    prior_context = ""
+    if prior_synthesis and prior_synthesis.strip():
+        prior_context = f"""
+
+## Prior Deliberation Context
+
+The user is refining a prompt that was already deliberated on. Here is what the council previously concluded:
+
+{prior_synthesis[:4000]}{'...' if len(prior_synthesis) > 4000 else ''}
+
+Your job: Help the user identify what was missing, what needs deeper analysis, what assumptions should be challenged, and how to sharpen the prompt for a better second round. Do NOT repeat the prior synthesis. Push the user to go further with probing questions and critical thinking.
+"""
+
+    system_message = base_system + prior_context
 
     messages = [{"role": "system", "content": system_message}]
     

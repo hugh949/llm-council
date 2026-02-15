@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import ProgressIndicator from './ProgressIndicator';
 import './ReviewStage.css';
 
 export default function ReviewStage({
@@ -31,11 +30,6 @@ export default function ReviewStage({
 
   return (
     <div className="review-stage">
-      <ProgressIndicator 
-        currentStep={2}
-        step1Complete={true}
-        step2Complete={false}
-      />
       <div className="review-header">
         <h2>Final Review — What Will Be Sent to the Council</h2>
         <p className="review-description">

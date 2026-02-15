@@ -502,9 +502,10 @@ async def send_preparation_message(conversation_id: str, request: SendMessageReq
         
         storage.add_prompt_engineering_message(conversation_id, "user", request.content)
         storage.add_context_engineering_message(conversation_id, "user", request.content)
-        
+
+        prior_synth = conversation.get("prior_synthesis")
         response = await get_preparation_response(
-            messages, request.content, documents, files, links
+            messages, request.content, documents, files, links, prior_synthesis=prior_synth
         )
         
         if response is None:
@@ -722,7 +723,24 @@ def _build_full_query_with_prior_deliberation(
     if not prior_response and prior_synthesis:
         prior_response = prior_synthesis
     if prior_response:
-        prior_section = f"## PREVIOUS COUNCIL SYNTHESIS (build on this)\n\n{prior_response}\n\n---\n\n"
+        prior_section = f"""## PRIOR COUNCIL DELIBERATION
+
+The following synthesis was produced in a previous round of deliberation. The user has reviewed it and refined their prompt specifically to address gaps and push deeper.
+
+{prior_response}
+
+---
+
+CRITICAL INSTRUCTIONS FOR THIS ROUND:
+- You MUST NOT simply repeat or rephrase the prior synthesis.
+- Identify specific gaps, weaknesses, or assumptions in the prior response.
+- Provide NEW analysis, deeper reasoning, or alternative perspectives.
+- If the refined prompt asks about something the prior round missed, focus there.
+- Build upon what was correct but push significantly beyond it.
+
+---
+
+"""
         return prior_section + base_query
     return base_query
 

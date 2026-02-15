@@ -3,7 +3,6 @@ import Sidebar from './components/Sidebar';
 import PromptEngineering from './components/PromptEngineering';
 import ContextEngineering from './components/ContextEngineering';
 import PreparationStep from './components/PreparationStep';
-import ReviewStage from './components/ReviewStage';
 import ChatInterface from './components/ChatInterface';
 import StepView from './components/StepView';
 import { api } from './api';
@@ -240,17 +239,13 @@ function App() {
       councilMessagesCount: councilMessages.length
     });
     
-    // Merged preparation step: when prompt or context not ready
-    if (!promptFinalized || !contextFinalized) {
-      console.log('🔍 getCurrentStage: Returning preparation');
-      return 'preparation';
+    // Preparation until council has run; no separate review stage
+    if (councilMessages.length > 0) {
+      console.log('🔍 getCurrentStage: Returning council_deliberation');
+      return 'council_deliberation';
     }
-    if (contextFinalized && councilMessages.length === 0) {
-      console.log('🔍 getCurrentStage: Returning review (context finalized, no council messages)');
-      return 'review';
-    }
-    console.log('🔍 getCurrentStage: Returning council_deliberation');
-    return 'council_deliberation';
+    console.log('🔍 getCurrentStage: Returning preparation');
+    return 'preparation';
   };
 
   const handlePreparationMessage = async (content) => {
@@ -573,12 +568,29 @@ function App() {
     try {
       const result = await api.packageContext(currentConversationId);
       setCurrentConversation(result.conversation);
-      // After packaging, we'll automatically show the review stage
     } catch (error) {
       console.error('Failed to package context:', error);
       alert(`Error: ${error.message || 'Failed to package context'}`);
     } finally {
       setContextLoading(false);
+    }
+  };
+
+  const handleSubmitToCouncil = async (promptText) => {
+    if (!currentConversationId || !promptText?.trim()) return;
+    setPromptLoading(true);
+    try {
+      const promptEng = currentConversation?.prompt_engineering || {};
+      if (!promptEng.finalized_prompt || promptEng.finalized_prompt !== promptText.trim()) {
+        await api.finalizePrompt(currentConversationId, promptText.trim());
+      }
+      await handlePackageContext();
+      setPromptLoading(false);
+      await handleStartCouncilDeliberation();
+    } catch (error) {
+      console.error('Submit to Council failed:', error);
+      setPromptLoading(false);
+      alert(`Error: ${error.message || 'Failed to submit to council.'}`);
     }
   };
 
@@ -1154,6 +1166,7 @@ function App() {
             onUploadFile={handleUploadFile}
             onAddLink={handleAddLink}
             onPackageContext={handlePackageContext}
+            onSubmitToCouncil={handleSubmitToCouncil}
             onReloadConversation={() => loadConversation(currentConversationId)}
             isLoading={promptLoading}
           />
@@ -1162,7 +1175,7 @@ function App() {
 
       case 'prompt_engineering': {
         console.log('🎨 renderStage: Rendering PromptEngineering', { finalizedPromptExists: !!promptEng.finalized_prompt });
-        // Extract prior deliberation summary for refinement mode (last Stage 3 synthesis)
+        // Extract prior deliberation summary (last council synthesis)
         let priorDeliberationSummary = null;
         const councilMsgs = councilDelib.messages || [];
         for (let i = councilMsgs.length - 1; i >= 0; i--) {
@@ -1232,63 +1245,12 @@ function App() {
           );
         }
 
-      case 'review':
-        // Ensure we have the required data
-        if (!promptEng.finalized_prompt || !contextEng.finalized_context) {
-          return (
-            <div className="empty-state">
-              <h2>Loading Review...</h2>
-              <p>Preparing the review stage...</p>
-            </div>
-          );
-        }
-        return (
-          <ReviewStage
-            finalizedPrompt={promptEng.finalized_prompt}
-            documents={contextEng.documents || []}
-            files={contextEng.files || []}
-            links={contextEng.links || []}
-            packagedContext={contextEng.finalized_context}
-            onEditPrompt={handleEditPrompt}
-            onEditContext={handleEditContext}
-            onProceedToCouncil={handleStartCouncilDeliberation}
-            isProceeding={isLoading}
-          />
-        );
-
       case 'council_deliberation':
         // Convert council_deliberation format to format expected by ChatInterface
         const formattedConversation = {
           ...currentConversation,
           messages: councilDelib.messages || [],
         };
-
-        // Show start button if no messages yet
-        if (councilDelib.messages.length === 0) {
-          return (
-            <div className="empty-state" style={{ padding: '40px' }}>
-              <h2>Step 3: Council Deliberation</h2>
-              <p>Ready to start the council deliberation with your finalized prompt and context.</p>
-              <button
-                onClick={handleStartCouncilDeliberation}
-                disabled={isLoading}
-                style={{
-                  marginTop: '20px',
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  backgroundColor: '#4a90e2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  opacity: isLoading ? 0.6 : 1,
-                }}
-              >
-                {isLoading ? 'Starting...' : 'Start Council Deliberation'}
-              </button>
-            </div>
-          );
-        }
 
         return (
           <ChatInterface

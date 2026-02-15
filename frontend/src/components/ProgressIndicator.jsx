@@ -1,19 +1,16 @@
 import './ProgressIndicator.css';
 
-export default function ProgressIndicator({ currentStep, step1Complete, step2Complete, step3Complete }) {
-  const getStepStatus = (step) => {
-    if (step === 1) return step1Complete ? 'completed' : currentStep === 1 ? 'active' : 'pending';
-    if (step === 2) return (step2Complete ?? step3Complete) ? 'completed' : currentStep === 2 || currentStep === 3 ? 'active' : 'pending';
-    return 'pending';
-  };
+export default function ProgressIndicator({ prepared, deliberated }) {
+  const step1Status = prepared ? 'completed' : 'active';
+  const step2Status = deliberated ? 'completed' : (prepared ? 'active' : 'pending');
 
-  const StepCircle = ({ step, status, label }) => (
+  const StepCircle = ({ status, label }) => (
     <div className={`progress-step ${status}`}>
       <div className="step-circle">
         {status === 'completed' ? (
           <span className="step-checkmark">✓</span>
         ) : (
-          <span className="step-number">{step}</span>
+          <span className="step-dot" aria-hidden="true">•</span>
         )}
       </div>
       <div className="step-label">{label}</div>
@@ -22,9 +19,9 @@ export default function ProgressIndicator({ currentStep, step1Complete, step2Com
 
   return (
     <div className="progress-indicator">
-      <StepCircle step={1} status={getStepStatus(1)} label="Prepare for Council" />
-      <div className={`progress-line ${getStepStatus(2) !== 'pending' || getStepStatus(1) === 'completed' ? 'active' : ''}`} />
-      <StepCircle step={2} status={getStepStatus(2)} label="Council Deliberation" />
+      <StepCircle status={step1Status} label="Prepare for Council" />
+      <div className={`progress-line ${step2Status !== 'pending' || step1Status === 'completed' ? 'active' : ''}`} />
+      <StepCircle status={step2Status} label="Council Deliberation" />
     </div>
   );
 }
