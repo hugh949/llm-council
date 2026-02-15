@@ -34,6 +34,7 @@ export default function PreparationStep({
   const [priorDeliberationExpanded, setPriorDeliberationExpanded] = useState(false); // Collapsed to reduce scroll
   const [refinementPanelExpanded, setRefinementPanelExpanded] = useState(false); // Collapsed by default
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [suggestedPromptText, setSuggestedPromptText] = useState(null); // When set, shows editable "Suggested Final Prompt" panel
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const hasPreFilledRef = useRef(false);
@@ -76,18 +77,23 @@ export default function PreparationStep({
     try {
       const result = await onSuggestFinal();
       const suggested = result.suggested_prompt || '';
-      setInput(suggested);
-      setTimeout(() => {
-        const el = document.querySelector('.message-input');
-        if (el) {
-          el.focus();
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
+      setSuggestedPromptText(suggested);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
       console.error('Failed to suggest final prompt:', error);
     }
   };
+
+  const handleDismissSuggestedPrompt = () => {
+    setSuggestedPromptText(null);
+  };
+
+  const promptForSubmit =
+    suggestedPromptText !== null
+      ? suggestedPromptText.trim()
+      : finalizedPrompt && !isEditingPrompt
+        ? finalizedPrompt
+        : (input.trim() || lastUserMessage);
 
   const handleAddDocument = async (e) => {
     e.preventDefault();
@@ -141,11 +147,7 @@ export default function PreparationStep({
   };
 
   const lastUserMessage = messages.filter((m) => m.role === 'user').pop()?.content || '';
-  const promptToUse =
-    finalizedPrompt && (!isEditingPrompt || !input.trim())
-      ? finalizedPrompt
-      : (input.trim() || lastUserMessage);
-  const canSubmit = !!promptToUse.trim() && !isLoading && onSubmitToCouncil;
+  const canSubmit = !!promptForSubmit.trim() && !isLoading && onSubmitToCouncil;
 
   return (
     <div className="preparation-step">
@@ -210,8 +212,12 @@ export default function PreparationStep({
         <div className="preparation-main">
           <div className="messages-container">
             {messages.length === 0 ? (
-              <div className="empty-state">
-                <p>Describe what you want to achieve. The assistant will ask questions and suggest when to add documents.</p>
+              <div className="message assistant opening-message">
+                <div className="message-label">Assistant</div>
+                <div className="message-content markdown-content">
+                  <p><strong>How can I help with your Council Preparation?</strong></p>
+                  <p>I'm an expert critical thinking prompt engineer. Describe what you're trying to achieve, and I'll ask the right questions to sharpen your prompt. You can also attach documents—I'll use them to tailor my guidance. When you're ready, click "Suggest Final Prompt" to get a draft you can review and edit before submitting for deliberation.</p>
+                </div>
               </div>
             ) : (
               messages.map((msg, i) => (
@@ -241,6 +247,38 @@ export default function PreparationStep({
                   </button>
                 </div>
               )}
+              {suggestedPromptText !== null && (
+                <div className="suggested-prompt-panel">
+                  <div className="suggested-prompt-header">
+                    <strong>Suggested Final Prompt</strong>
+                    <span className="suggested-prompt-hint">Review and edit below, then submit for deliberation</span>
+                    <button type="button" className="dismiss-suggested-btn" onClick={handleDismissSuggestedPrompt} aria-label="Dismiss">×</button>
+                  </div>
+                  <textarea
+                    className="suggested-prompt-textarea"
+                    value={suggestedPromptText}
+                    onChange={(e) => setSuggestedPromptText(e.target.value)}
+                    placeholder="Edit the suggested prompt..."
+                    rows={6}
+                  />
+                  <div className="suggested-prompt-actions">
+                    <button type="button" className="edit-prompt-btn" onClick={handleDismissSuggestedPrompt}>
+                      Dismiss
+                    </button>
+                    <button
+                      type="button"
+                      className="proceed-button large"
+                      onClick={() => {
+                        if (promptForSubmit.trim()) onSubmitToCouncil(promptForSubmit.trim());
+                        setSuggestedPromptText(null);
+                      }}
+                      disabled={!promptForSubmit.trim() || isLoading}
+                    >
+                      Submit for Deliberation
+                    </button>
+                  </div>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="input-form">
                 <textarea
                   className="message-input"
@@ -255,14 +293,14 @@ export default function PreparationStep({
                   <button type="submit" className="send-button" disabled={!input.trim() || isLoading}>
                     Send
                   </button>
-                  {canSubmit && (
+                  {canSubmit && suggestedPromptText === null && (
                     <button
                       type="button"
                       className="proceed-button large"
-                      onClick={() => onSubmitToCouncil(promptToUse.trim())}
+                      onClick={() => onSubmitToCouncil(promptForSubmit.trim())}
                       disabled={!canSubmit}
                     >
-                      Submit to Council
+                      Submit for Deliberation
                     </button>
                   )}
                   {(messages.length > 0 || (isContinuation && input.trim()) || input.trim()) && (

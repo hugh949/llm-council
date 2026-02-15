@@ -43,20 +43,18 @@ async def get_preparation_response(
     if links is None:
         links = []
 
-    base_system = """You are an expert preparation assistant helping the user get ready for a multi-LLM council deliberation. Your role combines prompt engineering and context engineering.
+    base_system = """You are an expert critical thinking prompt engineer helping the user prepare for a multi-LLM council deliberation. Your job is to ask the right questions—probing, clarifying, and sharpening—so their prompt is ready for deliberation.
 
-## Your Capabilities
-1. **Critical Thinking & Probing Questions**: Ask thoughtful, targeted questions to help the user clarify their goals, scope, and desired output. Don't assume—probe to uncover hidden requirements, edge cases, and constraints.
-2. **Prompt Refinement**: Help structure their idea into a clear, logical, and effective prompt that will work well with multiple LLMs.
-3. **RAG & Context Suggestions**: When appropriate, suggest that the user attach documents, files, or links that would improve the council's responses. For example:
-   - "Have you considered attaching [type of document]? It could help the council understand [specific aspect]."
-   - "If you have reference materials, guidelines, or examples relevant to this topic, adding them would strengthen the deliberation."
-   - "Documents like technical specs, prior analyses, or policy documents could provide valuable context here."
+## Your Approach
+1. **Start by asking how you can help**: Invite the user to describe what they want to achieve.
+2. **Ask the right questions**: As an expert prompt engineer, you know what makes a prompt effective. Ask targeted questions about goals, scope, constraints, desired output format, and edge cases. Don't assume—probe.
+3. **Use attached documents in your guidance**: When the user has attached documents, files, or links, explicitly reference them. Incorporate what they provide into your questions and suggestions. If they attach a report, spec, or reference, use it to ask more focused questions and refine the prompt around that context.
+4. **Suggest attachments when useful**: If the prompt could benefit from reference materials, suggest they add documents. Once attached, actively use them in your guidance.
+5. **Suggest finalization when ready**: When the prompt is clear and well-supported (with or without attachments), suggest they use "Suggest Final Prompt" to get a draft they can review and submit for deliberation.
 
 ## Guidelines
 - Be conversational and supportive. Ask one or two focused questions at a time.
-- When the prompt seems vague or could benefit from domain-specific context, suggest RAG attachments.
-- Once the prompt is clear and well-supported (with or without attachments), suggest they finalize and run the council.
+- When documents are attached: reference specific content or themes when giving guidance.
 - Keep responses concise but substantive.
 - Consider: What would a council of expert LLMs need to give a great answer?"""
 
@@ -90,23 +88,46 @@ The user already discussed the following in the previous round. Do NOT re-ask qu
         if msg.get("role") != "system":
             messages.append(msg)
     
-    # Add attachment summary if any
+    # Add attachment summary and document content for the assistant to consume
     attachment_info = []
+    doc_content_section = ""
     if documents:
         attachment_info.append(f"{len(documents)} text document(s)")
+        # Include document content (truncated) so the assistant can use it in guidance
+        for doc in documents:
+            name = doc.get("name", "Untitled")
+            content = doc.get("content", "")
+            if content:
+                excerpt = content[:2500] + ("..." if len(content) > 2500 else "")
+                doc_content_section += f"\n\n--- Document: {name} ---\n{excerpt}"
     if files:
         names = [f.get("name", "file") for f in files[:5]]
         if len(files) > 5:
             names.append(f"...+{len(files)-5} more")
         attachment_info.append(f"Files: {', '.join(names)}")
+        # Include extracted file content when available
+        for f in files[:3]:  # Limit to first 3 files to avoid token overflow
+            content = f.get("content") or f.get("extracted_text") or ""
+            if content:
+                name = f.get("name", "File")
+                excerpt = content[:2500] + ("..." if len(content) > 2500 else "")
+                doc_content_section += f"\n\n--- File: {name} ---\n{excerpt}"
     if links:
         attachment_info.append(f"{len(links)} link(s)")
-    
-    # Add user message with optional attachment context
+        for link in links[:2]:  # Include first 2 link contents if available
+            content = link.get("content", "")
+            if content:
+                name = link.get("original_url", "Link")[:60]
+                excerpt = content[:2000] + ("..." if len(content) > 2000 else "")
+                doc_content_section += f"\n\n--- Link: {name} ---\n{excerpt}"
+
+    # Build user message: include attachment summary and document content for guidance
     if attachment_info:
         user_content = f"{user_message}\n\n[Attachments: {'; '.join(attachment_info)}]"
     else:
         user_content = user_message
+    if doc_content_section:
+        user_content += f"\n\n## Attached content (use this in your guidance):{doc_content_section}"
     messages.append({"role": "user", "content": user_content})
     
     response = await query_model(PROMPT_ENGINEERING_MODEL, messages, timeout=60.0)

@@ -291,9 +291,9 @@ function App() {
       setPromptLoading(false);
       await handleStartCouncilDeliberation();
     } catch (error) {
-      console.error('Submit to Council failed:', error);
+      console.error('Submit for Deliberation failed:', error);
       setPromptLoading(false);
-      alert(`Error: ${error.message || 'Failed to submit to council.'}`);
+      alert(`Error: ${error.message || 'Failed to submit for deliberation.'}`);
     }
   };
 

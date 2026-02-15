@@ -123,7 +123,7 @@ export default function ChatInterface({
         onStartNewRound && (
         <div className="refinement-actions">
           <p className="refinement-hint">
-            Start a new conversation round. Your prompt, context, and attachments will carry over.
+            Scroll up to see all stages and what each council member said. Start a new round to refine and deliberate again—your prompt, context, and attachments will carry over.
           </p>
           <button
             type="button"

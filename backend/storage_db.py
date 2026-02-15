@@ -12,6 +12,7 @@ def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]
     parent_id = getattr(conversation, "parent_id", None)
     round_number = getattr(conversation, "round_number", None) or 1
     prior_synthesis = getattr(conversation, "prior_synthesis", None)
+    prior_preparation_summary = getattr(conversation, "prior_preparation_summary", None)
     data = {
         "id": conversation.id,
         "created_at": conversation.created_at.isoformat() if conversation.created_at else datetime.utcnow().isoformat(),
@@ -20,6 +21,7 @@ def _ensure_conversation_structure(conversation: Conversation) -> Dict[str, Any]
         "parent_id": parent_id,
         "round_number": round_number,
         "prior_synthesis": prior_synthesis,
+        "prior_preparation_summary": prior_preparation_summary,
     }
     
     # Get JSON fields with defaults - always ensure they exist
@@ -70,6 +72,7 @@ def create_conversation(
     parent_id: Optional[str] = None,
     round_number: int = 1,
     prior_synthesis: Optional[str] = None,
+    prior_preparation_summary: Optional[str] = None,
     title: Optional[str] = None,
     prompt_engineering: Optional[Dict[str, Any]] = None,
     context_engineering: Optional[Dict[str, Any]] = None,
@@ -101,6 +104,7 @@ def create_conversation(
             parent_id=parent_id,
             round_number=round_number,
             prior_synthesis=prior_synthesis,
+            prior_preparation_summary=prior_preparation_summary,
             prompt_engineering=prompt_eng,
             context_engineering=context_eng,
             council_deliberation=council_delib,

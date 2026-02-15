@@ -23,6 +23,7 @@ class Conversation(Base):
     parent_id = Column(String, nullable=True)  # Previous round ID; null for first round
     round_number = Column(Integer, default=1, nullable=True)
     prior_synthesis = Column(Text, nullable=True)  # Prior Stage 3 synthesis for continuation
+    prior_preparation_summary = Column(Text, nullable=True)  # Summary of prior preparation conversation
     
     # JSON fields for complex nested data
     prompt_engineering = Column(JSON, default=dict)
@@ -88,17 +89,25 @@ def get_engine():
 
 
 def _migrate_add_chain_columns(engine):
-    """Add chain_id, parent_id, round_number, prior_synthesis if missing (migration)."""
+    """Add chain_id, parent_id, round_number, prior_synthesis, prior_preparation_summary if missing (migration)."""
     from sqlalchemy import text
+    db_url = str(engine.url)
     try:
         with engine.connect() as conn:
-            r = conn.execute(text("PRAGMA table_info(conversations)"))
-            cols = [row[1] for row in r.fetchall()]
+            if db_url.startswith("sqlite"):
+                r = conn.execute(text("PRAGMA table_info(conversations)"))
+                cols = [row[1] for row in r.fetchall()]
+            else:
+                r = conn.execute(text(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'conversations'"
+                ))
+                cols = [row[0] for row in r.fetchall()]
             for col, sql_type in [
                 ("chain_id", "TEXT"),
                 ("parent_id", "TEXT"),
                 ("round_number", "INTEGER"),
                 ("prior_synthesis", "TEXT"),
+                ("prior_preparation_summary", "TEXT"),
             ]:
                 if col not in cols:
                     conn.execute(text(f"ALTER TABLE conversations ADD COLUMN {col} {sql_type}"))
