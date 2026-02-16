@@ -37,11 +37,18 @@ export default function PreparationStep({
   const [suggestedPromptText, setSuggestedPromptText] = useState(null); // When set, shows editable "Suggested Final Prompt" panel
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const suggestedPromptRef = useRef(null);
   const hasPreFilledRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isLoading]);
+
+  useEffect(() => {
+    if (suggestedPromptText !== null && suggestedPromptRef.current) {
+      suggestedPromptRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [suggestedPromptText]);
 
   const isContinuation = !!priorDeliberationSummary;
 
@@ -248,7 +255,7 @@ export default function PreparationStep({
                 </div>
               )}
               {suggestedPromptText !== null && (
-                <div className="suggested-prompt-panel">
+                <div ref={suggestedPromptRef} className="suggested-prompt-panel">
                   <div className="suggested-prompt-header">
                     <strong>Suggested Final Prompt</strong>
                     <span className="suggested-prompt-hint">Review and edit below, then submit for deliberation</span>

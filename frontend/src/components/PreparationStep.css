@@ -50,7 +50,8 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .preparation-sidebar {
@@ -71,11 +72,9 @@
 
 
 .preparation-main .messages-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  margin-bottom: 12px;
+  flex: 1 1 auto;
   min-height: 120px;
+  margin-bottom: 12px;
   padding-right: 8px;
   -webkit-overflow-scrolling: touch;
 }
@@ -140,7 +139,7 @@
 
 .preparation-main .input-section {
   flex-shrink: 0;
-  padding: 8px 0;
+  padding: 12px 0 24px 0;
   background: #fff;
   border-top: 1px solid #e5e7eb;
   margin-top: auto;
@@ -169,19 +168,27 @@
 
 .preparation-main .input-actions {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.preparation-main .send-button,
+.preparation-main .suggest-final-button,
+.preparation-main .proceed-button.large {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .preparation-main .send-button {
-  padding: 10px 20px;
   background-color: #4a90e2;
   color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 .preparation-main .send-button:hover:not(:disabled) {
@@ -194,13 +201,8 @@
 }
 
 .preparation-main .suggest-final-button {
-  padding: 10px 20px;
   background-color: #f0f0f0;
   color: #333;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
 }
 
 .preparation-main .suggest-final-button:hover:not(:disabled) {
@@ -706,17 +708,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
-  margin-bottom: 12px;
+  gap: 6px 12px;
+  margin-bottom: 10px;
 }
 
 .suggested-prompt-header strong {
-  font-size: 15px;
+  flex-shrink: 0;
+  font-size: 14px;
   color: #22543d;
 }
 
-.suggested-prompt-hint {
-  font-size: 13px;
+.suggested-prompt-header .suggested-prompt-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
   color: #276749;
 }
 
@@ -743,7 +748,8 @@
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
-  min-height: 120px;
+  min-height: 100px;
+  max-height: 300px;
   margin-bottom: 12px;
 }
 
@@ -755,6 +761,15 @@
 
 .suggested-prompt-actions {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.suggested-prompt-actions .edit-prompt-btn,
+.suggested-prompt-actions .proceed-button.large {
+  padding: 8px 16px;
+  font-size: 13px;
+  white-space: nowrap;
 }
