@@ -703,13 +703,33 @@
   margin-bottom: 0;
 }
 
-/* Suggested Final Prompt panel - ready to view and edit */
-.suggested-prompt-panel {
-  margin-bottom: 16px;
-  padding: 16px;
+/* Suggested Final Prompt - full takeover of main content area */
+.suggested-prompt-fullscreen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
   background: #f0fff0;
   border: 1px solid #9ae6b4;
   border-radius: 10px;
+}
+
+.suggested-prompt-fullscreen .suggested-prompt-header {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.suggested-prompt-fullscreen .suggested-prompt-textarea-fullscreen {
+  flex: 1;
+  min-height: 200px;
+  max-height: none;
+  resize: none;
+  margin-bottom: 16px;
+}
+
+.suggested-prompt-fullscreen .suggested-prompt-actions {
+  flex-shrink: 0;
 }
 
 .suggested-prompt-header {

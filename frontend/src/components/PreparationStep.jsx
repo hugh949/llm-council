@@ -44,11 +44,6 @@ export default function PreparationStep({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isLoading]);
 
-  useEffect(() => {
-    if (suggestedPromptText !== null && suggestedPromptRef.current) {
-      suggestedPromptRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [suggestedPromptText]);
 
   const isContinuation = !!priorDeliberationSummary;
 
@@ -85,7 +80,6 @@ export default function PreparationStep({
       const result = await onSuggestFinal();
       const suggested = result.suggested_prompt || '';
       setSuggestedPromptText(suggested);
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
       console.error('Failed to suggest final prompt:', error);
     }
@@ -213,8 +207,41 @@ export default function PreparationStep({
       )}
 
       <div className="preparation-layout">
-        {/* Main: Chat + Input */}
+        {/* Main: Chat + Input, OR Suggested Final Prompt full takeover */}
         <div className="preparation-main">
+          {suggestedPromptText !== null ? (
+            /* Suggested Final Prompt takes over entire content area */
+            <div ref={suggestedPromptRef} className="suggested-prompt-fullscreen">
+              <div className="suggested-prompt-header">
+                <strong>Suggested Final Prompt</strong>
+                <span className="suggested-prompt-hint">Review and edit below, then submit for deliberation</span>
+                <button type="button" className="dismiss-suggested-btn" onClick={handleDismissSuggestedPrompt} aria-label="Dismiss">×</button>
+              </div>
+              <textarea
+                className="suggested-prompt-textarea suggested-prompt-textarea-fullscreen"
+                value={suggestedPromptText}
+                onChange={(e) => setSuggestedPromptText(e.target.value)}
+                placeholder="Edit the suggested prompt..."
+                rows={12}
+              />
+              <div className="suggested-prompt-actions">
+                <button type="button" className="edit-prompt-btn" onClick={handleDismissSuggestedPrompt}>
+                  ← Back to conversation
+                </button>
+                <button
+                  type="button"
+                  className="proceed-button large"
+                  onClick={() => {
+                    if (promptForSubmit.trim()) onSubmitToCouncil(promptForSubmit.trim());
+                    setSuggestedPromptText(null);
+                  }}
+                  disabled={!promptForSubmit.trim() || isLoading}
+                >
+                  Submit for Deliberation
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="preparation-main-scroll">
           <div className="messages-container">
             {messages.length === 0 ? (
@@ -251,38 +278,6 @@ export default function PreparationStep({
                   <button type="button" className="edit-prompt-btn" onClick={handleEditPrompt} disabled={isLoading}>
                     ✏️ Edit prompt
                   </button>
-                </div>
-              )}
-              {suggestedPromptText !== null && (
-                <div ref={suggestedPromptRef} className="suggested-prompt-panel">
-                  <div className="suggested-prompt-header">
-                    <strong>Suggested Final Prompt</strong>
-                    <span className="suggested-prompt-hint">Review and edit below, then submit for deliberation</span>
-                    <button type="button" className="dismiss-suggested-btn" onClick={handleDismissSuggestedPrompt} aria-label="Dismiss">×</button>
-                  </div>
-                  <textarea
-                    className="suggested-prompt-textarea"
-                    value={suggestedPromptText}
-                    onChange={(e) => setSuggestedPromptText(e.target.value)}
-                    placeholder="Edit the suggested prompt..."
-                    rows={6}
-                  />
-                  <div className="suggested-prompt-actions">
-                    <button type="button" className="edit-prompt-btn" onClick={handleDismissSuggestedPrompt}>
-                      Dismiss
-                    </button>
-                    <button
-                      type="button"
-                      className="proceed-button large"
-                      onClick={() => {
-                        if (promptForSubmit.trim()) onSubmitToCouncil(promptForSubmit.trim());
-                        setSuggestedPromptText(null);
-                      }}
-                      disabled={!promptForSubmit.trim() || isLoading}
-                    >
-                      Submit for Deliberation
-                    </button>
-                  </div>
                 </div>
               )}
               <form onSubmit={handleSubmit} className="input-form">
@@ -323,6 +318,7 @@ export default function PreparationStep({
               </form>
             </div>
           </div>
+          )}
         </div>
 
         {/* Sidebar: Attachments */}
