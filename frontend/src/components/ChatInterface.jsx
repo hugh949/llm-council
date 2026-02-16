@@ -13,6 +13,7 @@ export default function ChatInterface({
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
+  const stage3Ref = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -21,6 +22,14 @@ export default function ChatInterface({
   useEffect(() => {
     scrollToBottom();
   }, [conversation]);
+
+  // Scroll Final Council Answer into view when it appears (important result)
+  useEffect(() => {
+    const hasStage3 = conversation?.messages?.some((msg) => msg.role === 'assistant' && msg.stage3);
+    if (hasStage3 && stage3Ref.current) {
+      stage3Ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [conversation?.messages]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -101,7 +110,11 @@ export default function ChatInterface({
                       <span>Synthesizing final answer...</span>
                     </div>
                   )}
-                  {msg.stage3 && <Stage3 finalResponse={msg.stage3} />}
+                  {msg.stage3 && (
+                    <div ref={stage3Ref} className="stage3-wrapper">
+                      <Stage3 finalResponse={msg.stage3} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

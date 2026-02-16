@@ -6,17 +6,22 @@ export default function Stage3({ finalResponse }) {
     return null;
   }
 
-  const isError = finalResponse.model === 'error' || 
-                  (finalResponse.response && finalResponse.response.startsWith('Error:'));
+  // Normalize format (object with model/response, or string from storage)
+  const normalized = typeof finalResponse === 'object' && finalResponse !== null && 'response' in finalResponse
+    ? finalResponse
+    : { model: 'unknown', response: String(finalResponse || 'No response') };
+
+  const isError = normalized.model === 'error' || 
+                  (normalized.response && String(normalized.response).startsWith('Error:'));
   
-  const modelName = finalResponse.model === 'error' 
+  const modelName = normalized.model === 'error' 
     ? 'Error' 
-    : (finalResponse.model.split('/')[1] || finalResponse.model);
+    : (normalized.model.split('/')[1] || normalized.model);
 
   return (
-    <div className={`stage stage3 ${isError ? 'stage3-error' : ''}`}>
-      <h3 className="stage-title">
-        {isError ? '⚠️ Synthesis Error' : 'Final Council Answer'}
+    <div className={`stage stage3 stage3-final-deliberation ${isError ? 'stage3-error' : ''}`}>
+      <h3 className="stage-title stage3-main-title">
+        {isError ? '⚠️ Synthesis Error' : '🏆 Final Council Deliberation'}
       </h3>
       <div className={`final-response ${isError ? 'error-response' : ''}`}>
         <div className="chairman-label">
@@ -29,7 +34,7 @@ export default function Stage3({ finalResponse }) {
               <p>The chairman model encountered an error. Please see details below and try again.</p>
             </div>
           )}
-          <ReactMarkdown>{finalResponse.response}</ReactMarkdown>
+          <ReactMarkdown>{normalized.response}</ReactMarkdown>
         </div>
       </div>
     </div>

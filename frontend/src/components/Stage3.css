@@ -3,6 +3,20 @@
   border-color: #c8e6c8;
 }
 
+/* Final Council Deliberation - prominent end result */
+.stage3-final-deliberation {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #38a169;
+  box-shadow: 0 2px 8px rgba(56, 161, 105, 0.15);
+}
+
+.stage3-main-title {
+  font-size: 18px !important;
+  color: #22543d !important;
+  margin-bottom: 16px !important;
+}
+
 .stage3.stage3-error {
   background: #fff5f5;
   border-color: #ffa8a8;
@@ -10,8 +24,8 @@
 
 .final-response {
   background: #ffffff;
-  padding: 20px;
-  border-radius: 6px;
+  padding: 24px;
+  border-radius: 8px;
   border: 1px solid #c8e6c8;
 }
 

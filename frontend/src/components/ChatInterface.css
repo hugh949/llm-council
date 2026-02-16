@@ -72,6 +72,11 @@
   font-size: 14px;
 }
 
+/* Wrapper for Final Council Deliberation - scroll target */
+.stage3-wrapper {
+  scroll-margin-top: 16px;
+}
+
 .stage-loading {
   display: flex;
   align-items: center;
