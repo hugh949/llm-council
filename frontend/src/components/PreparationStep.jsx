@@ -186,7 +186,7 @@ export default function PreparationStep({
                   </button>
                   {priorDeliberationExpanded && (
                     <div className="refinement-prior-content markdown-content">
-                      <ReactMarkdown>{priorDeliberationSummary}</ReactMarkdown>
+                      <ReactMarkdown>{typeof priorDeliberationSummary === 'string' ? priorDeliberationSummary : ''}</ReactMarkdown>
                     </div>
                   )}
                 </div>
@@ -195,7 +195,7 @@ export default function PreparationStep({
                 <div className="refinement-prior-prompt">
                   <span className="refinement-label">Your previous prompt (editable below):</span>
                   <div className="refinement-prompt-preview markdown-content">
-                    <ReactMarkdown>{finalizedPrompt}</ReactMarkdown>
+                    <ReactMarkdown>{typeof finalizedPrompt === 'string' ? finalizedPrompt : ''}</ReactMarkdown>
                   </div>
                   <button type="button" className="edit-prompt-btn" onClick={handleEditPrompt}>
                     ✏️ Edit this prompt
@@ -224,7 +224,7 @@ export default function PreparationStep({
                 <div key={i} className={`message ${msg.role}`}>
                   <div className="message-label">{msg.role === 'user' ? 'You' : 'Assistant'}</div>
                   <div className="message-content markdown-content">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown>{msg.content ?? ''}</ReactMarkdown>
                   </div>
                 </div>
               ))
