@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
+import ErrorBoundary from './components/ErrorBoundary';
 import PreparationStep from './components/PreparationStep';
 import ChatInterface from './components/ChatInterface';
 import StepView from './components/StepView';
@@ -68,19 +69,13 @@ function App() {
     loadConversations();
   }, []);
 
-  useEffect(() => {
-    if (!currentConversationId) return;
-    // Skip redundant load when we already have this conversation (e.g. from create response)
-    if (currentConversation?.id === currentConversationId) return;
-    loadConversation(currentConversationId);
-  }, [currentConversationId, currentConversation?.id]);
-
   const handleNewConversation = async () => {
     if (isCreatingConversation) return;
     setIsCreatingConversation(true);
+    console.log('[handleNewConversation] starting create...');
     try {
       const newConv = await api.createConversation();
-      
+      console.log('[handleNewConversation] create ok, id=', newConv?.id);
       setConversations((prev) => [
         {
           id: newConv.id,
@@ -102,6 +97,7 @@ function App() {
       // This avoids a second API call that might fail
       if (newConv) {
         setCurrentConversation(newConv);
+        console.log('[handleNewConversation] setCurrentConversation done');
       } else {
         // Fallback: try to load if the response didn't include full conversation data
         await loadConversation(newConv.id);
@@ -120,6 +116,9 @@ function App() {
     }
     setCurrentConversationId(id);
     setViewingStep(null);
+    if (currentConversation?.id !== id) {
+      loadConversation(id);
+    }
   };
 
   const handleSelectStep = (convId, step) => {
@@ -712,6 +711,7 @@ function App() {
     try {
       if (!currentConversation) {
         if (currentConversationId) {
+          console.log('[renderStage] loading (convId set, no data)');
           return (
             <div className="empty-state loading-conversation">
               <h2>Loading conversation…</h2>
@@ -720,6 +720,7 @@ function App() {
             </div>
           );
         }
+        console.log('[renderStage] welcome (no conv)');
         return (
           <div className="empty-state">
             <h2>Welcome to LLM Council</h2>
@@ -738,12 +739,14 @@ function App() {
       }
 
       const stageToRender = getCurrentStage();
+      console.log('[renderStage] stage=', stageToRender, 'convId=', currentConversationId);
 
     switch (stageToRender) {
       case 'preparation': {
         const priorDeliberationSummary = extractPriorDeliberationSummary(currentConversation);
         return (
           <PreparationStep
+            key={currentConversationId}
             conversationId={currentConversationId}
             messages={promptEng.messages || []}
             documents={contextEng.documents || []}
@@ -766,7 +769,7 @@ function App() {
         );
       }
 
-      case 'council_deliberation':
+      case 'council_deliberation': {
         // Convert council_deliberation format to format expected by ChatInterface
         const formattedConversation = {
           ...currentConversation,
@@ -775,12 +778,14 @@ function App() {
 
         return (
           <ChatInterface
+            key={currentConversationId}
             conversation={formattedConversation}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
             onStartNewRound={handleStartNewRound}
           />
         );
+      }
 
       default:
         return (
@@ -853,16 +858,18 @@ function App() {
         isCreatingConversation={isCreatingConversation}
       />
       <div className="main-content">
-        {viewingStep ? (
-          <StepView 
-            step={viewingStep}
-            conversation={currentConversation}
-            onBack={() => setViewingStep(null)}
-            onStartNewRound={handleStartNewRound}
-          />
-        ) : (
-          stageContent
-        )}
+        <ErrorBoundary>
+          {viewingStep ? (
+            <StepView 
+              step={viewingStep}
+              conversation={currentConversation}
+              onBack={() => setViewingStep(null)}
+              onStartNewRound={handleStartNewRound}
+            />
+          ) : (
+            stageContent
+          )}
+        </ErrorBoundary>
       </div>
     </div>
   );

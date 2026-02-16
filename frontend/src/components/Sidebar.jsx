@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '../api';
-import { APP_VERSION } from '../version';
+import { APP_VERSION, BUILD_TIME } from '../version';
 import './Sidebar.css';
 
 export default function Sidebar({
@@ -123,7 +123,7 @@ export default function Sidebar({
       <div className="sidebar-header">
         <div className="sidebar-brand">
           <img src="/xavorlogo.jpeg" alt="Xavor" className="xavor-logo" />
-          <h1 className="app-title">LLM Council <span className="app-version">v{APP_VERSION}</span></h1>
+          <h1 className="app-title">LLM Council <span className="app-version">v{APP_VERSION}</span>{BUILD_TIME && <span className="app-build-time" title="Build time">{BUILD_TIME.slice(0, 10)}</span>}</h1>
         </div>
         <button
           className="new-conversation-btn"
