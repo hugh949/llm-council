@@ -19,18 +19,22 @@ function App() {
 
   // Define functions FIRST before useEffects that use them
   const extractPriorDeliberationSummary = (conv) => {
-    if (!conv) return null;
-    const prior = conv.prior_synthesis;
-    if (prior) return prior;
-    const councilMsgs = conv.council_deliberation?.messages || [];
-    for (let i = councilMsgs.length - 1; i >= 0; i--) {
-      const msg = councilMsgs[i];
-      if (msg?.role === 'assistant' && msg?.stage3) {
-        const response = typeof msg.stage3 === 'object' ? msg.stage3.response : String(msg.stage3 || '');
-        if (response) return response.length > 3000 ? response.substring(0, 3000) + '...' : response;
+    try {
+      if (!conv) return null;
+      const prior = conv.prior_synthesis;
+      if (typeof prior === 'string') return prior;
+      const councilMsgs = Array.isArray(conv.council_deliberation?.messages) ? conv.council_deliberation.messages : [];
+      for (let i = councilMsgs.length - 1; i >= 0; i--) {
+        const msg = councilMsgs[i];
+        if (msg?.role === 'assistant' && msg?.stage3 != null) {
+          const response = typeof msg.stage3 === 'object' && msg.stage3 !== null ? (msg.stage3.response ?? '') : String(msg.stage3 ?? '');
+          if (response) return response.length > 3000 ? response.substring(0, 3000) + '...' : response;
+        }
       }
+      return null;
+    } catch {
+      return null;
     }
-    return null;
   };
 
   const loadConversations = async () => {
@@ -734,10 +738,6 @@ function App() {
       const contextEng = currentConversation.context_engineering || { messages: [], documents: [], files: [], links: [], finalized_context: null };
       const councilDelib = currentConversation.council_deliberation || { messages: [] };
 
-      if (!currentConversation.context_engineering) {
-        currentConversation.context_engineering = { messages: [], documents: [], files: [], links: [], finalized_context: null };
-      }
-
       const stageToRender = getCurrentStage();
       console.log('[renderStage] stage=', stageToRender, 'convId=', currentConversationId);
 
@@ -748,10 +748,10 @@ function App() {
           <PreparationStep
             key={currentConversationId}
             conversationId={currentConversationId}
-            messages={promptEng.messages || []}
-            documents={contextEng.documents || []}
-            files={contextEng.files || []}
-            links={contextEng.links || []}
+            messages={Array.isArray(promptEng.messages) ? promptEng.messages : []}
+            documents={Array.isArray(contextEng.documents) ? contextEng.documents : []}
+            files={Array.isArray(contextEng.files) ? contextEng.files : []}
+            links={Array.isArray(contextEng.links) ? contextEng.links : []}
             finalizedPrompt={promptEng.finalized_prompt}
             finalizedContext={contextEng.finalized_context}
             priorDeliberationSummary={priorDeliberationSummary}
@@ -846,6 +846,7 @@ function App() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="app">
       <Sidebar
         conversations={conversations}
@@ -872,6 +873,7 @@ function App() {
         </ErrorBoundary>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
 

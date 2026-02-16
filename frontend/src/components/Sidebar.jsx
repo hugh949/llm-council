@@ -110,12 +110,17 @@ export default function Sidebar({
   }, [conversations]);
 
   const getPhaseStatus = (details) => {
-    const promptEng = details?.prompt_engineering || {};
-    const contextEng = details?.context_engineering || {};
-    const councilDelib = details?.council_deliberation || {};
-    const prepared = !!(promptEng.finalized_prompt && contextEng.finalized_context);
-    const deliberated = councilDelib.messages?.some(msg => msg.role === 'assistant' && msg.stage3) ?? false;
-    return { prepared, deliberated };
+    try {
+      const promptEng = details?.prompt_engineering && typeof details.prompt_engineering === 'object' ? details.prompt_engineering : {};
+      const contextEng = details?.context_engineering && typeof details.context_engineering === 'object' ? details.context_engineering : {};
+      const councilDelib = details?.council_deliberation && typeof details.council_deliberation === 'object' ? details.council_deliberation : {};
+      const messages = Array.isArray(councilDelib.messages) ? councilDelib.messages : [];
+      const prepared = !!(promptEng?.finalized_prompt && contextEng?.finalized_context);
+      const deliberated = messages.some((msg) => msg && msg.role === 'assistant' && msg.stage3 != null);
+      return { prepared, deliberated };
+    } catch {
+      return { prepared: false, deliberated: false };
+    }
   };
 
   return (

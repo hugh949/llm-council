@@ -220,9 +220,9 @@ export default function PreparationStep({
                 </div>
               </div>
             ) : (
-              messages.map((msg, i) => (
-                <div key={i} className={`message ${msg.role}`}>
-                  <div className="message-label">{msg.role === 'user' ? 'You' : 'Assistant'}</div>
+              (Array.isArray(messages) ? messages : []).filter((m) => m && typeof m === 'object').map((msg, i) => (
+                <div key={msg.id ?? i} className={`message ${msg.role || 'user'}`}>
+                  <div className="message-label">{(msg.role === 'user' ? 'You' : 'Assistant')}</div>
                   <div className="message-content markdown-content">
                     <ReactMarkdown>{msg.content ?? ''}</ReactMarkdown>
                   </div>
