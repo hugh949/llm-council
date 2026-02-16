@@ -21,6 +21,13 @@ COUNCIL_MODELS = [
 # Using Gemini 3 Flash Preview for advanced reasoning and synthesis
 CHAIRMAN_MODEL = "google/gemini-3-flash-preview"
 
+# Council model timeout (seconds) - reduce wait when one model is slow/hanging
+# Second-round prompts can be 7K+ chars (prior synthesis + context) - some models struggle
+COUNCIL_MODEL_TIMEOUT = 90
+
+# Max seconds to wait for Stage 1/2 - proceed with partial results if hit (avoids 2+ min stall)
+COUNCIL_STAGE_TIMEOUT = 95
+
 # Prompt Engineering model (cheap and fast)
 PROMPT_ENGINEERING_MODEL = "google/gemini-2.5-flash"
 

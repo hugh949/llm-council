@@ -91,7 +91,9 @@ async def query_model(
 
 async def query_models_parallel(
     models: List[str],
-    messages: List[Dict[str, str]]
+    messages: List[Dict[str, str]],
+    timeout: Optional[float] = None,
+    stage_timeout: Optional[float] = None
 ) -> Dict[str, Optional[Dict[str, Any]]]:
     """
     Query multiple models in parallel.
@@ -99,17 +101,45 @@ async def query_models_parallel(
     Args:
         models: List of OpenRouter model identifiers
         messages: List of message dicts to send to each model
+        timeout: Per-model timeout in seconds (default 120)
+        stage_timeout: Max seconds for whole stage - proceed with partial results (avoids long stalls)
 
     Returns:
         Dict mapping model identifier to response dict (or None if failed)
     """
     import asyncio
 
-    # Create tasks for all models
-    tasks = [query_model(model, messages) for model in models]
+    per_model = timeout if timeout is not None else 120.0
 
-    # Wait for all to complete
-    responses = await asyncio.gather(*tasks)
+    async def query_one(model: str):
+        return model, await query_model(model, messages, timeout=per_model)
 
-    # Map models to their responses
-    return {model: response for model, response in zip(models, responses)}
+    tasks = [asyncio.create_task(query_one(m)) for m in models]
+
+    if stage_timeout is not None and stage_timeout > 0:
+        done, pending = await asyncio.wait(tasks, timeout=stage_timeout, return_when=asyncio.ALL_COMPLETED)
+        if pending:
+            print(f"[OPENROUTER] Stage timeout ({stage_timeout}s) - proceeding with {len(done)}/{len(models)} responses", file=sys.stderr, flush=True)
+            for t in pending:
+                t.cancel()
+                try:
+                    await t
+                except asyncio.CancelledError:
+                    pass
+        completed = done
+    else:
+        await asyncio.gather(*tasks)
+        completed = set(tasks)
+
+    results = {}
+    for t in completed:
+        if t.done() and not t.cancelled():
+            try:
+                model, resp = t.result()
+                results[model] = resp
+            except Exception:
+                pass
+    for m in models:
+        if m not in results:
+            results[m] = None
+    return results

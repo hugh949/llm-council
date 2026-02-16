@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Tuple
 from .openrouter import query_models_parallel, query_model
-from .config import COUNCIL_MODELS, CHAIRMAN_MODEL
+from .config import COUNCIL_MODELS, CHAIRMAN_MODEL, COUNCIL_MODEL_TIMEOUT, COUNCIL_STAGE_TIMEOUT
 
 
 async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
@@ -17,8 +17,12 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
     """
     messages = [{"role": "user", "content": user_query}]
 
-    # Query all models in parallel
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    # Query all models in parallel (stage timeout avoids 2+ min stall when one model hangs)
+    responses = await query_models_parallel(
+        COUNCIL_MODELS, messages,
+        timeout=COUNCIL_MODEL_TIMEOUT,
+        stage_timeout=COUNCIL_STAGE_TIMEOUT
+    )
 
     # Format results
     stage1_results = []
@@ -95,7 +99,11 @@ Now provide your evaluation and ranking:"""
     messages = [{"role": "user", "content": ranking_prompt}]
 
     # Get rankings from all council models in parallel
-    responses = await query_models_parallel(COUNCIL_MODELS, messages)
+    responses = await query_models_parallel(
+        COUNCIL_MODELS, messages,
+        timeout=COUNCIL_MODEL_TIMEOUT,
+        stage_timeout=COUNCIL_STAGE_TIMEOUT
+    )
 
     # Format results
     stage2_results = []
