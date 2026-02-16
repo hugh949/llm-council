@@ -128,8 +128,13 @@ export default function Sidebar({
       <div className="sidebar-header">
         <div className="sidebar-brand">
           <img src="/xavorlogo.jpeg" alt="Xavor" className="xavor-logo" />
-          <h1 className="app-title">LLM Council <span className="app-version">v{APP_VERSION}</span>{BUILD_TIME && typeof BUILD_TIME === 'string' && <span className="app-build-time" title="Build time">{BUILD_TIME.slice(0, 10)}</span>}</h1>
+          <div className="app-title-block">
+            <h1 className="app-title">LLM Council</h1>
+            <span className="app-version">v{APP_VERSION}{BUILD_TIME && typeof BUILD_TIME === 'string' && <span className="app-build-time" title="Build time"> {BUILD_TIME.slice(0, 10)}</span>}</span>
+          </div>
         </div>
+      </div>
+      <div className="sidebar-actions">
         <button
           className="new-conversation-btn"
           onClick={onNewConversation}

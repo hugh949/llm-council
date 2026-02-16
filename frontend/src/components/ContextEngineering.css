@@ -1624,7 +1624,7 @@
 .step-transition-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: var(--sidebar-width, 300px);
   right: 0;
   background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
   padding: 20px 24px;
@@ -1990,7 +1990,7 @@
 .prior-context-edit-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: var(--sidebar-width, 300px);
   right: 0;
   z-index: 1001;
   background: linear-gradient(135deg, #fff9e6 0%, #fff3c4 100%);
@@ -2017,7 +2017,7 @@
 .package-context-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: var(--sidebar-width, 300px);
   right: 0;
   background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
   padding: 20px 24px;

@@ -7,6 +7,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Main app sidebar width - fixed input/action bars align with main content (not sidebar) */
+  --sidebar-width: 300px;
 }
 
 * {

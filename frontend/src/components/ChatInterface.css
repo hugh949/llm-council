@@ -106,11 +106,11 @@
   }
 }
 
-/* Input/refinement bars: ALWAYS visible - fixed at bottom, never hidden */
+/* Input/refinement bars: ALWAYS visible - fixed at bottom, aligned with main content (not sidebar) */
 .input-form {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: var(--sidebar-width, 300px);
   right: 0;
   z-index: 1000;
   display: flex;
@@ -178,7 +178,7 @@
 .refinement-actions {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: var(--sidebar-width, 300px);
   right: 0;
   z-index: 1000;
   padding: 20px 24px;
