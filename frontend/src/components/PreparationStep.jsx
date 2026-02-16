@@ -154,8 +154,6 @@ export default function PreparationStep({
     }, 50);
   };
 
-  const canSubmit = !!promptForSubmit.trim() && !isLoading && onSubmitToCouncil;
-
   return (
     <div className="preparation-step">
       <ProgressIndicator
@@ -217,6 +215,7 @@ export default function PreparationStep({
       <div className="preparation-layout">
         {/* Main: Chat + Input */}
         <div className="preparation-main">
+          <div className="preparation-main-scroll">
           <div className="messages-container">
             {messages.length === 0 ? (
               <div className="message assistant opening-message">
@@ -300,17 +299,7 @@ export default function PreparationStep({
                   <button type="submit" className="send-button" disabled={!input.trim() || isLoading}>
                     Send
                   </button>
-                  {canSubmit && suggestedPromptText === null && (
-                    <button
-                      type="button"
-                      className="proceed-button large"
-                      onClick={() => onSubmitToCouncil(promptForSubmit.trim())}
-                      disabled={!canSubmit}
-                    >
-                      Submit for Deliberation
-                    </button>
-                  )}
-                  {(messages.length > 0 || (isContinuation && input.trim()) || input.trim()) && (
+                  {messages.length > 0 && (
                     <button
                       type="button"
                       className="suggest-final-button"
@@ -320,9 +309,20 @@ export default function PreparationStep({
                       Suggest Final Prompt
                     </button>
                   )}
+                  {finalizedPrompt && !isEditingPrompt && suggestedPromptText === null && (
+                    <button
+                      type="button"
+                      className="proceed-button large"
+                      onClick={() => onSubmitToCouncil(promptForSubmit.trim())}
+                      disabled={isLoading}
+                    >
+                      Submit for Deliberation
+                    </button>
+                  )}
                 </div>
               </form>
             </div>
+          </div>
         </div>
 
         {/* Sidebar: Attachments */}
