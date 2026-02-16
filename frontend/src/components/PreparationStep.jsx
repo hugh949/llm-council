@@ -88,6 +88,7 @@ export default function PreparationStep({
     setSuggestedPromptText(null);
   };
 
+  const lastUserMessage = (Array.isArray(messages) ? messages : []).filter((m) => m && m.role === 'user').pop()?.content || '';
   const promptForSubmit =
     suggestedPromptText !== null
       ? suggestedPromptText.trim()
@@ -146,7 +147,6 @@ export default function PreparationStep({
     }, 50);
   };
 
-  const lastUserMessage = messages.filter((m) => m.role === 'user').pop()?.content || '';
   const canSubmit = !!promptForSubmit.trim() && !isLoading && onSubmitToCouncil;
 
   return (
